@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1f1b30">
+<title>Mopapa</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main id="app">
+  <section id="screen-home">
+    <div id="pet-wrap">
+      <div id="pet"></div>
+      <div id="bubble" role="status"></div>
+    </div>
+    <div id="confirm" hidden></div>
+    <form id="talk-form">
+      <textarea id="talk-input" rows="2" maxlength="1000" placeholder="Tell Mopapa anything..."></textarea>
+      <button type="submit" id="send">Tell</button>
+    </form>
+    <h2>Mopapa's rooms</h2>
+    <div id="rooms"></div>
+    <div id="tools">
+      <button type="button" id="btn-export" class="link">Export backup</button>
+      <button type="button" id="btn-import" class="link">Import backup</button>
+      <input type="file" id="file-import" accept="application/json,.json" hidden>
+    </div>
+  </section>
+
+  <section id="screen-room" hidden>
+    <header id="room-head">
+      <button type="button" id="back" class="link">&larr; Back</button>
+      <h2 id="room-title"></h2>
+    </header>
+    <ul id="room-list"></ul>
+  </section>
+</main>
+
+<script src="js/store.js"></script>
+<script src="js/understand/rooms.js"></script>
+<script src="js/understand/rules.js"></script>
+<script src="js/understand/sorter.js"></script>
+<script src="js/memory/entries.js"></script>
+<script src="js/pet/body.js"></script>
+<script src="js/ui/talk.js"></script>
+<script src="js/ui/room.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
