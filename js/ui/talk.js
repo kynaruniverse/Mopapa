@@ -43,10 +43,25 @@ Mopapa.talk = (function () {
   function submit() {
     var text = input.value.trim();
     if (!text || busy) return;
-    if (/\?\s*$/.test(text)) {
-      Mopapa.pet.say("I can't answer questions yet, I only file things for now. Questions are coming soon.");
+    var q = Mopapa.rules.questionLevel(text);
+    if (q === 'sure') { noAnswer(); return; }
+    if (q === 'maybe') {
+      Mopapa.pet.say('Is that a question for me, or something to file?');
+      showChoices([
+        { label: 'A question', primary: true, fn: function () { endChoices(); noAnswer(); } },
+        { label: 'File it', fn: function () { endChoices(); fileIt(text); } },
+        { label: 'Cancel', fn: cancel }
+      ]);
       return;
     }
+    fileIt(text);
+  }
+
+  function noAnswer() {
+    Mopapa.pet.say("I can't answer questions yet, I only file things for now. Questions are coming soon.");
+  }
+
+  function fileIt(text) {
     var parse = Mopapa.rules.parse(text, new Date());
     var res = Mopapa.sorter.classify(text, parse);
     var ctx = { text: text, parse: parse, money: Mopapa.rules.money(text) };
