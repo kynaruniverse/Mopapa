@@ -1,0 +1,77 @@
+var Mopapa = window.Mopapa = window.Mopapa || {};
+
+Mopapa.customRooms = (function () {
+  var MAX_CUSTOM_ROOMS = 10;
+  var ICONS = ['📚', '🌱', '🎨', '🐾', '🎵', '✈️', '🏠', '💼', '🔭', '⭐'];
+
+  function cleanName(value) {
+    return String(value || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function findDuplicate(name) {
+    var target = cleanName(name).toLowerCase();
+    return Mopapa.rooms.some(function (room) {
+      return room.name.toLowerCase() === target;
+    });
+  }
+
+  function validSavedRoom(room) {
+    return room &&
+      typeof room.id === 'string' && /^custom_[a-z0-9]+$/.test(room.id) &&
+      typeof room.name === 'string' && room.name.length >= 2 && room.name.length <= 20 &&
+      ICONS.indexOf(room.icon) !== -1;
+  }
+
+  function reload() {
+    Mopapa.rooms = Mopapa.rooms.filter(function (room) {
+      return room.id.indexOf('custom_') !== 0;
+    });
+
+    var saved = Mopapa.store.data().customRooms || [];
+    var ids = {};
+    saved.forEach(function (room) {
+      var name = cleanName(room && room.name);
+      if (!validSavedRoom(room) || !name || ids[room.id] || findDuplicate(name)) return;
+      ids[room.id] = true;
+      Mopapa.rooms.push({
+        id: room.id,
+        name: name,
+        icon: room.icon,
+        dated: false,
+        words: [name]
+      });
+    });
+  }
+
+  function add(name, icon) {
+    name = cleanName(name);
+    var current = Mopapa.store.data().customRooms || [];
+    if (name.length < 2 || name.length > 20) {
+      return { ok: false, message: 'Use a room name between 2 and 20 characters.' };
+    }
+    if (findDuplicate(name)) {
+      return { ok: false, message: 'A room with that name already exists.' };
+    }
+    if (current.length >= MAX_CUSTOM_ROOMS) {
+      return { ok: false, message: 'You have reached the limit of 10 custom rooms for now.' };
+    }
+    if (ICONS.indexOf(icon) === -1) icon = ICONS[0];
+
+    var room = {
+      id: 'custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      name: name,
+      icon: icon
+    };
+    current.push(room);
+    Mopapa.store.data().customRooms = current;
+    if (!Mopapa.store.save()) {
+      current.pop();
+      return { ok: false, message: 'I could not save that room on this device. Check available storage and try again.' };
+    }
+
+    Mopapa.rooms.push({ id: room.id, name: room.name, icon: room.icon, dated: false, words: [room.name] });
+    return { ok: true, room: room };
+  }
+
+  return { init: reload, reload: reload, add: add };
+})();

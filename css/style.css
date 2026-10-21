@@ -12,6 +12,7 @@ h2{font-size:1.05rem;margin:22px 0 10px;color:var(--accent)}
 @keyframes blink{0%,94%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
 #bubble{background:var(--card);border-radius:14px;padding:12px 14px;flex:1;min-height:48px}
 #confirm{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+#confirm[hidden]{display:none!important}
 .chip{background:var(--card2);color:var(--text);border:0;border-radius:999px;padding:10px 14px;font-size:.95rem}
 .chip.primary{background:var(--accent);color:#2b2540;font-weight:600}
 #talk-form{display:flex;gap:8px}
@@ -37,3 +38,8 @@ h2{font-size:1.05rem;margin:22px 0 10px;color:var(--accent)}
 .entry-actions select{background:var(--card2);color:var(--text);border:0;border-radius:8px;padding:6px}
 .entry-actions .del{margin-left:auto;color:var(--bad)}
 .empty{color:var(--dim);padding:14px 0}
+#answer-sources{margin:0 0 12px 122px;max-width:calc(100% - 122px)}
+.source-heading{color:var(--dim);font-size:.82rem;margin:0 0 6px}
+.source-entry{background:var(--card2);border-radius:10px;padding:9px 11px;margin:6px 0;font-size:.9rem;overflow-wrap:anywhere}
+.source-meta{color:var(--dim);font-size:.78rem;margin-top:4px}
+@media(max-width:420px){#answer-sources{margin-left:0;max-width:100%}}

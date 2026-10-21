@@ -39,16 +39,57 @@ Mopapa.talk = (function () {
     endChoices();
     Mopapa.pet.say('Okay, I dropped that one. Your text is still in the box.');
   }
+  
+    function renderSources(entries) {
+    var box = document.getElementById('answer-sources');
+    if (!box) return;
+    box.innerHTML = '';
+    if (!entries || !entries.length) {
+      box.hidden = true;
+      return;
+    }
+
+    var heading = document.createElement('div');
+    heading.className = 'source-heading';
+    heading.textContent = 'From your saved entries:';
+    box.appendChild(heading);
+
+    entries.forEach(function (entry) {
+      var card = document.createElement('div');
+      card.className = 'source-entry';
+      var text = document.createElement('div');
+      text.textContent = entry.text;
+      card.appendChild(text);
+
+      var meta = document.createElement('div');
+      meta.className = 'source-meta';
+      var room = Mopapa.roomById(entry.room);
+      var parts = [room ? room.name : 'Saved entry'];
+      if (entry.when) {
+        parts.push(Mopapa.rules.describe(new Date(entry.when), entry.hasTime));
+      }
+      if (entry.created) {
+        var created = new Date(entry.created);
+        if (!isNaN(created.getTime())) {
+          parts.push('logged ' + created.toLocaleDateString());
+        }
+      }
+      meta.textContent = parts.join(' · ');
+      card.appendChild(meta);
+      box.appendChild(card);
+    });
+    box.hidden = false;
+  }
 
   function submit() {
     var text = input.value.trim();
     if (!text || busy) return;
     var q = Mopapa.rules.questionLevel(text);
-    if (q === 'sure') { noAnswer(); return; }
+    if (q === 'sure') { noAnswer(text); return; }
     if (q === 'maybe') {
       Mopapa.pet.say('Is that a question for me, or something to file?');
       showChoices([
-        { label: 'A question', primary: true, fn: function () { endChoices(); noAnswer(); } },
+        { label: 'A question', primary: true, fn: function () { endChoices(); noAnswer(text); } },
         { label: 'File it', fn: function () { endChoices(); fileIt(text); } },
         { label: 'Cancel', fn: cancel }
       ]);
@@ -57,9 +98,13 @@ Mopapa.talk = (function () {
     fileIt(text);
   }
 
-  function noAnswer() {
-    Mopapa.pet.say("I can't answer questions yet, I only file things for now. Questions are coming soon.");
+  function noAnswer(text) {
+    var result = Mopapa.ask.answer(text);
+    Mopapa.pet.say(result.answer);
+    renderSources(result.sources);
+    Mopapa.pet.react(result.sources.length ? 'helpful' : 'curious');
   }
+
 
   function fileIt(text) {
     var parse = Mopapa.rules.parse(text, new Date());
@@ -71,6 +116,7 @@ Mopapa.talk = (function () {
 
   function askRoom(ctx, ranked) {
     Mopapa.pet.say('Not sure where that goes. Which room?');
+    Mopapa.pet.react('curious');
     var choices = ranked.map(function (id, i) {
       var r = Mopapa.roomById(id);
       return {
@@ -121,6 +167,7 @@ Mopapa.talk = (function () {
     Mopapa.pet.say(line);
     Mopapa.pet.bounce();
     Mopapa.room.renderRooms();
+    if (Mopapa.agendaUI) Mopapa.agendaUI.render();
   }
 
   return { init: init };

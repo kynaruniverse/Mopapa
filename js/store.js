@@ -2,7 +2,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var data = { entries: [], learned: {} };
+  var data = { entries: [], learned: {}, customRooms: [] };
 
   function load() {
     try {
@@ -12,6 +12,7 @@ Mopapa.store = (function () {
         if (p && Array.isArray(p.entries)) {
           data.entries = p.entries;
           data.learned = p.learned || {};
+          data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
         }
       }
     } catch (e) {}
@@ -45,9 +46,17 @@ Mopapa.store = (function () {
       try {
         var p = JSON.parse(r.result);
         if (!p || !Array.isArray(p.entries)) throw new Error('bad file');
-        data.entries = p.entries;
-        data.learned = p.learned || {};
-        save();
+        var previous = data;
+        data = {
+          entries: p.entries,
+          learned: p.learned && typeof p.learned === 'object' ? p.learned : {},
+          customRooms: Array.isArray(p.customRooms) ? p.customRooms : []
+        };
+        if (!save()) {
+          data = previous;
+          cb(false);
+          return;
+        }
         cb(true);
       } catch (e) { cb(false); }
     };

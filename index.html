@@ -6,22 +6,145 @@
 <meta name="theme-color" content="#1f1b30">
 <title>Mopapa</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/den.css">
 </head>
 <body>
 <main id="app">
   <section id="screen-home">
-    <div id="pet-wrap">
-      <div id="pet"></div>
-      <div id="bubble" role="status"></div>
+    <div class="den-world">
+      <div class="den-scenery" aria-hidden="true">
+        <span class="firefly firefly-one"></span>
+        <span class="firefly firefly-two"></span>
+        <span class="firefly firefly-three"></span>
+        <span class="den-stone stone-one"></span>
+        <span class="den-stone stone-two"></span>
+        <div class="den-hill den-hill-back"></div>
+        <div class="den-hill den-hill-front"></div>
+        <div class="den-floor"></div>
+      </div>
+
+      <header class="den-heading">
+        <p class="den-kicker">YOUR LITTLE WORLD</p>
+        <h1>Mopapa’s Den</h1>
+        <p class="den-subtitle">A cosy place for everything you want to keep.</p>
+      </header>
+
+      <div id="pet-wrap" class="den-pet">
+        <div id="pet" aria-label="Mopapa the pet"></div>
+        <div class="den-speech">
+          <div id="bubble" role="status">Hi, I’m Mopapa. Tell me anything and I’ll keep it safe.</div>
+          <div id="answer-sources" aria-live="polite" hidden></div>
+        </div>
+      </div>
     </div>
-    <div id="confirm" hidden></div>
-    <form id="talk-form">
+
+    <form id="talk-form" class="den-talk">
+      <label class="visually-hidden" for="talk-input">Tell Mopapa something or ask a question</label>
       <textarea id="talk-input" rows="2" maxlength="1000" placeholder="Tell Mopapa anything..."></textarea>
       <button type="submit" id="send">Tell</button>
     </form>
-    <h2>Mopapa's rooms</h2>
-    <div id="rooms"></div>
-    <div id="tools">
+
+    <div id="confirm" class="den-confirm" role="group" aria-live="polite" hidden></div>
+    
+    <section id="agenda-panel" class="agenda-panel" aria-labelledby="agenda-title" hidden>
+      <div class="agenda-heading">
+        <div>
+          <p class="den-kicker">DATES YOU SAVED</p>
+          <h2 id="agenda-title">Today &amp; upcoming</h2>
+        </div>
+        <span class="agenda-mark" aria-hidden="true">◷</span>
+      </div>
+      <p id="agenda-status" class="agenda-status" role="status" aria-live="polite"></p>
+      <ul id="agenda-list" class="agenda-list"></ul>
+    </section>
+    
+    <section id="keepsakes-panel" class="keepsakes-panel" aria-labelledby="keepsakes-title" hidden>
+      <div class="keepsakes-heading">
+        <div>
+          <p class="den-kicker">MEMORIES YOU CHOSE</p>
+          <h2 id="keepsakes-title">Keepsakes</h2>
+        </div>
+        <span class="keepsakes-star" aria-hidden="true">★</span>
+      </div>
+      <p id="keepsakes-status" class="keepsakes-status" role="status" aria-live="polite"></p>
+      <ul id="keepsakes-list" class="keepsakes-list"></ul>
+    </section>
+
+    <section id="memory-shelf" class="memory-shelf" aria-labelledby="memory-shelf-title" hidden>
+      <div class="memory-shelf-heading">
+        <div>
+          <p class="den-kicker">A LITTLE SOMETHING TO REMEMBER</p>
+          <h2 id="memory-shelf-title">From your memory shelf</h2>
+        </div>
+        <span class="memory-shelf-mark" aria-hidden="true">✦</span>
+      </div>
+      <article class="memory-card" aria-live="polite">
+        <p id="memory-shelf-label" class="memory-label"></p>
+        <p id="memory-shelf-text" class="memory-text"></p>
+        <p id="memory-shelf-meta" class="memory-meta"></p>
+        <div class="memory-actions">
+          <button type="button" id="memory-shelf-open" class="memory-button primary">Open room</button>
+          <button type="button" id="memory-shelf-next" class="memory-button">Another memory</button>
+        </div>
+      </article>
+    </section>
+
+    <section id="memory-search" class="memory-search" aria-labelledby="memory-search-title">
+      <div class="memory-search-heading">
+        <div>
+          <p class="den-kicker">FIND SOMETHING YOU SAVED</p>
+          <h2 id="memory-search-title">Search your memories</h2>
+        </div>
+        <span aria-hidden="true">⌕</span>
+      </div>
+      <form id="memory-search-form">
+        <label class="visually-hidden" for="memory-search-input">Search all saved memories</label>
+        <div class="memory-search-controls">
+          <input id="memory-search-input" type="search" maxlength="100" placeholder="Try a name, place, idea, or phrase…" autocomplete="off">
+          <button type="submit" class="memory-search-submit">Search</button>
+          <button type="button" id="memory-search-clear" class="memory-search-clear">Clear</button>
+        </div>
+      </form>
+      <p id="memory-search-status" class="memory-search-status" role="status" aria-live="polite">Search looks through every room on this device.</p>
+      <ul id="memory-search-results" class="memory-search-results" hidden></ul>
+    </section>
+
+
+    <div class="rooms-heading">
+      <div>
+        <p class="den-kicker">YOUR MEMORIES LIVE HERE</p>
+        <h2>Explore the rooms</h2>
+      </div>
+      <button type="button" id="custom-room-open" class="add-room-button" aria-expanded="false" aria-controls="custom-room-panel">+ New room</button>
+    </div>
+
+    <form id="custom-room-panel" class="custom-room-panel" hidden>
+      <label for="custom-room-name">Room name</label>
+      <input id="custom-room-name" name="roomName" type="text" maxlength="20" minlength="2" placeholder="e.g. Books to read" required>
+      <label for="custom-room-icon">Choose an icon</label>
+      <select id="custom-room-icon" name="roomIcon">
+        <option value="📚">📚 Books</option>
+        <option value="🌱">🌱 Growing</option>
+        <option value="🎨">🎨 Creative</option>
+        <option value="🐾">🐾 Pets</option>
+        <option value="🎵">🎵 Music</option>
+        <option value="✈️">✈️ Travel</option>
+        <option value="🏠">🏠 Home</option>
+        <option value="💼">💼 Work</option>
+        <option value="🔭">🔭 Learning</option>
+        <option value="⭐">⭐ Favourites</option>
+      </select>
+      <div class="custom-room-actions">
+        <button type="submit" class="memory-button primary">Create room</button>
+        <button type="button" id="custom-room-cancel" class="memory-button">Cancel</button>
+      </div>
+      <p id="custom-room-status" role="status" aria-live="polite"></p>
+    </form>
+
+    <div id="rooms" class="den-rooms"></div>
+
+
+    <div id="tools" class="den-tools">
       <button type="button" id="btn-export" class="link">Export backup</button>
       <button type="button" id="btn-import" class="link">Import backup</button>
       <input type="file" id="file-import" accept="application/json,.json" hidden>
@@ -40,11 +163,21 @@
 <script src="js/store.js"></script>
 <script src="js/understand/rooms.js"></script>
 <script src="js/understand/rules.js"></script>
+<script src="js/understand/custom-rooms.js"></script>
 <script src="js/understand/sorter.js"></script>
 <script src="js/memory/entries.js"></script>
+<script src="js/memory/agenda.js"></script>
+<script src="js/memory/search.js"></script>
+<script src="js/memory/ask.js"></script>
+<script src="js/memory/resurface.js"></script>
 <script src="js/pet/body.js"></script>
 <script src="js/ui/talk.js"></script>
 <script src="js/ui/room.js"></script>
+<script src="js/ui/agenda.js"></script>
+<script src="js/ui/custom-rooms.js"></script>
+<script src="js/ui/resurface.js"></script>
+<script src="js/ui/search.js"></script>
+<script src="js/ui/keepsakes.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

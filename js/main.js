@@ -1,9 +1,15 @@
 (function () {
   var M = window.Mopapa;
   M.store.load();
+  M.customRooms.init();
   M.pet.init();
   M.talk.init();
   M.room.init();
+  M.keepsakesUI.init();
+  M.agendaUI.init();
+  M.searchUI.init();
+  M.resurfaceUI.init();
+  M.customRoomsUI.init();
 
   var n = M.store.data().entries.length;
   M.pet.say(n
@@ -23,7 +29,12 @@
     if (!window.confirm('Importing replaces everything Mopapa has now. Continue?')) { fileInput.value = ''; return; }
     M.store.importJSON(f, function (ok) {
       fileInput.value = '';
+      if (ok) M.customRooms.reload();
       M.room.renderRooms();
+      if (M.keepsakesUI) M.keepsakesUI.render();
+      if (M.agendaUI) M.agendaUI.render();
+      if (M.resurfaceUI) M.resurfaceUI.refresh();
+      if (M.searchUI) M.searchUI.refresh();
       M.pet.say(ok ? 'Backup restored.' : "That file didn't look like a Mopapa backup.");
     });
   });
