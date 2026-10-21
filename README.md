@@ -6,6 +6,6 @@ Mopapa is a local-first web app prototype for saving entries in rooms, searching
 
 Open `index.html` in a modern browser or use SPCK's preview. Data is stored in that browser's local storage. Use **Export backup** before changing devices or making major edits; imports replace the current local data.
 
-## Reviewed project status
+## Status
 
-This copy includes the user's uploaded features through Step 11 plus integration repairs: the missing confirmation-choice container, panel refreshes after imports and memory changes, and rollback/feedback for selected failed local-storage writes. `STEP12-MOPAPA-SPCK.md` is a separate guide; the Tag Explorer is not yet installed in this project copy.
+Prototype. Data lives only in this browser's local storage (plaintext, no sync), so export backups regularly. There are no reminders or notifications yet. The Tag Explorer is installed. Run the tests with `node tests/run.js`; CI runs them on every push.

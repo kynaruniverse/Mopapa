@@ -12,13 +12,21 @@
   M.resurfaceUI.init();
   M.customRoomsUI.init();
 
+  if (M.store.data().corrupt) alert('Your saved data could not be read. A copy was kept in this browser.');
+
   var n = M.store.data().entries.length;
+  var lastBackup = 0;
+  try { lastBackup = +localStorage.getItem('mopapa.lastBackup') || 0; } catch (e) {}
+  var stale = n >= 10 && Date.now() - lastBackup > 14 * 86400000;
+
   M.pet.say(n
-    ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' safe for you.'
-    : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room.");
+    ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.' +
+      (stale ? ' Please tap Export backup so nothing gets lost.' : '')
+    : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only, so export a backup now and then.");
 
   document.getElementById('btn-export').addEventListener('click', function () {
     M.store.exportJSON();
+    try { localStorage.setItem('mopapa.lastBackup', String(Date.now())); } catch (e) {}
     M.pet.say('Backup saved to your downloads.');
   });
 
