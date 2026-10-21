@@ -70,6 +70,19 @@
       <ul id="keepsakes-list" class="keepsakes-list"></ul>
     </section>
 
+    <section id="tag-explorer-panel" class="tag-explorer-panel" aria-labelledby="tag-explorer-title" hidden>
+      <div class="tag-explorer-heading">
+        <div>
+          <p class="den-kicker">BROWSE BY YOUR LABELS</p>
+          <h2 id="tag-explorer-title">Tag Explorer</h2>
+        </div>
+        <span class="tag-explorer-mark" aria-hidden="true">#</span>
+      </div>
+      <p id="tag-explorer-status" class="tag-explorer-status" role="status" aria-live="polite"></p>
+      <ul id="tag-explorer-tags" class="tag-explorer-tags" aria-label="Memory tags"></ul>
+      <ul id="tag-explorer-results" class="tag-explorer-results" aria-label="Memories with selected tag" hidden></ul>
+    </section>
+
     <section id="memory-shelf" class="memory-shelf" aria-labelledby="memory-shelf-title" hidden>
       <div class="memory-shelf-heading">
         <div>
@@ -178,6 +191,7 @@
 <script src="js/ui/resurface.js"></script>
 <script src="js/ui/search.js"></script>
 <script src="js/ui/keepsakes.js"></script>
+<script src="js/ui/tag-explorer.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

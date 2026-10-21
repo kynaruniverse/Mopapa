@@ -167,7 +167,7 @@ Mopapa.talk = (function () {
     Mopapa.pet.say(line);
     Mopapa.pet.bounce();
     Mopapa.room.renderRooms();
-    if (Mopapa.agendaUI) Mopapa.agendaUI.render();
+    Mopapa.refreshPanels();
   }
 
   return { init: init };

@@ -33,6 +33,36 @@ Mopapa.entries = (function () {
     e.tags = previous;
     return false;
   }
+  function tagSummary() {
+    var groups = Object.create(null);
+    list().forEach(function (entry) {
+      if (!entry || !Array.isArray(entry.tags)) return;
+      var countedForEntry = Object.create(null);
+      entry.tags.forEach(function (value) {
+        var tag = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!tag) return;
+        var key = tag.toLowerCase();
+        if (countedForEntry[key]) return;
+        countedForEntry[key] = true;
+        if (!groups[key]) groups[key] = { tag: tag, count: 0 };
+        groups[key].count += 1;
+      });
+    });
+    return Object.keys(groups).map(function (key) { return groups[key]; })
+      .sort(function (a, b) { return a.tag.localeCompare(b.tag); });
+  }
+
+  function byTag(value) {
+    var key = String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!key) return [];
+    return list().filter(function (entry) {
+      return entry && Array.isArray(entry.tags) && entry.tags.some(function (tag) {
+        return String(tag || '').replace(/\s+/g, ' ').trim().toLowerCase() === key;
+      });
+    }).sort(function (a, b) {
+      return new Date(b.created) - new Date(a.created);
+    });
+  }
 
   function add(o) {
     var e = {
@@ -134,5 +164,5 @@ Mopapa.entries = (function () {
     return l;
   }
 
-  return { add: add, updateText: updateText, remove: remove, toggleDone: toggleDone, togglePinned: togglePinned, pinned: pinned, setTags: setTags, move: move, count: count, byRoom: byRoom };
+  return { add: add, updateText: updateText, remove: remove, toggleDone: toggleDone, togglePinned: togglePinned, pinned: pinned, setTags: setTags, tagSummary: tagSummary, byTag: byTag, move: move, count: count, byRoom: byRoom };
 })();

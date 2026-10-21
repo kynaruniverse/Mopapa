@@ -8,7 +8,7 @@ Mopapa.ask = (function () {
     'please tell logged log logbook entry entries any anything something everything ' +
     'about on in at for of to from with and or but last this that there here next ' +
     'didnt dont have i ever ever been ever logged remember remind tell me ' +
-    'myself today yesterday tonight tomorrow yesterday'
+    'put left kept keep myself today yesterday tonight tomorrow yesterday'
   ).split(' ').reduce(function (o, w) { o[w] = true; return o; }, {});
 
   var ROOM_WORDS = [
@@ -90,25 +90,36 @@ Mopapa.ask = (function () {
       start.setDate(start.getDate() - 1);
       return { start: start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1), label: 'yesterday' };
     }
+    if (/\btomorrow\b/.test(n)) {
+      start = localDay(now);
+      start.setDate(start.getDate() + 1);
+      return { start: start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1), label: 'tomorrow', due: true };
+    }
     if (/\btoday\b/.test(n)) {
       start = localDay(now);
-      return { start: start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1), label: 'today' };
+      return { start: start, end: new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1), label: 'today', due: !/\b(did|logged|log)\b/.test(n) };
     }
     return null;
   }
 
   function loggedOn(e, filter) {
-    var d = new Date(e.created);
+    if (filter.due && !e.when) return false;
+    var d = new Date(filter.due ? e.when : e.created);
     return !isNaN(d.getTime()) && d >= filter.start && d < filter.end;
+  }
+
+  function stem(w) {
+    var irr = { paid: 'pay', bought: 'buy' };
+    if (irr[w]) return irr[w];
+    return w.length > 4 ? w.replace(/(ing|ed|es|s)$/, '') : w.replace(/s$/, '');
   }
 
   function includesAllTerms(e, terms) {
     if (!terms.length) return true;
     var tagText = Array.isArray(e.tags) ? e.tags.join(' ') : '';
-    var text = ' ' + norm(e.text + ' ' + tagText) + ' ';
-
+    var have = norm(e.text + ' ' + tagText).split(' ').map(stem);
     return terms.every(function (term) {
-      return text.indexOf(' ' + term + ' ') !== -1;
+      return have.indexOf(stem(term)) !== -1;
     });
   }
 
@@ -135,6 +146,9 @@ Mopapa.ask = (function () {
     var room = roomForQuestion(q);
     var date = dateFilter(q, now);
     var terms = queryTerms(q, room);
+    if (!terms.length && !room && !date) {
+      return { answer: 'Ask me about something specific, like “when is the dentist?”', sources: [] };
+    }
     var matches = all.filter(function (e) {
       if (room && e.room !== room) return false;
       if (date && !loggedOn(e, date)) return false;

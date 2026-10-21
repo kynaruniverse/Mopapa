@@ -116,10 +116,7 @@ Mopapa.room = (function () {
           }
           editingId = null;
           renderList();
-          if (Mopapa.keepsakesUI) Mopapa.keepsakesUI.render();
-          if (Mopapa.agendaUI) Mopapa.agendaUI.render();
-          if (Mopapa.resurfaceUI) Mopapa.resurfaceUI.refresh();
-          if (Mopapa.searchUI) Mopapa.searchUI.refresh();
+          Mopapa.refreshPanels();
           Mopapa.pet.say('Saved your correction.');
           if (Mopapa.pet.react) Mopapa.pet.react('helpful');
         });
@@ -174,7 +171,7 @@ Mopapa.room = (function () {
             renderList();
             return;
           }
-          if (Mopapa.agendaUI) Mopapa.agendaUI.render();
+          Mopapa.refreshPanels();
           renderList();
         });
         actions.appendChild(cb);
@@ -195,9 +192,7 @@ Mopapa.room = (function () {
           renderList();
           return;
         }
-        if (Mopapa.keepsakesUI) Mopapa.keepsakesUI.render();
-        if (Mopapa.agendaUI) Mopapa.agendaUI.render();
-        if (Mopapa.searchUI) Mopapa.searchUI.refresh();
+        Mopapa.refreshPanels();
         Mopapa.sorter.learn(e.text, sel.value);
         renderList();
       });
@@ -213,7 +208,7 @@ Mopapa.room = (function () {
           Mopapa.pet.say('I could not save that change on this device.');
           return;
         }
-        if (Mopapa.keepsakesUI) Mopapa.keepsakesUI.render();
+        Mopapa.refreshPanels();
         renderList();
       });
       actions.appendChild(pin);
@@ -241,7 +236,7 @@ Mopapa.room = (function () {
           return;
         }
         renderList();
-        if (Mopapa.searchUI) Mopapa.searchUI.refresh();
+        Mopapa.refreshPanels();
         Mopapa.pet.say(e.tags.length ? 'Tags saved.' : 'Tags cleared.');
       });
       actions.appendChild(tagButton);
@@ -254,10 +249,7 @@ Mopapa.room = (function () {
             Mopapa.pet.say('I could not delete that entry on this device. It is still saved.');
             return;
           }
-          if (Mopapa.keepsakesUI) Mopapa.keepsakesUI.render();
-          if (Mopapa.agendaUI) Mopapa.agendaUI.render();
-          if (Mopapa.resurfaceUI) Mopapa.resurfaceUI.refresh();
-          if (Mopapa.searchUI) Mopapa.searchUI.refresh();
+          Mopapa.refreshPanels();
           renderList();
         }
       });

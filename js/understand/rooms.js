@@ -33,5 +33,13 @@ Mopapa.roomById = function (id) {
   for (var i = 0; i < Mopapa.rooms.length; i++) {
     if (Mopapa.rooms[i].id === id) return Mopapa.rooms[i];
   }
-  return Mopapa.rooms[Mopapa.rooms.length - 1];
+  return { id: 'unsorted', name: 'Unsorted', icon: '📥', words: [] };
+};
+
+Mopapa.refreshPanels = function () {
+  if (Mopapa.keepsakesUI) Mopapa.keepsakesUI.render();
+  if (Mopapa.agendaUI) Mopapa.agendaUI.render();
+  if (Mopapa.resurfaceUI) Mopapa.resurfaceUI.refresh();
+  if (Mopapa.searchUI) Mopapa.searchUI.refresh();
+  if (Mopapa.tagExplorerUI) Mopapa.tagExplorerUI.render();
 };

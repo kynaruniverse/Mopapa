@@ -4,20 +4,34 @@ Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
   var data = { entries: [], learned: {}, customRooms: [] };
 
-  function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (p && Array.isArray(p.entries)) {
-          data.entries = p.entries;
-          data.learned = p.learned || {};
-          data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
-        }
+  function cleanEntries(list) {
+  return list.filter(function (e) {
+    return e && typeof e === 'object' && typeof e.text === 'string';
+  });
+}
+
+function load() {
+  var raw = null;
+  try {
+    raw = localStorage.getItem(KEY);
+    if (raw) {
+      var p = JSON.parse(raw);
+      if (p && Array.isArray(p.entries)) {
+        data.entries = cleanEntries(p.entries);
+        data.learned = p.learned && typeof p.learned === 'object' ? p.learned : {};
+        data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
+      } else {
+        throw new Error('unexpected shape');
       }
-    } catch (e) {}
-    return data;
+    }
+  } catch (e) {
+    if (raw) {
+      try { localStorage.setItem(KEY + '.corrupt.' + Date.now(), raw); } catch (e2) {}
+      data.corrupt = true;
+    }
   }
+  return data;
+}
 
   function save() {
     try {
@@ -48,7 +62,7 @@ Mopapa.store = (function () {
         if (!p || !Array.isArray(p.entries)) throw new Error('bad file');
         var previous = data;
         data = {
-          entries: p.entries,
+          entries: cleanEntries(p.entries),
           learned: p.learned && typeof p.learned === 'object' ? p.learned : {},
           customRooms: Array.isArray(p.customRooms) ? p.customRooms : []
         };

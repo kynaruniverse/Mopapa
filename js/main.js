@@ -6,6 +6,7 @@
   M.talk.init();
   M.room.init();
   M.keepsakesUI.init();
+  M.tagExplorerUI.init();
   M.agendaUI.init();
   M.searchUI.init();
   M.resurfaceUI.init();
@@ -32,6 +33,7 @@
       if (ok) M.customRooms.reload();
       M.room.renderRooms();
       if (M.keepsakesUI) M.keepsakesUI.render();
+      if (Mopapa.tagExplorerUI) Mopapa.tagExplorerUI.render();
       if (M.agendaUI) M.agendaUI.render();
       if (M.resurfaceUI) M.resurfaceUI.refresh();
       if (M.searchUI) M.searchUI.refresh();

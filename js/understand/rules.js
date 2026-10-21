@@ -132,7 +132,7 @@ Mopapa.rules = (function () {
   // 'sure' = ends with ?, 'maybe' = reads like a question, null = not a question
   function questionLevel(text) {
     var t = String(text).toLowerCase().replace(/['’`]/g, '').trim();
-    if (/\?\s*$/.test(t)) return 'sure';
+    if (/\?\s*$/.test(t)) return 'maybe';
     if (/^what if\b/.test(t)) return null;
     if (Q_START.test(t) || Q_AUX.test(t) || Q_CMD.test(t) || Q_ANY.test(t)) return 'maybe';
     return null;
