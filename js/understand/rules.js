@@ -129,12 +129,21 @@ Mopapa.rules = (function () {
   var Q_CMD = /^(show|tell|list|find|search)\s+(me\s+)?(what|when|where|who|which|how|all|my|everything|anything)\b/;
   var Q_ANY = /\b(did i|do i|have i|am i|when is|when are|when do|when did|whens|whats|what is|what are|where is|where are|who is|how many|how much|how often)\b/;
 
-  // 'sure' = ends with ?, 'maybe' = reads like a question, null = not a question
+  // 'sure' = explicit question mark, 'maybe' = likely question, null = not a question
   function questionLevel(text) {
     var t = String(text).toLowerCase().replace(/['’`]/g, '').trim();
-    if (/\?\s*$/.test(t)) return 'maybe';
+
     if (/^what if\b/.test(t)) return null;
-    if (Q_START.test(t) || Q_AUX.test(t) || Q_CMD.test(t) || Q_ANY.test(t)) return 'maybe';
+
+    if (/\?\s*$/.test(t)) return 'sure';
+
+    if (
+      Q_START.test(t) ||
+      Q_AUX.test(t) ||
+      Q_CMD.test(t) ||
+      Q_ANY.test(t)
+    ) return 'sure';
+
     return null;
   }
 

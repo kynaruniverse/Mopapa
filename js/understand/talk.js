@@ -85,7 +85,12 @@ Mopapa.talk = (function () {
     var text = input.value.trim();
     if (!text || busy) return;
     var q = Mopapa.rules.questionLevel(text);
-    if (q === 'sure') { noAnswer(text); return; }
+
+    if (q === 'sure') {
+      noAnswer(text);
+      return;
+    }
+
     if (q === 'maybe') {
       Mopapa.pet.say('Is that a question for me, or something to file?');
       showChoices([
@@ -95,6 +100,7 @@ Mopapa.talk = (function () {
       ]);
       return;
     }
+
     fileIt(text);
   }
 

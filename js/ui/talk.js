@@ -85,7 +85,14 @@ Mopapa.talk = (function () {
     var text = input.value.trim();
     if (!text || busy) return;
     var q = Mopapa.rules.questionLevel(text);
-    if (q === 'sure') { noAnswer(text); return; }
+    var looksLikeQuestion = /^(when|what|who|where|why|how|which|whose|whom|is|are|am|was|were|do|does|did|can|could|would|will|should|has|have|had)\b/i.test(text.trim()) ||
+      /\?$/.test(text.trim());
+
+    if (q === 'sure' || (q === 'maybe' && looksLikeQuestion)) {
+      noAnswer(text);
+      return;
+    }
+
     if (q === 'maybe') {
       Mopapa.pet.say('Is that a question for me, or something to file?');
       showChoices([
@@ -95,6 +102,7 @@ Mopapa.talk = (function () {
       ]);
       return;
     }
+
     fileIt(text);
   }
 
