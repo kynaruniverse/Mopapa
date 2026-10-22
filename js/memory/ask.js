@@ -140,6 +140,77 @@ Mopapa.ask = (function () {
     return /\b(when|what time|what date|next)\b/.test(norm(q));
   }
 
+  function extractTextDate(text) {
+    var months = 'january february march april may june july august september october november december';
+    var monthPattern = '(?:' + months.split(' ').join('|') + ')';
+    var dayFirst = new RegExp(
+      '\\b(\\d{1,2})\\s+(' + monthPattern + ')(?:\\s+(\\d{4}))?\\b',
+      'i'
+    );
+    var monthFirst = new RegExp(
+      '\\b(' + monthPattern + ')\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?\\b',
+      'i'
+    );
+    var match = String(text || '').match(dayFirst) ||
+      String(text || '').match(monthFirst);
+
+    if (!match) return null;
+
+    var day = parseInt(match[1] || match[2], 10);
+    var month = match[2] && /^\d+$/.test(match[2])
+      ? match[1]
+      : match[2];
+
+    if (match[1] && /^\d+$/.test(match[1])) {
+      month = match[2];
+    } else {
+      month = match[1];
+    }
+
+    var monthNumber = months.split(' ').indexOf(month.toLowerCase());
+    var year = match[3] || '';
+
+    if (monthNumber < 0 || day < 1 || day > 31) return null;
+
+    var daysInMonth = new Date(
+      year ? parseInt(year, 10) : 2000,
+      monthNumber + 1,
+      0
+    ).getDate();
+
+    if (day > daysInMonth) return null;
+
+    return String(day) + ' ' +
+      month.charAt(0).toUpperCase() + month.slice(1).toLowerCase() +
+      (year ? ' ' + year : '');
+  }
+
+  function isNameQuestion(q) {
+    var n = norm(q);
+    return /\bwhat is the .+ called\b/.test(n) ||
+      /\bwhat was the .+ called\b/.test(n) ||
+      /\bwhat is the .+ name\b/.test(n) ||
+      /\bwho is the .+\b/.test(n);
+  }
+
+  function extractCalledPerson(text) {
+    var match = String(text || '').match(
+      /\b(?:the\s+)?([A-Za-z][A-Za-z -]{1,30}?)\s+(?:is|was)\s+called\s+([A-Z][A-Za-z'-]*(?:\s+[A-Z][A-Za-z'-]*){0,2})\b/
+    );
+
+    if (!match) return null;
+
+    var role = match[1].replace(/^the\s+/i, '').trim();
+    var name = match[2].trim();
+
+    if (!role || !name) return null;
+
+    return {
+      role: role,
+      name: name
+    };
+  }
+
   function answer(q) {
     var now = new Date();
     var all = Mopapa.entries.byRoom ? Mopapa.store.data().entries.slice() : [];
@@ -175,10 +246,46 @@ Mopapa.ask = (function () {
           sources: pastDated.slice(0, 5)
         };
       }
+      var textDated = [];
+
+      matches.forEach(function (e) {
+        var foundDate = extractTextDate(e.text);
+        if (foundDate) {
+          textDated.push({
+            entry: e,
+            date: foundDate
+          });
+        }
+      });
+
+      if (textDated.length) {
+        return {
+          answer: 'The saved entry says the date is ' +
+            textDated[0].date + '.',
+          sources: textDated.slice(0, 5).map(function (item) {
+            return item.entry;
+          })
+        };
+      }
+
       return {
-        answer: 'I found matching entries, but none has a date saved. I will not guess the date.',
+        answer: 'I found matching entries, but none has a recognisable date in its saved text or scheduled date field. I will not guess the date.',
         sources: matches.slice(0, 5)
       };
+    }
+
+    if (matches.length && isNameQuestion(q)) {
+      for (var ni = 0; ni < matches.length; ni++) {
+        var person = extractCalledPerson(matches[ni].text);
+
+        if (person) {
+          return {
+            answer: 'The ' + person.role + ' is called ' +
+              person.name + '.',
+            sources: [matches[ni]]
+          };
+        }
+      }
     }
 
     matches.sort(sortNewest);
