@@ -76,7 +76,13 @@ Mopapa.entries = (function () {
       done: false
     };
     list().unshift(e);
-    return { entry: e, saved: Mopapa.store.save() };
+    if (Mopapa.store.save()) return { entry: e, saved: true };
+
+    // Do not show an unsaved entry as safely stored. The caller keeps the text for recovery.
+    var current = list();
+    var index = current.indexOf(e);
+    if (index !== -1) current.splice(index, 1);
+    return { entry: e, saved: false };
   }
   
   function updateText(id, value) {

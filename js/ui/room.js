@@ -205,7 +205,6 @@ Mopapa.room = (function () {
           return;
         }
         Mopapa.refreshPanels();
-        Mopapa.sorter.learn(e.text, sel.value);
         renderList();
       });
       actions.appendChild(sel);

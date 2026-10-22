@@ -39,8 +39,8 @@ Mopapa.talk = (function () {
     endChoices();
     Mopapa.pet.say('Okay, I dropped that one. Your text is still in the box.');
   }
-  
-    function renderSources(entries) {
+
+  function renderSources(entries) {
     var box = document.getElementById('answer-sources');
     if (!box) return;
     box.innerHTML = '';
@@ -105,33 +105,17 @@ Mopapa.talk = (function () {
     Mopapa.pet.react(result.sources.length ? 'helpful' : 'curious');
   }
 
-
   function fileIt(text) {
     var parse = Mopapa.rules.parse(text, new Date());
     var res = Mopapa.sorter.classify(text, parse);
     var ctx = { text: text, parse: parse, money: Mopapa.rules.money(text) };
-    if (res.confident) { ctx.room = res.room; afterRoom(ctx); }
-    else askRoom(ctx, res.ranked);
-  }
-
-  function askRoom(ctx, ranked) {
-    Mopapa.pet.say('Not sure where that goes. Which room?');
-    Mopapa.pet.react('curious');
-    var choices = ranked.map(function (id, i) {
-      var r = Mopapa.roomById(id);
-      return {
-        label: r.name,
-        primary: i === 0,
-        fn: function () {
-          Mopapa.sorter.learn(ctx.text, id);
-          ctx.room = id;
-          endChoices();
-          afterRoom(ctx);
-        }
-      };
-    });
-    choices.push({ label: 'Cancel', fn: cancel });
-    showChoices(choices);
+    if (res.confident) {
+      ctx.room = res.room;
+    } else {
+      // Room suggestions are optional. Uncertain entries go to Notes without a prompt.
+      ctx.room = 'notes';
+    }
+    afterRoom(ctx);
   }
 
   function afterRoom(ctx) {
@@ -159,11 +143,19 @@ Mopapa.talk = (function () {
       hasTime: withDate && ctx.parse.hasTime,
       amount: ctx.money
     });
+
+    if (!r.saved) {
+      input.value = ctx.text;
+      Mopapa.pet.say("I couldn't save this on your device. Your text is still in the box. Copy it or try again.");
+      Mopapa.room.renderRooms();
+      Mopapa.refreshPanels();
+      return;
+    }
+
     input.value = '';
     var line = 'Filed under ' + room.name.toLowerCase() + '.';
     if (withDate) line += ' ' + Mopapa.rules.describe(ctx.parse.date, ctx.parse.hasTime) + '.';
     if (ctx.money) line += ' ' + ctx.money + ' noted.';
-    if (!r.saved) line += " I couldn't save on this device, so export a backup.";
     Mopapa.pet.say(line);
     Mopapa.pet.bounce();
     Mopapa.room.renderRooms();
