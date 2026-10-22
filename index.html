@@ -87,11 +87,11 @@
     <section id="memory-search" class="memory-search" aria-labelledby="memory-search-title">
       <div class="memory-search-heading">
         <div>
-          <h2 id="memory-search-title">Search</h2>
+          <h2 id="memory-search-title">Search saved text</h2>
         </div>
       </div>
       <form id="memory-search-form">
-        <label class="visually-hidden" for="memory-search-input">Search all saved memories</label>
+        <label class="visually-hidden" for="memory-search-input">Search saved text</label>
         <div class="memory-search-controls">
           <input id="memory-search-input" type="search" maxlength="100" placeholder="Try a name, place, idea, or phrase…" autocomplete="off">
           <button type="submit" class="memory-search-submit">Search</button>
@@ -99,6 +99,10 @@
         </div>
       </form>
       <p id="memory-search-status" class="memory-search-status" role="status" aria-live="polite">Search looks through every room on this device.</p>
+      <details class="memory-search-help">
+        <summary>How search and Ask work</summary>
+        <p>Search matches words in saved text on this device. Ask uses simple text matching, not an AI memory-retrieval system. It can miss relevant entries or return imperfect matches, so check any saved entries shown as sources.</p>
+      </details>
       <ul id="memory-search-results" class="memory-search-results" hidden></ul>
     </section>
 
@@ -138,8 +142,6 @@
 
     <div id="tools" class="den-tools">
       <button type="button" id="btn-export" class="link">Back up data</button>
-      <button type="button" id="btn-import" class="link">Restore from backup</button>
-      <input type="file" id="file-import" accept="application/json,.json" hidden>
     </div>
   </section>
 
