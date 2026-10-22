@@ -136,54 +136,49 @@ Mopapa.ask = (function () {
     return new Date(a.when) - new Date(b.when);
   }
 
+
   function isWhenQuestion(q) {
     return /\b(when|what time|what date|next)\b/.test(norm(q));
   }
 
+  function isCostQuestion(q) {
+    var n = norm(q);
+    return /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|how much)\b/.test(n);
+  }
+
   function extractTextDate(text) {
-    var months = 'january february march april may june july august september october november december';
-    var monthPattern = '(?:' + months.split(' ').join('|') + ')';
-    var dayFirst = new RegExp(
-      '\\b(\\d{1,2})\\s+(' + monthPattern + ')(?:\\s+(\\d{4}))?\\b',
-      'i'
-    );
-    var monthFirst = new RegExp(
-      '\\b(' + monthPattern + ')\\s+(\\d{1,2})(?:,?\\s+(\\d{4}))?\\b',
-      'i'
-    );
-    var match = String(text || '').match(dayFirst) ||
-      String(text || '').match(monthFirst);
+    var months = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+
+    var source = String(text || '');
+    var pattern = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+(\d{4}))?\b/i;
+    var match = source.match(pattern);
 
     if (!match) return null;
 
-    var day = parseInt(match[1] || match[2], 10);
-    var month = match[2] && /^\d+$/.test(match[2])
-      ? match[1]
-      : match[2];
+    var day = parseInt(match[1], 10);
+    var monthName = match[2].toLowerCase();
+    var month = months.indexOf(monthName);
+    var year = match[3] ? parseInt(match[3], 10) : null;
 
-    if (match[1] && /^\d+$/.test(match[1])) {
-      month = match[2];
-    } else {
-      month = match[1];
-    }
+    if (month < 0 || day < 1 || day > 31) return null;
 
-    var monthNumber = months.split(' ').indexOf(month.toLowerCase());
-    var year = match[3] || '';
+    var checkYear = year || 2000;
+    var check = new Date(checkYear, month, day);
 
-    if (monthNumber < 0 || day < 1 || day > 31) return null;
+    if (
+      check.getFullYear() !== checkYear ||
+      check.getMonth() !== month ||
+      check.getDate() !== day
+    ) return null;
 
-    var daysInMonth = new Date(
-      year ? parseInt(year, 10) : 2000,
-      monthNumber + 1,
-      0
-    ).getDate();
-
-    if (day > daysInMonth) return null;
-
-    return String(day) + ' ' +
-      month.charAt(0).toUpperCase() + month.slice(1).toLowerCase() +
+    return day + ' ' +
+      monthName.charAt(0).toUpperCase() + monthName.slice(1) +
       (year ? ' ' + year : '');
   }
+
 
   function isNameQuestion(q) {
     var n = norm(q);
@@ -193,23 +188,26 @@ Mopapa.ask = (function () {
       /\bwho is the .+\b/.test(n);
   }
 
+
+
   function extractCalledPerson(text) {
-    var match = String(text || '').match(
-      /\b(?:the\s+)?([A-Za-z][A-Za-z -]{1,30}?)\s+(?:is|was)\s+called\s+([A-Z][A-Za-z'-]*(?:\s+[A-Z][A-Za-z'-]*){0,2})\b/
+    var source = String(text || '').replace(/\s+/g, ' ').trim();
+
+    var match = source.match(
+      /\bthe\s+([a-z][a-z-]{0,20})\s+(?:is|was)\s+called\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*){0,2})(?=[.,!?;]|$)/i
     );
 
     if (!match) return null;
 
-    var role = match[1].replace(/^the\s+/i, '').trim();
+    var role = match[1].trim();
     var name = match[2].trim();
 
-    if (!role || !name) return null;
+    var months = /^(january|february|march|april|may|june|july|august|september|october|november|december)$/i;
+    if (!role || !name || months.test(name)) return null;
 
-    return {
-      role: role,
-      name: name
-    };
+    return { role: role, name: name };
   }
+
 
   function answer(q) {
     var now = new Date();
@@ -288,7 +286,45 @@ Mopapa.ask = (function () {
       }
     }
 
+
     matches.sort(sortNewest);
+
+
+    if (!matches.length && isCostQuestion(q)) {
+      var costIntent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much)\b/g;
+      var costQuery = norm(q).replace(costIntent, ' ').replace(/\s+/g, ' ').trim();
+      var costTerms = queryTerms(costQuery, room);
+
+      var costMatches = all.filter(function (e) {
+        if (room && e.room !== room) return false;
+        return costTerms.length > 0 && includesAllTerms(e, costTerms);
+      });
+
+      if (costMatches.length) {
+        costMatches.sort(sortNewest);
+
+        var recordedCost = null;
+        var costSource = null;
+
+        for (var ci = 0; ci < costMatches.length; ci++) {
+          var amount = Mopapa.rules.money(costMatches[ci].text);
+
+          if (amount) {
+            recordedCost = amount;
+            costSource = costMatches[ci];
+            break;
+          }
+        }
+
+        return {
+          answer: recordedCost
+            ? 'The matching saved entry records a cost of ' + recordedCost + '.'
+            : 'I found a matching saved entry, but it does not contain a cost I can identify. I will not guess the amount.',
+          sources: costSource ? [costSource] : costMatches.slice(0, 5)
+        };
+      }
+    }
+
     if (!matches.length) {
       var scope = date ? ' for ' + date.label : '';
       return {
