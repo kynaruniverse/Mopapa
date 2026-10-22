@@ -14,23 +14,31 @@ Mopapa.pet = (function () {
 
   var SVG =
     '<svg viewBox="0 0 120 120" role="img" aria-label="Mopapa, a small golden companion">' +
-      '<ellipse class="tail" cx="94" cy="83" rx="12" ry="7" transform="rotate(28 94 83)" fill="#e9ad68"/>' +
-      '<ellipse cx="60" cy="110" rx="34" ry="6" fill="rgba(0,0,0,.25)"/>' +
+      '<ellipse cx="60" cy="110" rx="32" ry="5" fill="#000" opacity=".28"/>' +
+      '<circle class="tail" cx="90" cy="98" r="7" fill="#c8924a"/>' +
+      '<ellipse cx="60" cy="88" rx="28" ry="22" fill="#e2b46a"/>' +
+      '<ellipse cx="45" cy="106" rx="10" ry="6.5" fill="#c8924a"/>' +
+      '<ellipse cx="75" cy="106" rx="10" ry="6.5" fill="#c8924a"/>' +
+      '<ellipse cx="60" cy="96" rx="15" ry="11" fill="#f1dcb0"/>' +
+      '<ellipse cx="34" cy="92" rx="6" ry="11" transform="rotate(15 34 92)" fill="#d6a45a"/>' +
+      '<ellipse cx="86" cy="92" rx="6" ry="11" transform="rotate(-15 86 92)" fill="#d6a45a"/>' +
       '<g class="ears">' +
-        '<circle cx="32" cy="34" r="14" fill="#f2b56b"/>' +
-        '<circle cx="88" cy="34" r="14" fill="#f2b56b"/>' +
-        '<circle cx="32" cy="34" r="7" fill="#df8e82" opacity=".72"/>' +
-        '<circle cx="88" cy="34" r="7" fill="#df8e82" opacity=".72"/>' +
+        '<circle cx="33" cy="30" r="11" fill="#e2b46a"/>' +
+        '<circle cx="87" cy="30" r="11" fill="#e2b46a"/>' +
+        '<circle cx="33" cy="30" r="5.5" fill="#c8924a"/>' +
+        '<circle cx="87" cy="30" r="5.5" fill="#c8924a"/>' +
       '</g>' +
-      '<ellipse cx="60" cy="66" rx="42" ry="40" fill="#f7c985"/>' +
-      '<circle cx="34" cy="76" r="6" fill="#f09a8a" opacity=".62"/>' +
-      '<circle cx="86" cy="76" r="6" fill="#f09a8a" opacity=".62"/>' +
+      '<ellipse cx="60" cy="52" rx="33" ry="29" fill="#e2b46a"/>' +
+      '<path d="M54 31Q60 26 66 31" fill="none" stroke="#c8924a" stroke-width="3.2" stroke-linecap="round"/>' +
+      '<ellipse cx="60" cy="62" rx="14" ry="10" fill="#f1dcb0"/>' +
       '<g class="eyes">' +
-        '<ellipse cx="45" cy="62" rx="5" ry="7" fill="#2b2540"/>' +
-        '<ellipse cx="75" cy="62" rx="5" ry="7" fill="#2b2540"/>' +
+        '<ellipse cx="47" cy="48" rx="3.6" ry="4.8" fill="#251f33"/>' +
+        '<ellipse cx="73" cy="48" rx="3.6" ry="4.8" fill="#251f33"/>' +
+        '<circle cx="48.3" cy="46.3" r="1.2" fill="#ece6d8"/>' +
+        '<circle cx="74.3" cy="46.3" r="1.2" fill="#ece6d8"/>' +
       '</g>' +
-      '<ellipse cx="60" cy="76" rx="4" ry="3" fill="#c0735a"/>' +
-      '<path d="M55 81 Q60 86 65 81" fill="none" stroke="#9d5e55" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M55.5 57Q60 54.5 64.5 57Q62.5 61.5 60 61.5Q57.5 61.5 55.5 57Z" fill="#251f33"/>' +
+      '<path d="M60 61.5V64.5M60 64.5Q56.5 67.5 53.5 65M60 64.5Q63.5 67.5 66.5 65" fill="none" stroke="#251f33" stroke-width="1.6" stroke-linecap="round"/>' +
     '</svg>';
 
   function init() {

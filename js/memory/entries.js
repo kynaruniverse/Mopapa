@@ -141,10 +141,12 @@ Mopapa.entries = (function () {
   function move(id, room) {
     var e = find(id);
     if (!e) return false;
-    var previous = e.room;
+    var previous = e.room, wasDone = e.done;
     e.room = room;
+    if (!Mopapa.roomById(room).dated) e.done = false;
     if (Mopapa.store.save()) return true;
     e.room = previous;
+    e.done = wasDone;
     return false;
   }
 

@@ -50,7 +50,7 @@ Mopapa.agendaUI = (function () {
 
       var meta = document.createElement('p');
       meta.className = 'agenda-meta';
-      meta.textContent = room ? room.icon + ' ' + room.name : 'Saved entry';
+      meta.textContent = room ? room.name : 'Saved entry';
       li.appendChild(meta);
 
       var actions = document.createElement('div');
@@ -58,13 +58,13 @@ Mopapa.agendaUI = (function () {
       var openButton = document.createElement('button');
       openButton.type = 'button';
       openButton.className = 'agenda-button';
-      openButton.textContent = 'Open room';
+      openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
         if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
       });
       actions.appendChild(openButton);
 
-      if (entry.room === 'todo') {
+      if (Mopapa.roomById(entry.room).dated) {
         var doneButton = document.createElement('button');
         doneButton.type = 'button';
         doneButton.className = 'agenda-button done-button';

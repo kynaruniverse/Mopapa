@@ -3,6 +3,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.room = (function () {
   var current = null;
   var editingId = null;
+  var homeY = 0;
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -13,7 +14,10 @@ Mopapa.room = (function () {
   }
 
   function init() {
-    $('back').addEventListener('click', close);
+    $('back').addEventListener('click', function () {
+      if (history.state && history.state.room) history.back(); else close();
+    });
+    window.addEventListener('popstate', function () { if (current !== null) close(); });
     renderRooms();
   }
 
@@ -23,7 +27,9 @@ Mopapa.room = (function () {
     Mopapa.rooms.forEach(function (r) {
       var b = el('button', 'room-card');
       b.type = 'button';
-      b.appendChild(el('span', 'room-icon', r.icon));
+      var ic = el('span', 'room-icon');
+      ic.innerHTML = Mopapa.icon(r.icon);
+      b.appendChild(ic);
       b.appendChild(el('span', 'room-name', r.name));
       b.appendChild(el('span', 'room-count', String(Mopapa.entries.count(r.id))));
       b.addEventListener('click', function () { open(r.id); });
@@ -32,9 +38,11 @@ Mopapa.room = (function () {
   }
 
   function open(id) {
+    homeY = window.scrollY;
     current = id;
+    try { history.pushState({ room: id }, ''); } catch (err) {}
     var r = Mopapa.roomById(id);
-    $('room-title').textContent = r.icon + ' ' + r.name;
+    $('room-title').textContent = r.name;
     $('screen-home').hidden = true;
     $('screen-room').hidden = false;
     renderList();
@@ -46,6 +54,7 @@ Mopapa.room = (function () {
     $('screen-room').hidden = true;
     $('screen-home').hidden = false;
     renderRooms();
+    window.scrollTo(0, homeY);
   }
 
   function renderList() {
@@ -154,13 +163,13 @@ Mopapa.room = (function () {
         meta.appendChild(w);
       }
       if (e.amount) {
-        if (meta.childNodes.length) meta.appendChild(document.createTextNode('  ·  '));
+        if (meta.childNodes.length) meta.appendChild(document.createTextNode(', '));
         meta.appendChild(el('span', '', e.amount));
       }
       if (meta.childNodes.length) li.appendChild(meta);
 
       var actions = el('div', 'entry-actions');
-      if (current === 'todo') {
+      if (Mopapa.roomById(current).dated) {
         var cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.checked = e.done;
@@ -174,7 +183,10 @@ Mopapa.room = (function () {
           Mopapa.refreshPanels();
           renderList();
         });
-        actions.appendChild(cb);
+        var doneLabel = el('label', 'done-toggle');
+          doneLabel.appendChild(cb);
+          doneLabel.appendChild(document.createTextNode('Done'));
+          actions.appendChild(doneLabel);
       }
 
       var sel = document.createElement('select');
@@ -182,7 +194,7 @@ Mopapa.room = (function () {
       Mopapa.rooms.forEach(function (r) {
         var o = document.createElement('option');
         o.value = r.id;
-        o.textContent = r.icon + ' ' + r.name;
+        o.textContent = r.name;
         if (r.id === e.room) o.selected = true;
         sel.appendChild(o);
       });
@@ -198,7 +210,7 @@ Mopapa.room = (function () {
       });
       actions.appendChild(sel);
 
-      var pin = el('button', 'link pin-entry', e.pinned ? '★ Pinned' : '☆ Pin');
+      var pin = el('button', 'link pin-entry', e.pinned ? 'Pinned' : 'Pin');
       pin.type = 'button';
       pin.setAttribute('aria-pressed', e.pinned ? 'true' : 'false');
       pin.setAttribute('aria-label', e.pinned ? 'Unpin saved memory' : 'Pin saved memory');
@@ -226,32 +238,29 @@ Mopapa.room = (function () {
       tagButton.setAttribute('aria-label', 'Edit tags for saved memory');
       tagButton.addEventListener('click', function () {
         var currentTags = Array.isArray(e.tags) ? e.tags.join(', ') : '';
-        var entered = window.prompt(
-          'Add up to 8 tags, separated by commas. Each tag can be up to 24 characters. Leave empty to remove all tags.',
-          currentTags
-        );
-        if (entered === null) return;
-        if (!Mopapa.entries.setTags(e.id, entered)) {
-          Mopapa.pet.say('I could not save those tags on this device. Your original tags are unchanged.');
-          return;
-        }
-        renderList();
-        Mopapa.refreshPanels();
-        Mopapa.pet.say(e.tags.length ? 'Tags saved.' : 'Tags cleared.');
+        Mopapa.dialog.prompt('Tags, separated by commas. Up to 8 tags, 24 characters each. Clear the field to remove all tags.', currentTags, 'Save tags', function(entered) {
+          if (!Mopapa.entries.setTags(e.id, entered)) {
+            Mopapa.pet.say('I could not save those tags on this device. Your original tags are unchanged.');
+            return;
+          }
+          renderList();
+          Mopapa.refreshPanels();
+          Mopapa.pet.say(e.tags.length ? 'Tags saved.' : 'Tags cleared.');
+        });
       });
       actions.appendChild(tagButton);
 
       var del = el('button', 'link del', 'Delete');
       del.type = 'button';
       del.addEventListener('click', function () {
-        if (window.confirm('Delete this entry?')) {
+        Mopapa.dialog.confirm('Delete this entry? This cannot be undone.', 'Delete', function() {
           if (!Mopapa.entries.remove(e.id)) {
             Mopapa.pet.say('I could not delete that entry on this device. It is still saved.');
             return;
           }
           Mopapa.refreshPanels();
           renderList();
-        }
+        }, true);
       });
       actions.appendChild(del);
       li.appendChild(actions);

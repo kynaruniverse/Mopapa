@@ -12,7 +12,7 @@
   M.resurfaceUI.init();
   M.customRoomsUI.init();
 
-  if (M.store.data().corrupt) alert('Your saved data could not be read. A copy was kept in this browser.');
+  if (M.store.data().corrupt) M.dialog.notice('Your saved data could not be read. A copy was kept in this browser.');
 
   var n = M.store.data().entries.length;
   var lastBackup = 0;
@@ -21,8 +21,8 @@
 
   M.pet.say(n
     ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.' +
-      (stale ? ' Please tap Export backup so nothing gets lost.' : '')
-    : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only, so export a backup now and then.");
+      (stale ? ' Please use Back up data so nothing gets lost.' : '')
+    : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only, so use Back up data now and then.");
 
   document.getElementById('btn-export').addEventListener('click', function () {
     M.store.exportJSON();
@@ -35,7 +35,11 @@
   fileInput.addEventListener('change', function () {
     var f = fileInput.files && fileInput.files[0];
     if (!f) return;
-    if (!window.confirm('Importing replaces everything Mopapa has now. Continue?')) { fileInput.value = ''; return; }
+    fileInput.value = '';
+    M.dialog.confirm('Importing replaces everything Mopapa has now. Continue?', 'Replace data', function () { runImport(f); }, true);
+  });
+
+  function runImport(f) {
     M.store.importJSON(f, function (ok) {
       fileInput.value = '';
       if (ok) M.customRooms.reload();
@@ -47,5 +51,5 @@
       if (M.searchUI) M.searchUI.refresh();
       M.pet.say(ok ? 'Backup restored.' : "That file didn't look like a Mopapa backup.");
     });
-  });
+  }
 })();

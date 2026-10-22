@@ -5,28 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#1f1b30">
 <title>Mopapa</title>
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/den.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 <main id="app">
   <section id="screen-home">
     <div class="den-world">
-      <div class="den-scenery" aria-hidden="true">
-        <span class="firefly firefly-one"></span>
-        <span class="firefly firefly-two"></span>
-        <span class="firefly firefly-three"></span>
-        <span class="den-stone stone-one"></span>
-        <span class="den-stone stone-two"></span>
-        <div class="den-hill den-hill-back"></div>
-        <div class="den-hill den-hill-front"></div>
-        <div class="den-floor"></div>
-      </div>
-
       <header class="den-heading">
-        <p class="den-kicker">YOUR LITTLE WORLD</p>
-        <h1>Mopapa’s Den</h1>
-        <p class="den-subtitle">A cosy place for everything you want to keep.</p>
+        <h1>Mopapa</h1>
+        <p class="den-subtitle">Keep anything. Ask for it later.</p>
       </header>
 
       <div id="pet-wrap" class="den-pet">
@@ -40,8 +30,8 @@
 
     <form id="talk-form" class="den-talk">
       <label class="visually-hidden" for="talk-input">Tell Mopapa something or ask a question</label>
-      <textarea id="talk-input" rows="2" maxlength="1000" placeholder="Tell Mopapa anything..."></textarea>
-      <button type="submit" id="send">Tell</button>
+      <textarea id="talk-input" rows="2" maxlength="1000" placeholder="Write something to keep, or ask a question"></textarea>
+      <button type="submit" id="send">Add</button>
     </form>
 
     <div id="confirm" class="den-confirm" role="group" aria-live="polite" hidden></div>
@@ -49,10 +39,8 @@
     <section id="agenda-panel" class="agenda-panel" aria-labelledby="agenda-title" hidden>
       <div class="agenda-heading">
         <div>
-          <p class="den-kicker">DATES YOU SAVED</p>
-          <h2 id="agenda-title">Today &amp; upcoming</h2>
+          <h2 id="agenda-title">Coming up</h2>
         </div>
-        <span class="agenda-mark" aria-hidden="true">◷</span>
       </div>
       <p id="agenda-status" class="agenda-status" role="status" aria-live="polite"></p>
       <ul id="agenda-list" class="agenda-list"></ul>
@@ -61,10 +49,8 @@
     <section id="keepsakes-panel" class="keepsakes-panel" aria-labelledby="keepsakes-title" hidden>
       <div class="keepsakes-heading">
         <div>
-          <p class="den-kicker">MEMORIES YOU CHOSE</p>
-          <h2 id="keepsakes-title">Keepsakes</h2>
+          <h2 id="keepsakes-title">Pinned</h2>
         </div>
-        <span class="keepsakes-star" aria-hidden="true">★</span>
       </div>
       <p id="keepsakes-status" class="keepsakes-status" role="status" aria-live="polite"></p>
       <ul id="keepsakes-list" class="keepsakes-list"></ul>
@@ -73,10 +59,8 @@
     <section id="tag-explorer-panel" class="tag-explorer-panel" aria-labelledby="tag-explorer-title" hidden>
       <div class="tag-explorer-heading">
         <div>
-          <p class="den-kicker">BROWSE BY YOUR LABELS</p>
-          <h2 id="tag-explorer-title">Tag Explorer</h2>
+          <h2 id="tag-explorer-title">Browse by tag</h2>
         </div>
-        <span class="tag-explorer-mark" aria-hidden="true">#</span>
       </div>
       <p id="tag-explorer-status" class="tag-explorer-status" role="status" aria-live="polite"></p>
       <ul id="tag-explorer-tags" class="tag-explorer-tags" aria-label="Memory tags"></ul>
@@ -86,17 +70,15 @@
     <section id="memory-shelf" class="memory-shelf" aria-labelledby="memory-shelf-title" hidden>
       <div class="memory-shelf-heading">
         <div>
-          <p class="den-kicker">A LITTLE SOMETHING TO REMEMBER</p>
-          <h2 id="memory-shelf-title">From your memory shelf</h2>
+          <h2 id="memory-shelf-title">Remember this?</h2>
         </div>
-        <span class="memory-shelf-mark" aria-hidden="true">✦</span>
       </div>
       <article class="memory-card" aria-live="polite">
         <p id="memory-shelf-label" class="memory-label"></p>
         <p id="memory-shelf-text" class="memory-text"></p>
         <p id="memory-shelf-meta" class="memory-meta"></p>
         <div class="memory-actions">
-          <button type="button" id="memory-shelf-open" class="memory-button primary">Open room</button>
+          <button type="button" id="memory-shelf-open" class="memory-button primary">Open</button>
           <button type="button" id="memory-shelf-next" class="memory-button">Another memory</button>
         </div>
       </article>
@@ -105,10 +87,8 @@
     <section id="memory-search" class="memory-search" aria-labelledby="memory-search-title">
       <div class="memory-search-heading">
         <div>
-          <p class="den-kicker">FIND SOMETHING YOU SAVED</p>
-          <h2 id="memory-search-title">Search your memories</h2>
+          <h2 id="memory-search-title">Search</h2>
         </div>
-        <span aria-hidden="true">⌕</span>
       </div>
       <form id="memory-search-form">
         <label class="visually-hidden" for="memory-search-input">Search all saved memories</label>
@@ -125,27 +105,26 @@
 
     <div class="rooms-heading">
       <div>
-        <p class="den-kicker">YOUR MEMORIES LIVE HERE</p>
-        <h2>Explore the rooms</h2>
+        <h2>Rooms</h2>
       </div>
-      <button type="button" id="custom-room-open" class="add-room-button" aria-expanded="false" aria-controls="custom-room-panel">+ New room</button>
+      <button type="button" id="custom-room-open" class="add-room-button" aria-expanded="false" aria-controls="custom-room-panel">New room</button>
     </div>
 
     <form id="custom-room-panel" class="custom-room-panel" hidden>
       <label for="custom-room-name">Room name</label>
       <input id="custom-room-name" name="roomName" type="text" maxlength="20" minlength="2" placeholder="e.g. Books to read" required>
-      <label for="custom-room-icon">Choose an icon</label>
+      <label for="custom-room-icon">Icon</label>
       <select id="custom-room-icon" name="roomIcon">
-        <option value="📚">📚 Books</option>
-        <option value="🌱">🌱 Growing</option>
-        <option value="🎨">🎨 Creative</option>
-        <option value="🐾">🐾 Pets</option>
-        <option value="🎵">🎵 Music</option>
-        <option value="✈️">✈️ Travel</option>
-        <option value="🏠">🏠 Home</option>
-        <option value="💼">💼 Work</option>
-        <option value="🔭">🔭 Learning</option>
-        <option value="⭐">⭐ Favourites</option>
+        <option value="book">Books</option>
+        <option value="sprout">Growing</option>
+        <option value="palette">Creative</option>
+        <option value="paw">Pets</option>
+        <option value="music">Music</option>
+        <option value="plane">Travel</option>
+        <option value="home">Home</option>
+        <option value="briefcase">Work</option>
+        <option value="telescope">Learning</option>
+        <option value="star">Favourites</option>
       </select>
       <div class="custom-room-actions">
         <button type="submit" class="memory-button primary">Create room</button>
@@ -158,21 +137,23 @@
 
 
     <div id="tools" class="den-tools">
-      <button type="button" id="btn-export" class="link">Export backup</button>
-      <button type="button" id="btn-import" class="link">Import backup</button>
+      <button type="button" id="btn-export" class="link">Back up data</button>
+      <button type="button" id="btn-import" class="link">Restore from backup</button>
       <input type="file" id="file-import" accept="application/json,.json" hidden>
     </div>
   </section>
 
   <section id="screen-room" hidden>
     <header id="room-head">
-      <button type="button" id="back" class="link">&larr; Back</button>
+      <button type="button" id="back" class="link">Back</button>
       <h2 id="room-title"></h2>
     </header>
     <ul id="room-list"></ul>
   </section>
 </main>
 
+<script src="js/ui/icons.js"></script>
+<script src="js/ui/dialog.js"></script>
 <script src="js/store.js"></script>
 <script src="js/understand/rooms.js"></script>
 <script src="js/understand/rules.js"></script>

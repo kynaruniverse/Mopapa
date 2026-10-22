@@ -57,18 +57,18 @@ Mopapa.searchUI = (function () {
 
       var meta = document.createElement('p');
       meta.className = 'memory-search-result-meta';
-      var parts = [result.room ? result.room.icon + ' ' + result.room.name : 'Saved entry'];
+      var parts = [result.room ? result.room.name : 'Saved entry'];
       var created = new Date(entry.created);
       if (!isNaN(created.getTime())) parts.push('saved ' + created.toLocaleDateString());
       if (entry.when) parts.push('for ' + Mopapa.rules.describe(new Date(entry.when), entry.hasTime));
-      meta.textContent = parts.join(' · ');
+      meta.textContent = parts.join(', ');
       body.appendChild(meta);
       item.appendChild(body);
 
       var openButton = document.createElement('button');
       openButton.type = 'button';
       openButton.className = 'memory-search-open';
-      openButton.textContent = 'Open room';
+      openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
         if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
       });

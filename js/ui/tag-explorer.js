@@ -38,7 +38,7 @@ Mopapa.tagExplorerUI = (function () {
       button.type = 'button';
       button.className = 'tag-explorer-chip' +
         (selectedTag.toLowerCase() === item.tag.toLowerCase() ? ' selected' : '');
-      button.textContent = '#' + item.tag + ' · ' + item.count;
+      button.textContent = '#' + item.tag + ' (' + item.count + ')';
       button.setAttribute('aria-pressed',
         selectedTag.toLowerCase() === item.tag.toLowerCase() ? 'true' : 'false');
       button.addEventListener('click', function () {
@@ -75,17 +75,17 @@ Mopapa.tagExplorerUI = (function () {
 
       var meta = document.createElement('p');
       meta.className = 'tag-explorer-result-meta';
-      var parts = [room ? room.icon + ' ' + room.name : 'Saved entry'];
+      var parts = [room ? room.name : 'Saved entry'];
       var created = new Date(entry.created);
       if (!isNaN(created.getTime())) parts.push('saved ' + created.toLocaleDateString());
-      meta.textContent = parts.join(' · ');
+      meta.textContent = parts.join(', ');
       body.appendChild(meta);
       li.appendChild(body);
 
       var openButton = document.createElement('button');
       openButton.type = 'button';
       openButton.className = 'tag-explorer-open';
-      openButton.textContent = 'Open room';
+      openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
         if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
       });

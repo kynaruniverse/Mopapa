@@ -24,8 +24,8 @@ Mopapa.keepsakesUI = (function () {
     root.hidden = false;
     var shown = entries.slice(0, MAX_SHOWN);
     status.textContent = entries.length === 1
-      ? 'One memory you chose to keep close.'
-      : entries.length + ' memories you chose to keep close.';
+      ? '1 pinned entry.'
+      : entries.length + ' pinned entries.';
 
     shown.forEach(function (entry) {
       var room = Mopapa.roomById(entry.room);
@@ -41,11 +41,11 @@ Mopapa.keepsakesUI = (function () {
 
       var meta = document.createElement('p');
       meta.className = 'keepsake-meta';
-      var parts = [room ? room.icon + ' ' + room.name : 'Saved entry'];
+      var parts = [room ? room.name : 'Saved entry'];
       var created = new Date(entry.created);
       if (!isNaN(created.getTime())) parts.push('saved ' + created.toLocaleDateString());
       if (entry.when) parts.push(Mopapa.rules.describe(new Date(entry.when), entry.hasTime));
-      meta.textContent = parts.join(' · ');
+      meta.textContent = parts.join(', ');
       body.appendChild(meta);
       item.appendChild(body);
 
@@ -54,7 +54,7 @@ Mopapa.keepsakesUI = (function () {
       var openButton = document.createElement('button');
       openButton.type = 'button';
       openButton.className = 'keepsake-button';
-      openButton.textContent = 'Open room';
+      openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
         if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
       });

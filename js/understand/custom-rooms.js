@@ -2,7 +2,10 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.customRooms = (function () {
   var MAX_CUSTOM_ROOMS = 10;
-  var ICONS = ['📚', '🌱', '🎨', '🐾', '🎵', '✈️', '🏠', '💼', '🔭', '⭐'];
+  var ICONS = ['book', 'sprout', 'palette', 'paw', 'music', 'plane', 'home', 'briefcase', 'telescope', 'star'];
+  // Rooms saved by earlier versions stored an emoji; map them to the new icon keys.
+  var LEGACY = { '\ud83d\udcda': 'book', '\ud83c\udf31': 'sprout', '\ud83c\udfa8': 'palette', '\ud83d\udc3e': 'paw', '\ud83c\udfb5': 'music', '\u2708\ufe0f': 'plane', '\ud83c\udfe0': 'home', '\ud83d\udcbc': 'briefcase', '\ud83d\udd2d': 'telescope', '\u2b50': 'star' };
+  function normIcon(icon) { return LEGACY[icon] || icon; }
 
   function cleanName(value) {
     return String(value || '').replace(/\s+/g, ' ').trim();
@@ -19,7 +22,7 @@ Mopapa.customRooms = (function () {
     return room &&
       typeof room.id === 'string' && /^custom_[a-z0-9]+$/.test(room.id) &&
       typeof room.name === 'string' && room.name.length >= 2 && room.name.length <= 20 &&
-      ICONS.indexOf(room.icon) !== -1;
+      ICONS.indexOf(normIcon(room.icon)) !== -1;
   }
 
   function reload() {
@@ -36,7 +39,7 @@ Mopapa.customRooms = (function () {
       Mopapa.rooms.push({
         id: room.id,
         name: name,
-        icon: room.icon,
+        icon: normIcon(room.icon),
         dated: false,
         words: [name]
       });

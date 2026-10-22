@@ -54,13 +54,13 @@ Mopapa.resurfaceUI = (function () {
     label.textContent = item.label;
     text.textContent = item.entry.text;
 
-    var parts = [room ? room.icon + ' ' + room.name : 'Saved memory'];
+    var parts = [room ? room.name : 'Saved memory'];
     var created = new Date(item.entry.created);
     if (!isNaN(created.getTime())) parts.push('saved ' + created.toLocaleDateString());
-    meta.textContent = parts.join(' · ');
+    meta.textContent = parts.join(', ');
 
     nextButton.hidden = items.length < 2;
-    nextButton.textContent = items.length > 1 ? 'Another memory (' + (index + 1) + '/' + items.length + ')' : 'Another memory';
+    nextButton.textContent = items.length > 1 ? 'Show another (' + (index + 1) + '/' + items.length + ')' : 'Show another';
     root.hidden = false;
   }
 

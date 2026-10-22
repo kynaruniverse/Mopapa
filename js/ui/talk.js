@@ -74,7 +74,7 @@ Mopapa.talk = (function () {
           parts.push('logged ' + created.toLocaleDateString());
         }
       }
-      meta.textContent = parts.join(' · ');
+      meta.textContent = parts.join(', ');
       card.appendChild(meta);
       box.appendChild(card);
     });
@@ -120,7 +120,7 @@ Mopapa.talk = (function () {
     var choices = ranked.map(function (id, i) {
       var r = Mopapa.roomById(id);
       return {
-        label: r.icon + ' ' + r.name,
+        label: r.name,
         primary: i === 0,
         fn: function () {
           Mopapa.sorter.learn(ctx.text, id);
