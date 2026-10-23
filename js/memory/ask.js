@@ -258,8 +258,7 @@ Mopapa.ask = (function () {
 
       if (textDated.length) {
         return {
-          answer: 'The saved entry says the date is ' +
-            textDated[0].date + '.',
+          answer: textDated[0].date + '.',
           sources: textDated.slice(0, 5).map(function (item) {
             return item.entry;
           })
@@ -290,7 +289,7 @@ Mopapa.ask = (function () {
     matches.sort(sortNewest);
 
 
-    if (!matches.length && isCostQuestion(q)) {
+    if (isCostQuestion(q)) {
       var costIntent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much)\b/g;
       var costQuery = norm(q).replace(costIntent, ' ').replace(/\s+/g, ' ').trim();
       var costTerms = queryTerms(costQuery, room);
