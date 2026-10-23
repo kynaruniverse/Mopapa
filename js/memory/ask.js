@@ -7,8 +7,8 @@ Mopapa.ask = (function () {
     'where wheres who whos whose which why how many much often show tell find search ' +
     'please tell logged log logbook entry entries any anything something everything ' +
     'about on in at for of to from with and or but last this that there here next ' +
-    'didnt dont have i ever ever been ever logged remember remind tell me ' +
-    'put left kept keep myself today yesterday tonight tomorrow yesterday'
+    'didnt dont doesnt isnt wasnt werent hasnt havent wouldnt couldnt shouldnt ' +
+    'have i ever been logged remember remind tell me put left kept keep myself today yesterday tomorrow'
   ).split(' ').reduce(function (o, w) { o[w] = true; return o; }, {});
 
   var ROOM_WORDS = [
@@ -314,7 +314,7 @@ Mopapa.ask = (function () {
 
     if (asksWhoSomethingIsFor(q)) {
       return {
-        answer: 'I could not find who this is for in your saved information. I will not guess.',
+        answer: 'I could not find who that is for. I will not guess.',
         sources: []
       };
     }
@@ -327,14 +327,14 @@ Mopapa.ask = (function () {
         var first = dated[0];
         var label = Mopapa.rules.describe(new Date(first.when), first.hasTime);
         return {
-          answer: 'The next matching date I found is ' + label + '.',
+          answer: 'The next one is ' + label + '.',
           sources: dated.slice(0, 5)
         };
       }
       var pastDated = matches.filter(function (e) { return !!e.when; }).sort(sortByWhen);
       if (pastDated.length) {
         return {
-          answer: 'I found a matching entry, but it does not have a future date. Here is the entry so you can check it.',
+          answer: 'I found a matching entry, but its date has already passed. Here it is so you can check.',
           sources: pastDated.slice(0, 5)
         };
       }
@@ -360,7 +360,7 @@ Mopapa.ask = (function () {
       }
 
       return {
-        answer: 'I found matching entries, but none has a recognisable date in its saved text or scheduled date field. I will not guess the date.',
+        answer: 'I found matching entries, but none has a date I can read. I will not guess the date.',
         sources: matches.slice(0, 5)
       };
     }
@@ -421,7 +421,7 @@ Mopapa.ask = (function () {
     if (!matches.length) {
       var scope = date ? ' for ' + date.label : '';
       return {
-        answer: 'I could not find a saved entry matching that' + scope + '. Try different words, or check Mopapa’s rooms.',
+        answer: 'I could not find anything matching that' + scope + '. Try different words, or check the rooms in Mopapa.',
         sources: []
       };
     }
