@@ -63,7 +63,13 @@ Mopapa.ask = (function () {
     var customNameWords = selectedRoom && selectedRoom.id.indexOf('custom_') === 0 ? words(selectedRoom.name) : [];
 
     all.forEach(function (w) {
-      if (w.length < 3 || STOP[w] || /^\d+$/.test(w)) return;
+      if (
+        w.length < 3 ||
+        STOP[w] ||
+        ['name', 'called', 'named'].indexOf(w) !== -1 ||
+        /^\d+$/.test(w) ||
+        seen[w]
+      ) return;
 
       // Normalise common plural forms before searching.
       var term = w;
@@ -314,6 +320,7 @@ Mopapa.ask = (function () {
     matches.sort(sortNewest);
 
 
+
     if (isCostQuestion(q)) {
       var costIntent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much)\b/g;
       var costQuery = norm(q).replace(costIntent, ' ').replace(/\s+/g, ' ').trim();
@@ -327,24 +334,29 @@ Mopapa.ask = (function () {
       if (costMatches.length) {
         costMatches.sort(sortNewest);
 
-        var recordedCost = null;
-        var costSource = null;
+        var entriesWithCosts = costMatches.filter(function (e) {
+          return !!Mopapa.rules.money(e.text);
+        });
 
-        for (var ci = 0; ci < costMatches.length; ci++) {
-          var amount = Mopapa.rules.money(costMatches[ci].text);
+        if (entriesWithCosts.length > 1) {
+          return {
+            answer: 'I found multiple saved entries that could match this cost question. Please include more detail to identify the correct one.',
+            sources: costMatches.slice(0, 5)
+          };
+        }
 
-          if (amount) {
-            recordedCost = amount;
-            costSource = costMatches[ci];
-            break;
-          }
+        if (entriesWithCosts.length === 1) {
+          var recordedCost = Mopapa.rules.money(entriesWithCosts[0].text);
+
+          return {
+            answer: 'The matching saved entry records a cost of ' + recordedCost + '.',
+            sources: [entriesWithCosts[0]]
+          };
         }
 
         return {
-          answer: recordedCost
-            ? 'The matching saved entry records a cost of ' + recordedCost + '.'
-            : 'I found a matching saved entry, but it does not contain a cost I can identify. I will not guess the amount.',
-          sources: costSource ? [costSource] : costMatches.slice(0, 5)
+          answer: 'I found a matching saved entry, but it does not contain a cost I can identify. I will not guess the amount.',
+          sources: costMatches.slice(0, 5)
         };
       }
     }
