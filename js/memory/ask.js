@@ -4,6 +4,7 @@ Mopapa.ask = (function () {
   var STOP = (
     'a an the i me my mine we our you your he she it they them is are was were am ' +
     'do does did have has had can could would should will what whats when whens ' +
+    'know knows knowing knew understand understood ' +
     'where wheres who whos whose which why how many much often show tell find search ' +
     'please logged log logbook entry entries any anything something everything ' +
     'about on in at for of to from with and or but last this that there here next ' +
@@ -802,6 +803,20 @@ Mopapa.ask = (function () {
 
     if (matches.length > shown.length) {
       lead += ' Showing the newest ' + shown.length + '.';
+    }
+
+    var directQuestion =
+      /\bwhat do i know\b/.test(norm(q)) ||
+      /\bwhat did i save\b/.test(norm(q)) ||
+      /\bwhat have i saved\b/.test(norm(q)) ||
+      /\bwhat did i record\b/.test(norm(q)) ||
+      /\bwhat did i log\b/.test(norm(q));
+
+    if (directQuestion && shown.length === 1) {
+      return {
+        answer: 'You saved: ' + shown[0].text,
+        sources: shown
+      };
     }
 
     return {
