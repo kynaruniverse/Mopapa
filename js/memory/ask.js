@@ -56,18 +56,34 @@ Mopapa.ask = (function () {
     return null;
   }
 
+
   function queryTerms(q, roomId) {
     var all = words(q), out = [], seen = {};
     var selectedRoom = roomId ? Mopapa.roomById(roomId) : null;
     var customNameWords = selectedRoom && selectedRoom.id.indexOf('custom_') === 0 ? words(selectedRoom.name) : [];
+
     all.forEach(function (w) {
-      if (w.length < 3 || STOP[w] || /^\d+$/.test(w) || seen[w]) return;
-      if (customNameWords.indexOf(w) !== -1) return;
-      if (ROOM_WORDS.indexOf(w) !== -1 || DAY_NAMES.indexOf(w) !== -1) return;
-      if (['jan', 'january', 'feb', 'february', 'mar', 'march', 'apr', 'april', 'may', 'jun', 'june', 'jul', 'july', 'aug', 'august', 'sep', 'sept', 'september', 'oct', 'october', 'nov', 'november', 'dec', 'december', 'room', 'house', 'den'].indexOf(w) !== -1) return;
-      seen[w] = true;
-      out.push(w);
+      if (w.length < 3 || STOP[w] || /^\d+$/.test(w)) return;
+
+      // Normalise common plural forms before searching.
+      var term = w;
+      if (term.length > 5 && /ies$/.test(term)) {
+        term = term.slice(0, -3) + 'y';
+      } else if (term.length > 4 && /(ches|shes|sses|xes|zes)$/.test(term)) {
+        term = term.slice(0, -2);
+      } else if (term.length > 3 && /s$/.test(term) && !/ss$/.test(term)) {
+        term = term.slice(0, -1);
+      }
+
+      if (seen[term]) return;
+      if (customNameWords.indexOf(term) !== -1) return;
+      if (ROOM_WORDS.indexOf(term) !== -1 || DAY_NAMES.indexOf(term) !== -1) return;
+      if (['jan', 'january', 'feb', 'february', 'mar', 'march', 'apr', 'april', 'may', 'jun', 'june', 'jul', 'july', 'aug', 'august', 'sep', 'sept', 'september', 'oct', 'october', 'nov', 'november', 'dec', 'december', 'room', 'house', 'den'].indexOf(term) !== -1) return;
+
+      seen[term] = true;
+      out.push(term);
     });
+
     return out;
   }
 
@@ -181,13 +197,12 @@ Mopapa.ask = (function () {
 
   function isNameQuestion(q) {
     var n = norm(q);
-    return /\bwhat is the .+ called\b/.test(n) ||
-      /\bwhat was the .+ called\b/.test(n) ||
-      /\bwhat is the .+ name\b/.test(n) ||
-      /\bwho is the .+ (?:called|named)\b/.test(n);
+
+    return /\bwhat(?: is| was|s)\s+the .+\s+called\b/.test(n) ||
+      /\bwhat(?: is| was|s)\s+the .+\s+name\b/.test(n) ||
+      /\bwhat(?: is| was|s)\s+the .+ name\b/.test(n);
   }
-  
-  
+
   function asksWhoSomethingIsFor(q) {
     return /\bwho\b.*\b(?:is|was|will be)\b.*\bfor\b/.test(norm(q));
   }
