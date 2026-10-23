@@ -168,6 +168,69 @@ Mopapa.ask = (function () {
     return /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|how much)\b/.test(n);
   }
 
+  function answerCost(q, all, room, date) {
+    var n = norm(q);
+    var wantsLatest = /\b(latest|newest|most recent)\b/.test(n);
+
+    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much|according|latest|newest|recent|most|entry|entries|record|recorded)\b/g;
+    var subject = n.replace(intent, ' ').replace(/\s+/g, ' ').trim();
+    var subjectTerms = queryTerms(subject, room);
+
+    if (!subjectTerms.length && !room) {
+      return {
+        answer: 'I can look up costs, but I need to know what the cost was for. Try “how much did the boiler cost?”',
+        sources: []
+      };
+    }
+
+    var candidates = all.filter(function (e) {
+      if (room && e.room !== room) return false;
+      if (date && !loggedOn(e, date)) return false;
+      return subjectTerms.length > 0 && includesAllTerms(e, subjectTerms);
+    });
+
+    candidates.sort(sortNewest);
+
+    var priced = candidates.filter(function (e) {
+      return !!Mopapa.rules.money(e.text);
+    });
+
+    if (!priced.length) {
+      if (candidates.length) {
+        return {
+          answer: 'I found matching saved entries, but none mentions a cost I can read. I will not guess an amount.',
+          sources: candidates.slice(0, 5)
+        };
+      }
+
+      return {
+        answer: 'I could not find a saved entry for that cost. Try mentioning what it was for.',
+        sources: []
+      };
+    }
+
+    if (wantsLatest) {
+      return {
+        answer: 'The most recent matching entry records a cost of ' +
+          Mopapa.rules.money(priced[0].text) + '.',
+        sources: [priced[0]]
+      };
+    }
+
+    if (priced.length === 1) {
+      return {
+        answer: 'The saved entry records a cost of ' +
+          Mopapa.rules.money(priced[0].text) + '.',
+        sources: [priced[0]]
+      };
+    }
+
+    return {
+      answer: 'I found multiple matching entries with costs. Which job or purchase do you mean?',
+      sources: priced.slice(0, 5)
+    };
+  }
+
   function extractTextDate(text) {
     var months = [
       'january', 'february', 'march', 'april', 'may', 'june',
@@ -302,64 +365,58 @@ Mopapa.ask = (function () {
       };
     }
 
+
     if (matches.length && isNameQuestion(q)) {
-      for (var ni = 0; ni < matches.length; ni++) {
-        var person = extractCalledPerson(matches[ni].text);
+      var namedMatches = [];
+
+      matches.forEach(function (entry) {
+        var person = extractCalledPerson(entry.text);
 
         if (person) {
+          namedMatches.push({
+            entry: entry,
+            person: person
+          });
+        }
+      });
+
+      if (namedMatches.length) {
+        var distinctNames = [];
+
+        namedMatches.forEach(function (item) {
+          var key = item.person.name.toLowerCase();
+
+          if (distinctNames.indexOf(key) === -1) {
+            distinctNames.push(key);
+          }
+        });
+
+        if (distinctNames.length > 1) {
           return {
-            answer: 'The ' + person.role + ' is called ' +
-              person.name + '.',
-            sources: [matches[ni]]
+            answer: 'I found more than one possible person in your saved entries. Which job or appointment do you mean?',
+            sources: namedMatches.slice(0, 5).map(function (item) {
+              return item.entry;
+            })
           };
         }
+
+        return {
+          answer: 'The ' + namedMatches[0].person.role + ' is called ' +
+            namedMatches[0].person.name + '.',
+          sources: [namedMatches[0].entry]
+        };
       }
     }
-
 
     matches.sort(sortNewest);
 
 
 
+
     if (isCostQuestion(q)) {
-      var costIntent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much)\b/g;
-      var costQuery = norm(q).replace(costIntent, ' ').replace(/\s+/g, ' ').trim();
-      var costTerms = queryTerms(costQuery, room);
-
-      var costMatches = all.filter(function (e) {
-        if (room && e.room !== room) return false;
-        return costTerms.length > 0 && includesAllTerms(e, costTerms);
-      });
-
-      if (costMatches.length) {
-        costMatches.sort(sortNewest);
-
-        var entriesWithCosts = costMatches.filter(function (e) {
-          return !!Mopapa.rules.money(e.text);
-        });
-
-        if (entriesWithCosts.length > 1) {
-          return {
-            answer: 'I found multiple saved entries that could match this cost question. Please include more detail to identify the correct one.',
-            sources: costMatches.slice(0, 5)
-          };
-        }
-
-        if (entriesWithCosts.length === 1) {
-          var recordedCost = Mopapa.rules.money(entriesWithCosts[0].text);
-
-          return {
-            answer: 'The matching saved entry records a cost of ' + recordedCost + '.',
-            sources: [entriesWithCosts[0]]
-          };
-        }
-
-        return {
-          answer: 'I found a matching saved entry, but it does not contain a cost I can identify. I will not guess the amount.',
-          sources: costMatches.slice(0, 5)
-        };
-      }
+      return answerCost(q, all, room, date);
     }
+
 
     if (!matches.length) {
       var scope = date ? ' for ' + date.label : '';
