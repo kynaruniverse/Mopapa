@@ -179,15 +179,18 @@ Mopapa.ask = (function () {
       (year ? ' ' + year : '');
   }
 
-
   function isNameQuestion(q) {
     var n = norm(q);
     return /\bwhat is the .+ called\b/.test(n) ||
       /\bwhat was the .+ called\b/.test(n) ||
       /\bwhat is the .+ name\b/.test(n) ||
-      /\bwho is the .+\b/.test(n);
+      /\bwho is the .+ (?:called|named)\b/.test(n);
   }
-
+  
+  
+  function asksWhoSomethingIsFor(q) {
+    return /\bwho\b.*\b(?:is|was|will be)\b.*\bfor\b/.test(norm(q));
+  }
 
 
   function extractCalledPerson(text) {
@@ -224,6 +227,13 @@ Mopapa.ask = (function () {
       return includesAllTerms(e, terms);
     });
     var askingWhen = isWhenQuestion(q);
+
+    if (asksWhoSomethingIsFor(q)) {
+      return {
+        answer: 'I could not find who this is for in your saved information. I will not guess.',
+        sources: []
+      };
+    }
 
     if (askingWhen && matches.length) {
       var dated = matches.filter(function (e) {
