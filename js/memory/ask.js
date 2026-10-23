@@ -130,6 +130,36 @@ Mopapa.ask = (function () {
     return !isNaN(d.getTime()) && d >= filter.start && d < filter.end;
   }
 
+  function textDateMatchesFilter(e, filter) {
+    if (!filter || !filter.due || !filter.explicit) return false;
+
+    var match = String(e.text || '').match(
+      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+(\d{4}))?\b/i
+    );
+
+    if (!match) return false;
+
+    var months = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ];
+
+    var day = Number(match[1]);
+    var month = months.indexOf(match[2].toLowerCase());
+    var year = match[3] ? Number(match[3]) : filter.start.getFullYear();
+
+    var d = new Date(year, month, day);
+
+    if (
+      month < 0 ||
+      d.getFullYear() !== year ||
+      d.getMonth() !== month ||
+      d.getDate() !== day
+    ) return false;
+
+    return d >= filter.start && d < filter.end;
+  }
+
   function stem(w) {
     var irr = { paid: 'pay', bought: 'buy' };
     if (irr[w]) return irr[w];
@@ -162,7 +192,48 @@ Mopapa.ask = (function () {
   function isWhenQuestion(q) {
     return /\b(when|what time|what date|next)\b/.test(norm(q));
   }
+  
+  function explicitDateFilter(q, now) {
+    var n = norm(q);
+    var months = {
+      january: 0, february: 1, march: 2, april: 3,
+      may: 4, june: 5, july: 6, august: 7,
+      september: 8, october: 9, november: 10, december: 11
+    };
 
+    var match = n.match(
+      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?\b/
+    );
+
+    if (!match) return null;
+
+    var day = Number(match[1]);
+    var month = months[match[2]];
+    var year = match[3] ? Number(match[3]) : now.getFullYear();
+
+    if (!match[3]) {
+      var candidate = new Date(year, month, day);
+      if (candidate < localDay(now)) year++;
+    }
+
+    var start = new Date(year, month, day);
+
+    if (
+      start.getFullYear() !== year ||
+      start.getMonth() !== month ||
+      start.getDate() !== day
+    ) return null;
+
+    return {
+      start: start,
+      end: new Date(year, month, day + 1),
+      label: day + ' ' + match[2].charAt(0).toUpperCase() +
+        match[2].slice(1),
+      due: true,
+      explicit: true
+    };
+  }
+  
   function isCostQuestion(q) {
     var n = norm(q);
     return /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|how much)\b/.test(n);
@@ -300,14 +371,18 @@ Mopapa.ask = (function () {
     var now = new Date();
     var all = Mopapa.entries.byRoom ? Mopapa.store.data().entries.slice() : [];
     var room = roomForQuestion(q);
-    var date = dateFilter(q, now);
+    var date = explicitDateFilter(q, now) || dateFilter(q, now);
     var terms = queryTerms(q, room);
     if (!terms.length && !room && !date) {
       return { answer: 'Ask me about something specific, like “when is the dentist?”', sources: [] };
     }
     var matches = all.filter(function (e) {
       if (room && e.room !== room) return false;
-      if (date && !loggedOn(e, date)) return false;
+      if (
+        date &&
+        !loggedOn(e, date) &&
+        !textDateMatchesFilter(e, date)
+      ) return false;
       return includesAllTerms(e, terms);
     });
     var askingWhen = isWhenQuestion(q);
@@ -320,10 +395,29 @@ Mopapa.ask = (function () {
     }
 
     if (askingWhen && matches.length) {
+
       var dated = matches.filter(function (e) {
         return e.when && !Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);
+
       if (dated.length) {
+        var distinctWhen = [];
+
+        dated.forEach(function (entry) {
+          var key = new Date(entry.when).getTime();
+
+          if (distinctWhen.indexOf(key) === -1) {
+            distinctWhen.push(key);
+          }
+        });
+
+        if (distinctWhen.length > 1) {
+          return {
+            answer: 'I found different scheduled dates in your saved entries. Which entry do you mean?',
+            sources: dated.slice(0, 5)
+          };
+        }
+
         var first = dated[0];
         var label = Mopapa.rules.describe(new Date(first.when), first.hasTime);
         return {
@@ -350,7 +444,27 @@ Mopapa.ask = (function () {
         }
       });
 
+
       if (textDated.length) {
+        var distinctDates = [];
+
+        textDated.forEach(function (item) {
+          var key = item.date.toLowerCase();
+
+          if (distinctDates.indexOf(key) === -1) {
+            distinctDates.push(key);
+          }
+        });
+
+        if (distinctDates.length > 1) {
+          return {
+            answer: 'I found different dates in your saved entries. Which entry do you mean?',
+            sources: textDated.slice(0, 5).map(function (item) {
+              return item.entry;
+            })
+          };
+        }
+
         return {
           answer: textDated[0].date + '.',
           sources: textDated.slice(0, 5).map(function (item) {
