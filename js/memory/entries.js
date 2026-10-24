@@ -96,6 +96,39 @@ Mopapa.entries = (function () {
     return { entry: e, saved: false };
   }
   
+
+  function sourceChoicesSnapshot() {
+    var data = Mopapa.store.data();
+    var ask = data && data.ask;
+    return ask && ask.boosts ? JSON.stringify(ask.boosts) : null;
+  }
+
+  function removeSourceChoices(id) {
+    var data = Mopapa.store.data();
+    var ask = data && data.ask;
+    if (!ask || !ask.boosts) return;
+
+    Object.keys(ask.boosts).forEach(function (sig) {
+      var bucket = ask.boosts[sig];
+      if (!bucket || typeof bucket !== 'object') return;
+
+      delete bucket[id];
+
+      if (!Object.keys(bucket).length) {
+        delete ask.boosts[sig];
+      }
+    });
+  }
+
+  function restoreSourceChoices(snapshot) {
+    if (snapshot === null) return;
+
+    var data = Mopapa.store.data();
+    if (data && data.ask) {
+      data.ask.boosts = JSON.parse(snapshot);
+    }
+  }
+
   function updateText(id, value) {
     var e = find(id);
     if (!e) return false;
@@ -106,16 +139,42 @@ Mopapa.entries = (function () {
     var previousText = e.text;
     var previousFact = e.fact;
     var previousAmounts = e.amounts;
+    var previousChoices = sourceChoicesSnapshot();
     var info = analyse(nextText);
+
     e.text = nextText;
     e.fact = info.fact;
     e.amounts = info.amounts.length ? info.amounts : null;
+    removeSourceChoices(id);
+
     if (Mopapa.store.save()) return true;
 
-    // Restore the in-memory values if the device could not save them.
+    // Restore the entry and learning data if saving fails.
     e.text = previousText;
     e.fact = previousFact;
     e.amounts = previousAmounts;
+    restoreSourceChoices(previousChoices);
+    return false;
+  }
+
+  function remove(id) {
+    var l = list();
+
+    for (var i = 0; i < l.length; i++) {
+      if (l[i].id === id) {
+        var previousChoices = sourceChoicesSnapshot();
+        var removed = l.splice(i, 1)[0];
+
+        removeSourceChoices(id);
+
+        if (Mopapa.store.save()) return true;
+
+        l.splice(i, 0, removed);
+        restoreSourceChoices(previousChoices);
+        return false;
+      }
+    }
+
     return false;
   }
 

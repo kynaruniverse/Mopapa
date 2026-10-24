@@ -1087,14 +1087,22 @@ function textDateMatchesFilter(e, filter) {
   }
 
   // A read-only summary for the screen.
+
   function learned() {
     var s = learnedData();
     var taps = 0;
 
     if (!s) return { aliases: [], unanswered: [], taps: 0 };
 
+    var activeIds = Object.create(null);
+    Mopapa.store.data().entries.forEach(function (entry) {
+      if (entry && entry.id) activeIds[entry.id] = true;
+    });
+
     Object.keys(s.boosts).forEach(function (k) {
-      taps += Object.keys(s.boosts[k]).length;
+      Object.keys(s.boosts[k]).forEach(function (id) {
+        if (activeIds[id]) taps++;
+      });
     });
 
     return {
@@ -1105,6 +1113,7 @@ function textDateMatchesFilter(e, filter) {
       taps: taps
     };
   }
+
 
   function locationMatchScore(entry, terms) {
     var text = norm(String(entry.text || ''));

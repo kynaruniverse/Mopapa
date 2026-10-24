@@ -22,8 +22,16 @@ function boot(storage) {
 const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
-function stored(entries, learned) {
-  return { 'mopapa.v1': JSON.stringify({ entries: entries || [], learned: learned || {}, customRooms: [] }) };
+
+function stored(entries, learned, ask) {
+  return {
+    'mopapa.v1': JSON.stringify({
+      entries: entries || [],
+      learned: learned || {},
+      customRooms: [],
+      ask: ask || { aliases: [], boosts: {}, unanswered: [] }
+    })
+  };
 }
 
 test('load drops null entries instead of crashing later', function () {
@@ -125,6 +133,96 @@ test('failed delete leaves entry visible and stored', function () {
   assert.strictEqual(w.Mopapa.entries.byRoom('notes').length, 1);
   assert.strictEqual(JSON.parse(w.localStorage._['mopapa.v1']).entries[0].text, 'Keep me');
 });
+
+
+test('editing an entry clears only its saved source choices', function () {
+  const ask = {
+    aliases: [],
+    boosts: {
+      cost: { a: 2, b: 1 },
+      date: { a: 1 },
+      other: { c: 3 }
+    },
+    unanswered: []
+  };
+  const w = boot(stored([
+    { id: 'a', text: 'Car service £100', room: 'notes', created: ago(2) },
+    { id: 'b', text: 'Boiler service £120', room: 'notes', created: ago(1) }
+  ], {}, ask));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.entries.updateText('a', 'Car service £150'), true);
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+  assert.deepStrictEqual(Object.keys(boosts), ['cost', 'other']);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(boosts.cost)), { b: 1 });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(boosts.other)), { c: 3 });
+});
+
+test('deleting an entry clears only its saved source choices', function () {
+  const ask = {
+    aliases: [],
+    boosts: {
+      cost: { a: 2, b: 1 },
+      date: { a: 1 },
+      other: { c: 3 }
+    },
+    unanswered: []
+  };
+  const w = boot(stored([
+    { id: 'a', text: 'Car service £100', room: 'notes', created: ago(2) },
+    { id: 'b', text: 'Boiler service £120', room: 'notes', created: ago(1) }
+  ], {}, ask));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.entries.remove('a'), true);
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+  assert.deepStrictEqual(Object.keys(boosts), ['cost', 'other']);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(boosts.cost)), { b: 1 });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(boosts.other)), { c: 3 });
+});
+
+test('failed edit restores the original source choices', function () {
+  const ask = {
+    aliases: [],
+    boosts: { cost: { a: 2, b: 1 }, other: { c: 3 } },
+    unanswered: []
+  };
+  const w = boot(stored([
+    { id: 'a', text: 'Car service £100', room: 'notes', created: ago(2) }
+  ], {}, ask));
+
+  w.Mopapa.store.load();
+  const before = JSON.stringify(w.Mopapa.store.data().ask.boosts);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.entries.updateText('a', 'Car service £150'), false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].text, 'Car service £100');
+  assert.strictEqual(JSON.stringify(w.Mopapa.store.data().ask.boosts), before);
+});
+
+test('failed delete restores the original source choices', function () {
+  const ask = {
+    aliases: [],
+    boosts: { cost: { a: 2, b: 1 }, other: { c: 3 } },
+    unanswered: []
+  };
+  const w = boot(stored([
+    { id: 'a', text: 'Car service £100', room: 'notes', created: ago(2) }
+  ], {}, ask));
+
+  w.Mopapa.store.load();
+  const before = JSON.stringify(w.Mopapa.store.data().ask.boosts);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.entries.remove('a'), false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].text, 'Car service £100');
+  assert.strictEqual(JSON.stringify(w.Mopapa.store.data().ask.boosts), before);
+});
+
 
 test('failed edits, tags, done, pin and move all revert in memory', function () {
   const w = boot(stored([{ id: 'a', text: 'Original', room: 'notes', tags: ['old'], done: false, pinned: false, created: new Date().toISOString() }]));
@@ -383,7 +481,7 @@ test('learning: damaged saved learning data is cleaned on load', function () {
   const l = w.Mopapa.ask.learned();
   assert.strictEqual(l.aliases.length, 1);
   assert.strictEqual(l.unanswered.length, 1);
-  assert.strictEqual(l.taps, 1);
+  assert.strictEqual(l.taps, 0);
 });
 
 test('learning screen is wired in and teaches without touching room learning', function () {
