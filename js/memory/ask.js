@@ -1187,7 +1187,12 @@ function textDateMatchesFilter(e, filter) {
       /\bwhat ideas have i saved\b/.test(n) ||
       /\bwhat gift ideas\b/.test(n);
 
-    var shown = directQuestion
+    var isItemsQuestion =
+      /\b(what|which)\b/.test(n) &&
+      /\b(item|items|thing|things|object|objects)\b/.test(n) &&
+      /\b(in|inside|on|under|behind|beside|within)\b/.test(n);
+      
+    var shown = (directQuestion || isItemsQuestion)
       ? matches
       : matches.slice(0, 5);
     var roomText = room ? ' in ' + roomName(room) : '';
@@ -1212,6 +1217,16 @@ function textDateMatchesFilter(e, filter) {
       lead += ' Showing the newest ' + shown.length + '.';
     }
 
+    if (isItemsQuestion) {
+      return {
+        answer: 'I found these items:\n' +
+          shown.map(function (entry) {
+            return '• ' + entry.text;
+          }).join('\n'),
+        sources: shown
+      };
+    }
+    
     if (directQuestion && shown.length === 1) {
       return {
         answer: 'You saved this: ' + shown[0].text,
