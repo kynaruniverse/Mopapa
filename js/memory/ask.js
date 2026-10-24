@@ -674,8 +674,11 @@ function textDateMatchesFilter(e, filter) {
     return 0;
   }
 
-  function rankedMatches(entries, terms, room) {
+  function rankedMatches(entries, terms, room, sig) {
     if (!terms.length || !entries.length) return [];
+
+    var s = learnedData();
+    var tapped = s && sig && s.boosts[sig] ? s.boosts[sig] : {};
 
     var stemmed = entries.map(entryStems);
 
@@ -703,11 +706,14 @@ function textDateMatchesFilter(e, filter) {
       var coverage = total ? got / total : 0;
 
       // Most of the question must be covered, or it is not a match.
-      if (coverage < 0.6) return;
+      var wasTapped = tapped[e.id] > 0;
+      
+      // An entry the person tapped before for this question always qualifies.
+      if (coverage < (wasTapped ? 0.3 : 0.6)) return;
 
       scored.push({
         entry: e,
-        score: coverage + (room && e.room === room ? 0.1 : 0)
+        score: coverage + (room && e.room === room ? 0.1 : 0) + (wasTapped ? 0.3 : 0)
       });
     });
 
@@ -718,6 +724,386 @@ function textDateMatchesFilter(e, filter) {
     return scored.slice(0, 5).map(function (s) {
       return s.entry;
     });
+  }
+
+  // ---- Structured facts (where things are) ----
+
+  var DETS = { the: 1, my: 1, our: 1, a: 1, an: 1 };
+
+  function factOf(e) {
+    if (e && e.fact && e.fact.attr === 'location' && Array.isArray(e.fact.items)) {
+      return e.fact;
+    }
+
+    var info = Mopapa.rules && Mopapa.rules.extract
+      ? Mopapa.rules.extract(e && e.text)
+      : null;
+
+    return info && info.fact ? info.fact : null;
+  }
+
+  function itemStems(item) {
+    return words(item).map(stem);
+  }
+
+  function entryOrder(all) {
+    // Oldest first. On equal timestamps the later array slot is older,
+    // because new entries are added at the front.
+    return all.map(function (e, i) { return { e: e, i: i }; })
+      .sort(function (a, b) {
+        return (new Date(a.e.created) - new Date(b.e.created)) || (b.i - a.i);
+      })
+      .map(function (x) { return x.e; });
+  }
+
+  // The newest saved location for every item.
+  function currentLocations(all) {
+    var map = {};
+
+    entryOrder(all).forEach(function (e) {
+      var f = e && factOf(e);
+      if (!f) return;
+
+      f.items.forEach(function (item) {
+        var stems = itemStems(item);
+        if (!stems.length) return;
+        map[stems.join(' ')] = { item: item, stems: stems, entry: e, fact: f };
+      });
+    });
+
+    return map;
+  }
+
+  function isStale(e, map) {
+    var f = factOf(e);
+    if (!f) return false;
+
+    return f.items.every(function (item) {
+      var hit = map[itemStems(item).join(' ')];
+      return !!hit && hit.entry !== e;
+    });
+  }
+
+  function whereStems(c) {
+    return words(c.fact.where).map(stem).filter(function (w) {
+      return !DETS[w];
+    });
+  }
+
+  function structuredWhere(terms, all) {
+    if (!terms.length) return null;
+
+    var map = currentLocations(all);
+    var cands = Object.keys(map).map(function (k) { return map[k]; })
+      .filter(function (c) {
+        return terms.every(function (t) {
+          return c.stems.indexOf(t) !== -1 ||
+            (ALIAS_MAP[t] || []).some(function (a) {
+              return c.stems.indexOf(a) !== -1;
+            });
+        });
+      });
+
+    if (!cands.length) return null;
+
+    var exact = cands.filter(function (c) {
+      return c.stems.length === terms.length;
+    });
+    var use = exact.length ? exact : cands;
+    var entries = [];
+
+    use.forEach(function (c) {
+      if (entries.indexOf(c.entry) === -1) entries.push(c.entry);
+    });
+
+        if (entries.length > 1) {
+      var tappedEntry = confirmedBySig(entries, terms.slice().sort().join(' '));
+
+      if (tappedEntry) {
+        entries = [tappedEntry];
+        use = use.filter(function (c) { return c.entry === tappedEntry; });
+      }
+    }
+
+    if (entries.length > 1) {
+      return {
+        answer: 'I found more than one saved place that could match. Which do you mean?',
+        sources: entries.slice(0, 5)
+      };
+    }
+
+    return {
+      answer: (use[0].fact.plural ? 'They are ' : 'It is ') +
+        use[0].fact.value + '.',
+      sources: [entries[0]]
+    };
+  }
+
+  var PLACE_Q = /^what(?:s| is| are)?\s+(?:the\s+)?(?:(?:items?|things?|stuff|objects?)\s+)?(?:(?:is|are)\s+)?(?:(?:did\s+i|have\s+i)\s+(?:put|leave|store|keep|hide|park)\s+)?(in|inside|on|under|behind|beside|within|at)\s+(.+)$/;
+
+  function structuredItems(q, all) {
+    var m = norm(q).match(PLACE_Q);
+    if (!m) return null;
+
+    var placeStems = words(m[2]).map(stem).filter(function (w) {
+      return !DETS[w];
+    });
+
+    if (!placeStems.length) return null;
+
+    var map = currentLocations(all);
+    var hits = Object.keys(map).map(function (k) { return map[k]; })
+      .filter(function (c) {
+        var have = whereStems(c);
+        return placeStems.every(function (p) {
+          return have.indexOf(p) !== -1;
+        });
+      });
+
+    if (!hits.length) return null;
+
+    var values = [];
+    hits.forEach(function (c) {
+      if (values.indexOf(c.fact.value) === -1) values.push(c.fact.value);
+    });
+
+    var names = [];
+    hits.forEach(function (c) {
+      var label = values.length > 1
+        ? c.item + ' (' + c.fact.value + ')'
+        : c.item;
+
+      if (names.indexOf(label) === -1) names.push(label);
+    });
+
+    var more = names.length > 8 ? names.length - 8 : 0;
+    var list = names.slice(0, 8).join(', ') +
+      (more ? ' and ' + more + ' more' : '');
+    var sources = [];
+
+    hits.forEach(function (c) {
+      if (sources.indexOf(c.entry) === -1) sources.push(c.entry);
+    });
+
+    return {
+      answer: values.length === 1
+        ? values[0].charAt(0).toUpperCase() + values[0].slice(1) + ': ' + list + '.'
+        : 'Saved items matching that place: ' + list + '.',
+      sources: sources.slice(0, 8)
+    };
+  }
+
+  function formatMoney(n) {
+    var whole = Math.round(n * 100) % 100 === 0;
+
+    return '£' + n.toLocaleString('en-GB', {
+      minimumFractionDigits: whole ? 0 : 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  // ---- Learning from the person (saved in store.ask) ----
+
+  function learnedData() {
+    var d = Mopapa.store && Mopapa.store.data ? Mopapa.store.data() : null;
+
+    if (d && !d.ask) {
+      d.ask = { aliases: [], boosts: {}, unanswered: [] };
+    }
+
+    return d ? d.ask : null;
+  }
+
+  function applyLearned() {
+    var s = learnedData();
+    if (!s) return;
+
+    s.aliases.forEach(function (p) {
+      addAlias(p[0], p[1]);
+    });
+  }
+
+  function rebuildAliases() {
+    Object.keys(ALIAS_MAP).forEach(function (k) {
+      delete ALIAS_MAP[k];
+    });
+
+    ALIAS_GROUPS.forEach(function (group) {
+      group.forEach(function (a) {
+        group.forEach(function (b) {
+          addAlias(a, b);
+        });
+      });
+    });
+
+    applyLearned();
+  }
+
+  // One word each, e.g. teachAlias('gp', 'doctor').
+  function teachAlias(a, b) {
+    var x = norm(a);
+    var y = norm(b);
+    var s = learnedData();
+
+    if (!s || !x || !y || x === y) return false;
+    if (/\s/.test(x) || /\s/.test(y) || x.length > 30 || y.length > 30) {
+      return false;
+    }
+
+    var known = s.aliases.some(function (p) {
+      return (p[0] === x && p[1] === y) || (p[0] === y && p[1] === x);
+    });
+
+    if (!known) {
+      if (s.aliases.length >= 50) return false;
+
+      s.aliases.push([x, y]);
+
+      if (!Mopapa.store.save()) {
+        s.aliases.pop();
+        return false;
+      }
+    }
+
+    addAlias(x, y);
+    return true;
+  }
+
+  function forgetAlias(a, b) {
+    var x = norm(a);
+    var y = norm(b);
+    var s = learnedData();
+    if (!s) return false;
+
+    var before = s.aliases;
+
+    s.aliases = before.filter(function (p) {
+      return !((p[0] === x && p[1] === y) || (p[0] === y && p[1] === x));
+    });
+
+    if (!Mopapa.store.save()) {
+      s.aliases = before;
+      return false;
+    }
+
+    rebuildAliases();
+    return true;
+  }
+
+  // The same question always gives the same signature.
+  function signatureOf(q) {
+    return queryTerms(q, roomForQuestion(q)).slice().sort().join(' ');
+  }
+
+  // The person tapped this entry as "the one I meant" for this question.
+  function confirmSource(question, entryId) {
+    var s = learnedData();
+    var sig = signatureOf(question);
+
+    if (!s || !sig || !entryId) return false;
+
+    var before = JSON.stringify(s.boosts);
+
+    if (!s.boosts[sig]) s.boosts[sig] = {};
+    s.boosts[sig][entryId] = (s.boosts[sig][entryId] || 0) + 1;
+
+    var keys = Object.keys(s.boosts);
+    if (keys.length > 200) delete s.boosts[keys[0]];
+
+    if (!Mopapa.store.save()) {
+      s.boosts = JSON.parse(before);
+      return false;
+    }
+
+    return true;
+  }
+
+  function clearConfirmed() {
+    var s = learnedData();
+    if (!s) return false;
+
+    var before = s.boosts;
+    s.boosts = {};
+
+    if (!Mopapa.store.save()) {
+      s.boosts = before;
+      return false;
+    }
+
+    return true;
+  }
+
+  // Of these entries, the one the person tapped before for this question.
+  // Only returns something when exactly one was tapped.
+  function confirmedBySig(entries, sig) {
+    var s = learnedData();
+    var bucket = s && sig ? s.boosts[sig] : null;
+
+    if (!bucket) return null;
+
+    var hits = entries.filter(function (e) {
+      return e && bucket[e.id] > 0;
+    });
+
+    return hits.length === 1 ? hits[0] : null;
+  }
+
+  function logUnanswered(q) {
+    var s = learnedData();
+    var text = String(q || '').trim().slice(0, 200);
+
+    if (!s || !text) return false;
+
+    var before = s.unanswered;
+    var key = text.toLowerCase();
+
+    s.unanswered = [{ q: text, at: new Date().toISOString() }]
+      .concat(before.filter(function (u) {
+        return u.q.toLowerCase() !== key;
+      }))
+      .slice(0, 30);
+
+    if (!Mopapa.store.save()) {
+      s.unanswered = before;
+      return false;
+    }
+
+    return true;
+  }
+
+  function clearUnanswered() {
+    var s = learnedData();
+    if (!s) return false;
+
+    var before = s.unanswered;
+    s.unanswered = [];
+
+    if (!Mopapa.store.save()) {
+      s.unanswered = before;
+      return false;
+    }
+
+    return true;
+  }
+
+  // A read-only summary for the screen.
+  function learned() {
+    var s = learnedData();
+    var taps = 0;
+
+    if (!s) return { aliases: [], unanswered: [], taps: 0 };
+
+    Object.keys(s.boosts).forEach(function (k) {
+      taps += Object.keys(s.boosts[k]).length;
+    });
+
+    return {
+      aliases: s.aliases.map(function (p) { return [p[0], p[1]]; }),
+      unanswered: s.unanswered.map(function (u) {
+        return { q: u.q, at: u.at };
+      }),
+      taps: taps
+    };
   }
 
   function locationMatchScore(entry, terms) {
@@ -862,6 +1248,38 @@ function textDateMatchesFilter(e, filter) {
       };
     }
 
+    // "How much did I spend on the car" means add them up.
+    if (/\b(total|altogether|spend|spent|spending)\b/.test(n)) {
+      var sum = 0;
+      var counted = [];
+
+      priced.forEach(function (e) {
+        var v = parseFloat(
+          String(Mopapa.rules.money(e.text)).replace(/[£,]/g, '')
+        );
+
+        if (!isNaN(v)) {
+          sum += v;
+          counted.push(e);
+        }
+      });
+
+      return {
+        answer: 'You spent ' + formatMoney(sum) + ' in total across ' +
+          counted.length + ' entries.',
+        sources: counted.slice(0, 8)
+      };
+    }
+
+    var tappedCost = confirmedBySig(priced, signatureOf(q));
+
+    if (tappedCost) {
+      return {
+        answer: 'It cost ' + Mopapa.rules.money(tappedCost.text) + '.',
+        sources: [tappedCost]
+      };
+    }
+
     return {
       answer: 'I found multiple matching entries with costs. Which job or purchase do you mean?',
       sources: priced.slice(0, 5)
@@ -922,7 +1340,10 @@ function textDateMatchesFilter(e, filter) {
 
     var room = roomForQuestion(q);
     var date = explicitDateFilter(q, now) || dateFilter(q, now);
+    applyLearned();
+
     var terms = queryTerms(q, room);
+    var sig = terms.slice().sort().join(' ');
 
     if (
       !terms.length &&
@@ -963,7 +1384,7 @@ function textDateMatchesFilter(e, filter) {
 
     // Nothing exact: look for close matches (typos, aliases, partial).
     // The room guess only boosts the ranking here, it never hides entries.
-    if (!matches.length && terms.length) {
+    if (!matches.length && terms.length && !isCostQuestion(q)) {
       var closest = rankedMatches(
         all.filter(function (e) {
           return !date ||
@@ -971,7 +1392,8 @@ function textDateMatchesFilter(e, filter) {
             textDateMatchesFilter(e, date);
         }),
         terms,
-        room
+        room,
+        sig
       );
 
       if (closest.length) {
@@ -1020,6 +1442,18 @@ function textDateMatchesFilter(e, filter) {
         scoredMatches[0].score > scoredMatches[1].score
       ) {
         matches = [scoredMatches[0].entry];
+      }
+    }
+
+    // Structured answers: newest saved location wins, and place lists
+    // only show things whose newest location is that place.
+    if (!date) {
+      var placeList = structuredItems(q, all);
+      if (placeList) return placeList;
+
+      if (isLocationQuestion) {
+        var placeAnswer = structuredWhere(terms, all);
+        if (placeAnswer) return placeAnswer;
       }
     }
 
@@ -1146,6 +1580,15 @@ function textDateMatchesFilter(e, filter) {
             distinctWhen.push(key);
           }
         });
+
+        if (distinctWhen.length > 1) {
+          var tappedWhen = confirmedBySig(dated, sig);
+
+          if (tappedWhen) {
+            dated = [tappedWhen];
+            distinctWhen = [new Date(tappedWhen.when).getTime()];
+          }
+        }
 
         if (distinctWhen.length > 1) {
           return {
@@ -1323,13 +1766,25 @@ function textDateMatchesFilter(e, filter) {
       return answerCost(q, all, room, date);
     }
 
+    // Hide entries that a newer entry has replaced (never hide everything).
+    var currentMap = currentLocations(all);
+    var beforeStale = matches.length;
+    var fresh = matches.filter(function (e) {
+      return !isStale(e, currentMap);
+    });
+
+    if (fresh.length) matches = fresh;
+
+    var hiddenStale = beforeStale - matches.length;
+
     if (!matches.length) {
       var scope = date ? ' for ' + date.label : '';
 
       return {
         answer: 'I could not find anything matching that' + scope +
           '. Try different words, or check the rooms in Mopapa.',
-        sources: []
+        sources: [],
+        missed: true
       };
     }
 
@@ -1387,6 +1842,14 @@ function textDateMatchesFilter(e, filter) {
       lead += ' Showing the newest ' + shown.length + '.';
     }
 
+    var staleNote = hiddenStale
+      ? ' I hid ' + hiddenStale + ' older ' +
+        (hiddenStale === 1 ? 'entry' : 'entries') +
+        ' that a newer one replaced.'
+      : '';
+
+    lead += staleNote;
+    
     if (isItemsQuestion) {
       return {
         answer: 'I found these items:\n' +
@@ -1399,7 +1862,7 @@ function textDateMatchesFilter(e, filter) {
     
     if (directQuestion && shown.length === 1) {
       return {
-        answer: 'You saved this: ' + shown[0].text,
+        answer: 'You saved this: ' + shown[0].text + staleNote,
         sources: shown
       };
     }
@@ -1412,7 +1875,7 @@ function textDateMatchesFilter(e, filter) {
         answer: 'You saved ' + shown.length + ' items:\n' +
           shown.map(function (entry) {
             return '• ' + entry.text;
-          }).join('\n'),
+          }).join('\n') + staleNote,
         sources: shown
       };
     }
@@ -1425,6 +1888,13 @@ function textDateMatchesFilter(e, filter) {
 
   return {
     answer: answer,
-    addAlias: addAlias
+    addAlias: addAlias,
+    teachAlias: teachAlias,
+    forgetAlias: forgetAlias,
+    confirmSource: confirmSource,
+    clearConfirmed: clearConfirmed,
+    logUnanswered: logUnanswered,
+    clearUnanswered: clearUnanswered,
+    learned: learned
   };
 })();

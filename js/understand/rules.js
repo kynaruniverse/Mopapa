@@ -149,6 +149,52 @@ Mopapa.rules = (function () {
     return m ? '£' + m[1] : null;
   }
 
+  // Every £ amount in the text, as numbers.
+  function moneyAll(text) {
+    var out = [], m;
+    var re = /£\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g;
+    while ((m = re.exec(String(text))) !== null) {
+      out.push(parseFloat(m[1].replace(/,/g, '')));
+    }
+    return out;
+  }
+
+  // "Keys are in the kitchen drawer", "Car is parked on level 3"
+  var FACT_RE = /^(.+?)\s+(is|are)\s+(?:now\s+|currently\s+|always\s+|still\s+)?(?:(?:kept|left|stored|put|placed|parked|hidden|sitting|located)\s+)?(in|inside|on|under|behind|beside|next to|within|at)\s+(.+?)[.!?\s]*$/i;
+  var NOT_SUBJECT_RE = /^(?:i|we|you|he|she|they|it|there|this|that|these|those|what|who|where|when|why|how)\b/i;
+  var TIMEISH_RE = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|june|july|august|september|october|november|december|tomorrow|today|tonight|yesterday|noon|midday)\b|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\b\d{1,2}(?:st|nd|rd|th)\b|\d{1,2}\/\d{1,2}|^\d{1,2}(?::\d{2})?$/i;
+  var LEAD_DET_RE = /^(?:the|my|our|a|an)\s+/i;
+
+  // Pulls structure out of a saved sentence. Returns { fact, amounts }.
+  // fact is null unless the text says where something is.
+  function extract(text) {
+    var t = String(text || '').replace(/\s+/g, ' ').trim();
+    var res = { fact: null, amounts: moneyAll(t) };
+    var m = t.match(FACT_RE);
+    if (!m) return res;
+
+    var subject = m[1].replace(LEAD_DET_RE, '').trim();
+    var where = m[4].trim();
+
+    if (!subject || subject.split(' ').length > 6) return res;
+    if (NOT_SUBJECT_RE.test(subject) || TIMEISH_RE.test(where)) return res;
+
+    var items = subject.split(/\s*(?:,|&|\band\b)\s*/i)
+      .map(function (s) { return s.replace(LEAD_DET_RE, '').trim().toLowerCase(); })
+      .filter(Boolean);
+    if (!items.length) return res;
+
+    res.fact = {
+      attr: 'location',
+      items: items,
+      prep: m[3].toLowerCase(),
+      where: where.toLowerCase(),
+      value: (m[3] + ' ' + where).toLowerCase(),
+      plural: m[2].toLowerCase() === 'are' || items.length > 1
+    };
+    return res;
+  }
+
   var Q_START = /^(what|whats|when|whens|where|wheres|who|whos|whose|which|why|how|hows)\b/;
   var Q_AUX = /^(do|does|did|is|are|was|were|can|could|will|would|should|have|has|am)\s+(i|you|we|they|my|there|it|this|that|any|anything|anyone|everything)\b/;
   var Q_CMD = /^(show|tell|list|find|search)\s+(me\s+)?(what|when|where|who|which|how|all|my|everything|anything)\b/;
@@ -172,5 +218,5 @@ Mopapa.rules = (function () {
     return null;
   }
 
-  return { parse: parse, describe: describe, isPast: isPast, money: money, questionLevel: questionLevel, DAYS: DAYS, MONTHS: MONTHS };
+  return { parse: parse, describe: describe, isPast: isPast, money: money, moneyAll: moneyAll, extract: extract, questionLevel: questionLevel, DAYS: DAYS, MONTHS: MONTHS };
 })();

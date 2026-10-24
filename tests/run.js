@@ -171,6 +171,233 @@ test('capture code preserves text after failed save and does not ask for a room 
   assert.ok(!talk.includes('Mopapa.sorter.learn'));
 });
 
+function askWith(entries, question) {
+  const w = boot(stored(entries));
+  w.Mopapa.store.load();
+  return w.Mopapa.ask.answer(question);
+}
+
+function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
+
+test('extract: finds where things are and ignores dates and times', function () {
+  const w = boot({});
+  const r = w.Mopapa.rules;
+  assert.strictEqual(r.extract('Keys are in the kitchen drawer').fact.value, 'in the kitchen drawer');
+  assert.strictEqual(r.extract('Passport and charger are in the top drawer').fact.items.length, 2);
+  assert.strictEqual(r.extract('Car is parked on level 3').fact.where, 'level 3');
+  assert.strictEqual(r.extract('Dentist appointment is on 5 November').fact, null);
+  assert.strictEqual(r.extract('Meeting is at 3pm').fact, null);
+  assert.strictEqual(r.extract('I think the plan is on track').fact, null);
+  assert.deepStrictEqual(Array.from(r.extract('MOT £55 and tyres £1,210.50').amounts), [55, 1210.5]);
+});
+
+test('entries.add and updateText save and revert structured fields', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  const saved = w.Mopapa.entries.add({ text: 'Keys are in the kitchen drawer', room: 'notes' });
+  assert.strictEqual(saved.entry.fact.value, 'in the kitchen drawer');
+  assert.strictEqual(JSON.parse(w.localStorage._['mopapa.v1']).entries[0].fact.attr, 'location');
+  w.localStorage.failWrites = true;
+  assert.strictEqual(w.Mopapa.entries.updateText(saved.entry.id, 'Keys are in the car'), false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].fact.value, 'in the kitchen drawer');
+  w.localStorage.failWrites = false;
+  assert.strictEqual(w.Mopapa.entries.updateText(saved.entry.id, 'Keys are in the car'), true);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].fact.value, 'in the car');
+});
+
+test('ask: where uses the newest saved location, even for old entries without fields', function () {
+  const r = askWith([
+    { id: 'new', text: 'Keys are in the car', room: 'notes', created: ago(1) },
+    { id: 'old', text: 'Keys are in the kitchen drawer', room: 'notes', created: ago(5) }
+  ], 'Where did I leave my keys?');
+  assert.ok(/in the car/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources[0].id, 'new');
+});
+
+test('ask: flat number and plural are kept', function () {
+  const r = askWith([
+    { id: 'a', text: 'Flat 4 key is in the hall', room: 'notes', created: ago(2) },
+    { id: 'b', text: 'Car key is in my coat', room: 'notes', created: ago(2) }
+  ], 'Where is the flat 4 key?');
+  assert.ok(/in the hall/.test(r.answer), r.answer);
+});
+
+test('ask: what is in a place lists only items whose newest location is there', function () {
+  const entries = [
+    { id: 'c', text: 'Charger is in the car', room: 'notes', created: ago(1) },
+    { id: 'p', text: 'Passport and charger are in the top drawer', room: 'notes', created: ago(4) },
+    { id: 'k', text: 'Keys are in the kitchen drawer', room: 'notes', created: ago(3) }
+  ];
+  ['What things are in the top drawer?', "What's in the top drawer?"].forEach(function (q) {
+    const r = askWith(entries, q);
+    assert.ok(/passport/.test(r.answer) && !/charger/.test(r.answer) && !/key/.test(r.answer), q + ' -> ' + r.answer);
+  });
+});
+
+test('ask: generic list hides replaced entries and says so', function () {
+  const r = askWith([
+    { id: 'new', text: 'Keys are in the car', room: 'notes', created: ago(1) },
+    { id: 'old', text: 'Keys are in the kitchen drawer', room: 'notes', created: ago(5) }
+  ], 'What do I know about keys?');
+  assert.strictEqual(r.sources.length, 1);
+  assert.strictEqual(r.sources[0].id, 'new');
+  assert.ok(/hid 1 older entry/.test(r.answer), r.answer);
+});
+
+test('ask: spending questions add up the amounts', function () {
+  const r = askWith([
+    { id: 'a', text: 'Car MOT £55', room: 'notes', created: ago(9) },
+    { id: 'b', text: 'Car tyres £210', room: 'notes', created: ago(3) },
+    { id: 'c', text: 'Boiler service £120', room: 'notes', created: ago(2) }
+  ], 'How much did I spend on the car?');
+  assert.ok(/£265/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 2);
+});
+
+test('ask: past date questions stay in the past', function () {
+  const y = new Date().getFullYear();
+  const r = askWith([
+    { id: 'a', text: 'Paid £120 for the boiler service on 3 March ' + y, room: 'notes', created: ago(1) }
+  ], 'How much did I pay for the boiler service on 3 March?');
+  assert.ok(/£120/.test(r.answer), r.answer);
+});
+
+test('ask: typos and aliases give closest matches, unknown things give no guess', function () {
+  const entries = [
+    { id: 'p', text: 'Passport is in the top drawer', room: 'notes', created: ago(2) },
+    { id: 'b', text: 'Bin day is Thursday', room: 'notes', created: ago(2) }
+  ];
+  const typo = askWith(entries, 'Where is my pasport?');
+  assert.ok(/in the top drawer/.test(typo.answer), typo.answer);
+  assert.ok(/Bin day/.test(askWith(entries, 'What did I save about rubbish?').answer));
+  const none = askWith(entries, 'Where is my umbrella?');
+  assert.ok(/could not find/i.test(none.answer), none.answer);
+  assert.strictEqual(none.sources.length, 0);
+});
+
+test('ask: location verbs and generic words do not block a match', function () {
+  const r = askWith([{ id: 'k', text: 'Keys are in the kitchen drawer', room: 'notes', created: ago(2) }], 'Where did I put my keys?');
+  assert.ok(/kitchen drawer/.test(r.answer), r.answer);
+});
+
+function reboot(w) {
+  const copy = Object.assign({}, w.localStorage._);
+  const next = boot(copy);
+  next.Mopapa.store.load();
+  return next;
+}
+
+test('learning: taught words persist, work after reload, and leave room learning alone', function () {
+  const learned = { grocery: { wishlist: 99 } };
+  const w = boot(stored([{ id: 's', text: 'Sofa is in the lounge', room: 'notes', created: ago(2) }], learned));
+  w.Mopapa.store.load();
+  const before = JSON.stringify(w.Mopapa.store.data().learned);
+  assert.ok(/could not find/i.test(w.Mopapa.ask.answer('Where is the couch?').answer));
+  assert.strictEqual(w.Mopapa.ask.teachAlias('couch', 'sofa'), true);
+  assert.ok(/in the lounge/.test(w.Mopapa.ask.answer('Where is the couch?').answer));
+  assert.strictEqual(JSON.stringify(w.Mopapa.store.data().learned), before);
+  const again = reboot(w);
+  assert.ok(/in the lounge/.test(again.Mopapa.ask.answer('Where is the couch?').answer));
+  assert.strictEqual(again.Mopapa.ask.forgetAlias('couch', 'sofa'), true);
+  const gone = again.Mopapa.ask.answer('Where is the couch?');
+  assert.ok(/could not find/i.test(gone.answer));
+  assert.strictEqual(gone.missed, true);
+});
+
+test('learning: failed saves are not remembered', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.localStorage.failWrites = true;
+  assert.strictEqual(w.Mopapa.ask.teachAlias('couch', 'sofa'), false);
+  assert.strictEqual(w.Mopapa.ask.logUnanswered('Where is my umbrella?'), false);
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where is my umbrella?', 'x'), false);
+  const l = w.Mopapa.ask.learned();
+  assert.strictEqual(l.aliases.length + l.unanswered.length + l.taps, 0);
+  assert.strictEqual(w.Mopapa.ask.teachAlias('two words', 'sofa'), false);
+});
+
+test('learning: a tapped source settles a "which do you mean" cost question', function () {
+  const w = boot(stored([
+    { id: 'a', text: 'Car service £100', room: 'notes', created: ago(8) },
+    { id: 'b', text: 'Car service £150', room: 'notes', created: ago(2) }
+  ]));
+  w.Mopapa.store.load();
+  const q = 'How much did the car service cost?';
+  assert.ok(/Which job or purchase/.test(w.Mopapa.ask.answer(q).answer));
+  assert.strictEqual(w.Mopapa.ask.confirmSource(q, 'b'), true);
+  assert.ok(/^It cost £150/.test(w.Mopapa.ask.answer(q).answer), w.Mopapa.ask.answer(q).answer);
+  assert.strictEqual(w.Mopapa.ask.clearConfirmed(), true);
+  assert.ok(/Which job or purchase/.test(w.Mopapa.ask.answer(q).answer));
+});
+
+test('cost questions get a price, not a closest-matches list', function () {
+  const r = askWith([
+    { id: 'a', text: 'Boiler service visit £120', room: 'notes', created: ago(3) },
+    { id: 'b', text: 'Call the plumber', room: 'todo', created: ago(2) },
+    { id: 'c', text: 'Buy bin bags', room: 'wishlist', created: ago(1) }
+  ], 'How much did the boiler service visit cost?');
+  assert.ok(/^It cost £120/.test(r.answer), r.answer);
+});
+
+test('learning: a tapped appointment settles a "which entry" date question', function () {
+  const soon = new Date(Date.now() + 3 * 86400000).toISOString();
+  const later = new Date(Date.now() + 10 * 86400000).toISOString();
+  const w = boot(stored([
+    { id: 'a', text: 'Dentist check up', room: 'appointments', when: soon, created: ago(2) },
+    { id: 'b', text: 'Dentist hygiene visit', room: 'appointments', when: later, created: ago(1) }
+  ]));
+  w.Mopapa.store.load();
+  const q = 'When is the dentist?';
+  assert.ok(/Which entry do you mean/.test(w.Mopapa.ask.answer(q).answer));
+  w.Mopapa.ask.confirmSource(q, 'b');
+  const r = w.Mopapa.ask.answer(q);
+  assert.ok(!/Which entry do you mean/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 1);
+  assert.strictEqual(r.sources[0].id, 'b');
+});
+
+test('learning: unanswered questions are logged once, capped, and clearable', function () {
+  const w = boot(stored([{ id: 'a', text: 'Call mum', room: 'todo', created: ago(1) }]));
+  w.Mopapa.store.load();
+  assert.strictEqual(w.Mopapa.ask.answer('Where is my umbrella?').missed, true);
+  assert.notStrictEqual(w.Mopapa.ask.answer('Where is mum?').missed, true);
+  w.Mopapa.ask.logUnanswered('Where is my umbrella?');
+  w.Mopapa.ask.logUnanswered('where is my umbrella?');
+  assert.strictEqual(w.Mopapa.ask.learned().unanswered.length, 1);
+  for (let i = 0; i < 40; i++) w.Mopapa.ask.logUnanswered('question number ' + i);
+  assert.strictEqual(w.Mopapa.ask.learned().unanswered.length, 30);
+  assert.strictEqual(w.Mopapa.ask.clearUnanswered(), true);
+  assert.strictEqual(w.Mopapa.ask.learned().unanswered.length, 0);
+});
+
+test('learning: damaged saved learning data is cleaned on load', function () {
+  const w = boot({ 'mopapa.v1': JSON.stringify({
+    entries: [], learned: {}, customRooms: [],
+    ask: {
+      aliases: [['a'], 'x', ['gp', 'doctor']],
+      boosts: { sig: { id1: 1, bad: 'x' }, broken: 5 },
+      unanswered: [{ q: 'ok' }, { q: 5 }, null]
+    }
+  }) });
+  w.Mopapa.store.load();
+  const l = w.Mopapa.ask.learned();
+  assert.strictEqual(l.aliases.length, 1);
+  assert.strictEqual(l.unanswered.length, 1);
+  assert.strictEqual(l.taps, 1);
+});
+
+test('learning screen is wired in and teaches without touching room learning', function () {
+  const talk = fs.readFileSync(__dirname + '/../js/ui/talk.js', 'utf8');
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  const main = fs.readFileSync(__dirname + '/../js/main.js', 'utf8');
+  assert.ok(talk.includes('Tap the one you meant'));
+  assert.ok(talk.includes('teachAliasFrom'));
+  assert.ok(!talk.includes('Mopapa.sorter.learn'));
+  assert.ok(html.includes('js/ui/ask-learning.js'));
+  assert.ok(html.includes('id="ask-learning"'));
+  assert.ok(main.includes('M.askLearningUI.init();'));
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }

@@ -103,6 +103,19 @@
         <summary>How search and Ask work</summary>
         <p>Search matches words in saved text on this device. Ask uses simple text matching, not an AI memory-retrieval system. It can miss relevant entries or return imperfect matches, so check any saved entries shown as sources.</p>
       </details>
+      <details id="ask-learning" class="memory-search-help ask-learning">
+        <summary>What Ask has learned</summary>
+        <p>This stays in this browser and is included in Back up data. Remove anything you don’t want Ask to use.</p>
+        <h3>Words I treat as the same</h3>
+        <ul id="ask-learning-aliases" class="ask-learning-list"></ul>
+        <h3>Questions I couldn’t answer</h3>
+        <ul id="ask-learning-misses" class="ask-learning-list"></ul>
+        <div class="ask-learning-actions">
+          <button type="button" id="ask-learning-clear-misses" class="memory-button">Clear this list</button>
+          <button type="button" id="ask-learning-clear-taps" class="memory-button">Forget the sources I tapped</button>
+        </div>
+        <p id="ask-learning-status" class="memory-search-status" role="status" aria-live="polite"></p>
+      </details>
       <ul id="memory-search-results" class="memory-search-results" hidden></ul>
     </section>
 
@@ -175,6 +188,7 @@
 <script src="js/ui/search.js"></script>
 <script src="js/ui/keepsakes.js"></script>
 <script src="js/ui/tag-explorer.js"></script>
+<script src="js/ui/ask-learning.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

@@ -11,6 +11,7 @@
   M.searchUI.init();
   M.resurfaceUI.init();
   M.customRoomsUI.init();
+  M.askLearningUI.init();
 
   if (M.store.data().corrupt) M.dialog.notice('Your saved data could not be read. A copy was kept in this browser.');
 

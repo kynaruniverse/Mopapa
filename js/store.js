@@ -2,7 +2,52 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var data = { entries: [], learned: {}, customRooms: [] };
+  var data = { entries: [], learned: {}, customRooms: [], ask: { aliases: [], boosts: {}, unanswered: [] } };
+
+  // What Ask has learned from the person. Kept apart from "learned",
+  // which belongs to the room sorter and stays untouched.
+  function cleanAsk(a) {
+    var out = { aliases: [], boosts: Object.create(null), unanswered: [] };
+    if (!a || typeof a !== 'object') return out;
+
+    if (Array.isArray(a.aliases)) {
+      a.aliases.forEach(function (p) {
+        if (
+          Array.isArray(p) && p.length === 2 &&
+          typeof p[0] === 'string' && typeof p[1] === 'string' &&
+          out.aliases.length < 50
+        ) {
+          out.aliases.push([p[0].slice(0, 30), p[1].slice(0, 30)]);
+        }
+      });
+    }
+
+    if (a.boosts && typeof a.boosts === 'object') {
+      Object.keys(a.boosts).slice(0, 200).forEach(function (sig) {
+        var ids = a.boosts[sig];
+        if (!ids || typeof ids !== 'object') return;
+
+        var clean = Object.create(null);
+        Object.keys(ids).slice(0, 10).forEach(function (id) {
+          if (typeof ids[id] === 'number') clean[id] = ids[id];
+        });
+        out.boosts[sig] = clean;
+      });
+    }
+
+    if (Array.isArray(a.unanswered)) {
+      a.unanswered.forEach(function (u) {
+        if (u && typeof u.q === 'string' && out.unanswered.length < 30) {
+          out.unanswered.push({
+            q: u.q.slice(0, 200),
+            at: typeof u.at === 'string' ? u.at : ''
+          });
+        }
+      });
+    }
+
+    return out;
+  }
 
   function cleanEntries(list) {
   return list.filter(function (e) {
@@ -20,6 +65,7 @@ function load() {
         data.entries = cleanEntries(p.entries);
         data.learned = p.learned && typeof p.learned === 'object' ? p.learned : {};
         data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
+        data.ask = cleanAsk(p.ask);
       } else {
         throw new Error('unexpected shape');
       }
@@ -64,7 +110,8 @@ function load() {
         data = {
           entries: cleanEntries(p.entries),
           learned: p.learned && typeof p.learned === 'object' ? p.learned : {},
-          customRooms: Array.isArray(p.customRooms) ? p.customRooms : []
+          customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
+          ask: cleanAsk(p.ask)
         };
         if (!save()) {
           data = previous;

@@ -64,7 +64,16 @@ Mopapa.entries = (function () {
     });
   }
 
+  // Structure saved with each entry: where something is, and any £ amounts.
+  function analyse(text) {
+    var info = Mopapa.rules && Mopapa.rules.extract
+      ? Mopapa.rules.extract(text)
+      : { fact: null, amounts: [] };
+    return { fact: info.fact || null, amounts: info.amounts || [] };
+  }
+
   function add(o) {
+    var info = analyse(o.text);
     var e = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
       text: o.text,
@@ -72,6 +81,8 @@ Mopapa.entries = (function () {
       when: o.when || null,
       hasTime: !!o.hasTime,
       amount: o.amount || null,
+      fact: info.fact,
+      amounts: info.amounts.length ? info.amounts : null,
       created: new Date().toISOString(),
       done: false
     };
@@ -93,11 +104,18 @@ Mopapa.entries = (function () {
     if (!nextText || nextText.length > 1000) return false;
 
     var previousText = e.text;
+    var previousFact = e.fact;
+    var previousAmounts = e.amounts;
+    var info = analyse(nextText);
     e.text = nextText;
+    e.fact = info.fact;
+    e.amounts = info.amounts.length ? info.amounts : null;
     if (Mopapa.store.save()) return true;
 
-    // Restore the in-memory value if the device could not save it.
+    // Restore the in-memory values if the device could not save them.
     e.text = previousText;
+    e.fact = previousFact;
+    e.amounts = previousAmounts;
     return false;
   }
 

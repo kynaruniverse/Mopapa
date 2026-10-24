@@ -1,7 +1,7 @@
 var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.talk = (function () {
-  var input, form, box, busy = false;
+  var input, form, box, busy = false, lastQuestion = '';
 
   function init() {
     input = document.getElementById('talk-input');
@@ -51,12 +51,27 @@ Mopapa.talk = (function () {
 
     var heading = document.createElement('div');
     heading.className = 'source-heading';
-    heading.textContent = 'From your saved entries:';
+    heading.textContent = entries.length > 1
+      ? 'Tap the one you meant:'
+      : 'From your saved entries:';
     box.appendChild(heading);
 
     entries.forEach(function (entry) {
       var card = document.createElement('div');
-      card.className = 'source-entry';
+      card.className = 'source-entry tappable';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+
+      var choose = function () { chooseSource(entry, card); };
+
+      card.addEventListener('click', choose);
+      card.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter' || ev.key === ' ') {
+          ev.preventDefault();
+          choose();
+        }
+      });
+
       var text = document.createElement('div');
       text.textContent = entry.text;
       card.appendChild(text);
@@ -81,9 +96,38 @@ Mopapa.talk = (function () {
     box.hidden = false;
   }
 
+  function chooseSource(entry, card) {
+    if (!lastQuestion || !Mopapa.ask.confirmSource) return;
+
+    if (Mopapa.ask.confirmSource(lastQuestion, entry.id)) {
+      card.classList.add('chosen');
+      Mopapa.pet.say('Got it. I will remember that one for questions like that.');
+      if (Mopapa.askLearningUI) Mopapa.askLearningUI.render();
+    } else {
+      Mopapa.pet.say("I couldn't save that on your device, so I won't remember it.");
+    }
+  }
+
+  function teachAliasFrom(a, b) {
+    if (Mopapa.ask.teachAlias(a, b)) {
+      input.value = '';
+      Mopapa.pet.say('Okay. When you ask, I will treat "' + a + '" and "' + b + '" as the same thing.');
+      if (Mopapa.askLearningUI) Mopapa.askLearningUI.render();
+    } else {
+      Mopapa.pet.say("I couldn't save that, so I won't use it. Use one word each, for example: by GP I mean doctor.");
+    }
+  }
+
   function submit() {
     var text = input.value.trim();
     if (!text || busy) return;
+
+    var taught = text.match(/^by\s+["“']?([a-z0-9]{2,30})["”']?\s+i\s+mean\s+["“']?([a-z0-9]{2,30})["”']?\s*\.?$/i);
+
+    if (taught) {
+      teachAliasFrom(taught[1], taught[2]);
+      return;
+    }
     var q = Mopapa.rules.questionLevel(text);
     var looksLikeQuestion = /^(when|what|who|where|why|how|which|whose|whom|is|are|am|was|were|do|does|did|can|could|would|will|should|has|have|had)\b/i.test(text.trim()) ||
       /\?$/.test(text.trim());
@@ -107,8 +151,17 @@ Mopapa.talk = (function () {
   }
 
   function noAnswer(text) {
+    lastQuestion = text;
+
     var result = Mopapa.ask.answer(text);
-    Mopapa.pet.say(result.answer);
+
+    Mopapa.pet.say(result.answer + (result.missed
+      ? ' If I should treat two words as the same, tell me, for example: by GP I mean doctor.'
+      : ''));
+
+    if (result.missed && Mopapa.ask.logUnanswered(text) && Mopapa.askLearningUI) {
+      Mopapa.askLearningUI.render();
+    }
     renderSources(result.sources);
     Mopapa.pet.react(result.sources.length ? 'helpful' : 'curious');
   }
