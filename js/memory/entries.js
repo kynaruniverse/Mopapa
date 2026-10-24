@@ -178,19 +178,6 @@ Mopapa.entries = (function () {
     return false;
   }
 
-  function remove(id) {
-    var l = list();
-    for (var i = 0; i < l.length; i++) {
-      if (l[i].id === id) {
-        var removed = l.splice(i, 1)[0];
-        if (Mopapa.store.save()) return true;
-        l.splice(i, 0, removed);
-        return false;
-      }
-    }
-    return false;
-  }
-
   function toggleDone(id) {
     var e = find(id);
     if (!e) return false;
