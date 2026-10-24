@@ -352,6 +352,20 @@ test('ask: spending questions add up the amounts', function () {
   assert.strictEqual(r.sources.length, 2);
 });
 
+test('ask: total spending without a subject adds only explicit spending entries', function () {
+  const r = askWith([
+    { id: 'g', text: 'I spent £12 on groceries', room: 'notes', created: ago(1) },
+    { id: 'c', text: 'I spent £8 on household cleaning products', room: 'notes', created: ago(2) },
+    { id: 'k', text: 'I paid £18.50 for the replacement kettle', room: 'notes', created: ago(3) }
+  ], 'How much did I spend in total?');
+
+  assert.ok(/£20/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 2);
+  assert.ok(r.sources.some(function (e) { return e.id === 'g'; }));
+  assert.ok(r.sources.some(function (e) { return e.id === 'c'; }));
+  assert.ok(!r.sources.some(function (e) { return e.id === 'k'; }));
+});
+
 test('ask: past date questions stay in the past', function () {
   const y = new Date().getFullYear();
   const r = askWith([
