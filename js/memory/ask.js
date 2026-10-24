@@ -12,7 +12,9 @@ Mopapa.ask = (function () {
     'didnt dont doesnt isnt wasnt werent hasnt havent wouldnt couldnt shouldnt ' +
     'have i ever been remember remind tell me put left leave leaves leaving kept keep park parked parking store stored storing hide hidden hiding place placed placing myself today yesterday tomorrow ' +
     'save saved saving saves record records recorded recording records remember remembered ' +
-    'add added adding create created creating get got retrieve retrieving'
+    'add added adding create created creating get got retrieve retrieving ' +
+    'leave leaving leaves park parked parking store stored storing ' +
+    'hide hid hidden place placed thing things object objects stuff'
   ).split(' ').reduce(function (o, w) {
     o[w] = true;
     return o;
@@ -23,6 +25,49 @@ Mopapa.ask = (function () {
     'appointments', 'feel', 'feeling', 'feelings', 'mood', 'moods', 'wish',
     'wishlist', 'list', 'idea', 'ideas', 'note', 'notes'
   ];
+
+  var ROOM_STEMS = ROOM_WORDS.map(function (w) { return stem(w); });
+
+  var ALIAS_GROUPS = [
+    ['gp', 'doctor', 'surgery'],
+    ['dentist', 'dental'],
+    ['boiler', 'heating'],
+    ['car', 'vehicle'],
+    ['holiday', 'vacation'],
+    ['phone', 'mobile'],
+    ['bin', 'rubbish', 'trash'],
+    ['tv', 'television']
+  ];
+
+  var ALIAS_MAP = {};
+
+  function linkAlias(from, to) {
+    if (!ALIAS_MAP[from]) ALIAS_MAP[from] = [];
+
+    if (ALIAS_MAP[from].indexOf(to) === -1) {
+      ALIAS_MAP[from].push(to);
+    }
+  }
+
+  function addAlias(a, b) {
+    var x = stem(norm(a));
+    var y = stem(norm(b));
+
+    if (!x || !y || x === y) return false;
+
+    linkAlias(x, y);
+    linkAlias(y, x);
+
+    return true;
+  }
+
+  ALIAS_GROUPS.forEach(function (group) {
+    group.forEach(function (a) {
+      group.forEach(function (b) {
+        addAlias(a, b);
+      });
+    });
+  });
 
   var DAY_NAMES = [
     'sunday', 'monday', 'tuesday', 'wednesday',
@@ -112,15 +157,34 @@ Mopapa.ask = (function () {
   }
 
   function queryTerms(q, roomId) {
-    var all = words(q);
+    var dateHit = extractTextDate(q);
+    var all = words(dateHit ? String(q).replace(dateHit.text, ' ') : q);
     var out = [];
     var seen = {};
     var selectedRoom = roomId ? Mopapa.roomById(roomId) : null;
     var customNameWords = (
       selectedRoom && selectedRoom.id.indexOf('custom_') === 0
-    ) ? words(selectedRoom.name) : [];
+    ) ? words(selectedRoom.name).map(function (w) { return stem(w); }) : [];
 
-    all.forEach(function (w) {
+    all.forEach(function (w, i) {
+      if (/^\d+$/.test(w)) {
+        var prevWord = all[i - 1];
+        var nextWord = all[i + 1] || '';
+
+        // Keep "flat 4" or "bus 38"; drop years, "at 3 pm" and loose numbers.
+        if (
+          prevWord && !STOP[prevWord] &&
+          !/^(19|20)\d\d$/.test(w) &&
+          !/^(am|pm)$/.test(nextWord) &&
+          !seen[w]
+        ) {
+          seen[w] = true;
+          out.push(w);
+        }
+
+        return;
+      }
+
       if (
         (w.length < 3 && w !== 'gp') ||
         STOP[w] ||
@@ -137,7 +201,7 @@ Mopapa.ask = (function () {
 
       if (seen[term]) return;
       if (customNameWords.indexOf(term) !== -1) return;
-      if (ROOM_WORDS.indexOf(term) !== -1) return;
+      if (ROOM_STEMS.indexOf(term) !== -1) return;
       if (DAY_NAMES.indexOf(term) !== -1) return;
 
       if (MONTH_NAMES.indexOf(term) !== -1) return;
@@ -145,7 +209,7 @@ Mopapa.ask = (function () {
       if ([
         'jan', 'feb', 'mar', 'apr', 'may', 'jun',
         'jul', 'aug', 'sep', 'sept', 'oct', 'nov',
-        'dec', 'room', 'house', 'den'
+        'dec', 'room'
       ].indexOf(term) !== -1) {
         return;
       }
@@ -311,84 +375,69 @@ Mopapa.ask = (function () {
   }
 
 
+  var MONTH_RE =
+    '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|' +
+    'aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
+
+  function monthIndex(name) {
+    var key = String(name).toLowerCase().slice(0, 3);
+
+    for (var i = 0; i < MONTH_NAMES.length; i++) {
+      if (MONTH_NAMES[i].slice(0, 3) === key) return i;
+    }
+
+    return -1;
+  }
+
   function extractTextDate(text) {
     var source = String(text || '');
-    var match = source.match(
-      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+(\d{4}))?\b/i
-    );
+    var day, month, year = null;
+    var match = source.match(new RegExp(
+      '\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?' + MONTH_RE +
+      '(?:\\s+(\\d{4}))?\\b', 'i'
+    ));
 
-    var monthFirst = false;
-
-    if (!match) {
-      match = source.match(
-        /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/i
-      );
-      monthFirst = !!match;
-    }
-
-    var numeric = false;
-
-    if (!match) {
-      match = source.match(
-        /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/
-      );
-      numeric = !!match;
-    }
-
-    if (!match) return null;
-
-    var day;
-    var month;
-    var year;
-
-    if (numeric) {
-      // Match the capture parser's day/month/year interpretation.
-      day = parseInt(match[1], 10);
-      month = parseInt(match[2], 10) - 1;
-      year = match[3] ? parseInt(match[3], 10) : null;
-
-      if (year !== null && year < 100) {
-        year += year < 50 ? 2000 : 1900;
-      }
-    } else if (monthFirst) {
-      day = parseInt(match[2], 10);
-      month = MONTH_NAMES.indexOf(
-        match[1].toLowerCase().slice(0, 3) === 'sep'
-          ? 'september'
-          : MONTH_NAMES.filter(function (name) {
-              return name.slice(0, 3) === match[1].toLowerCase().slice(0, 3);
-            })[0]
-      );
-      year = match[3] ? parseInt(match[3], 10) : null;
+    if (match) {
+      day = Number(match[1]);
+      month = monthIndex(match[2]);
+      year = match[3] ? Number(match[3]) : null;
     } else {
-      day = parseInt(match[1], 10);
-      month = MONTH_NAMES.indexOf(
-        MONTH_NAMES.filter(function (name) {
-          return name.slice(0, 3) === match[2].toLowerCase().slice(0, 3);
-        })[0]
-      );
-      year = match[3] ? parseInt(match[3], 10) : null;
+      match = source.match(new RegExp(
+        '\\b' + MONTH_RE +
+        '\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b', 'i'
+      ));
+
+      if (match) {
+        month = monthIndex(match[1]);
+        day = Number(match[2]);
+        year = match[3] ? Number(match[3]) : null;
+      } else {
+        // Numeric dates use UK day/month/year order.
+        match = source.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
+
+        if (!match) return null;
+
+        day = Number(match[1]);
+        month = Number(match[2]) - 1;
+        year = match[3] ? Number(match[3]) : null;
+
+        if (year !== null && year < 100) {
+          year += year < 50 ? 2000 : 1900;
+        }
+      }
     }
 
-    if (month < 0 || month > 11 || day < 1 || day > 31) {
-      return null;
-    }
+    if (month < 0 || month > 11 || day < 1 || day > 31) return null;
 
-    var checkYear = year || 2000;
-    var check = new Date(checkYear, month, day);
+    var check = new Date(year || 2000, month, day);
 
-    if (
-      check.getFullYear() !== checkYear ||
-      check.getMonth() !== month ||
-      check.getDate() !== day
-    ) {
-      return null;
-    }
+    if (check.getMonth() !== month || check.getDate() !== day) return null;
 
     return {
       day: day,
       month: month,
       year: year,
+      text: match[0],
       label: day + ' ' +
         MONTH_NAMES[month].charAt(0).toUpperCase() +
         MONTH_NAMES[month].slice(1) +
@@ -396,10 +445,13 @@ Mopapa.ask = (function () {
     };
   }
 
-
   
 function textDateMatchesFilter(e, filter) {
-    if (!filter || !filter.due || !filter.start || !filter.end) {
+    if (
+      !filter || !filter.start || !filter.end ||
+      (!filter.due && !filter.explicit) ||
+      filter.logged
+    ) {
       return false;
     }
 
@@ -426,175 +478,125 @@ function textDateMatchesFilter(e, filter) {
 }
 
   function explicitDateFilter(q, now) {
-    var source = String(q || '');
     var n = norm(q);
-    var months = {};
-    var match;
-    var day;
-    var month;
-    var year;
+    var parsed = extractTextDate(q);
+
+    if (!parsed) return null;
+
     var loggedQuestion = isLoggedQuestion(n);
-
-    MONTH_NAMES.forEach(function (name, index) {
-      months[name] = index;
-      months[name.slice(0, 3)] = index;
-      if (name === 'september') months.sept = index;
-    });
-
-    var monthPattern =
-      '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|' +
-      'may|june?|july?|aug(?:ust)?|sept?(?:ember)?|' +
-      'oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
-
-    // Day first: 5 November 2026, 5th of November, 5 Nov
-    match = source.match(new RegExp(
-      '\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?' +
-      monthPattern + '(?:\\s+(\\d{4}))?\\b',
-      'i'
-    ));
-
-    if (match) {
-      day = Number(match[1]);
-      month = months[match[2].toLowerCase()];
-      year = match[3] ? Number(match[3]) : null;
-    } else {
-      // Month first: Nov 5 2026, November 5th 2026
-      match = source.match(new RegExp(
-        '\\b' + monthPattern +
-        '\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b',
-        'i'
-      ));
-
-      if (match) {
-        month = months[match[1].toLowerCase()];
-        day = Number(match[2]);
-        year = match[3] ? Number(match[3]) : null;
-      } else {
-        // Numeric dates use UK day/month/year order.
-        match = source.match(
-          /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/
-        );
-
-        if (!match) return null;
-
-        day = Number(match[1]);
-        month = Number(match[2]) - 1;
-        year = match[3] ? Number(match[3]) : null;
-
-        if (year !== null && year < 100) {
-          year += year < 50 ? 2000 : 1900;
-        }
-      }
-    }
-
-    if (
-      !Number.isInteger(day) ||
-      !Number.isInteger(month) ||
-      month < 0 ||
-      month > 11 ||
-      day < 1 ||
-      day > 31
-    ) {
-      return null;
-    }
+    var pastTense = /\b(did|was|were|paid|spent|bought|saved|logged|recorded)\b/.test(n);
+    var year = parsed.year;
 
     if (year === null) {
       year = now.getFullYear();
 
-      var provisional = new Date(year, month, day);
+      var provisional = new Date(year, parsed.month, parsed.day);
 
-      if (
-        provisional.getFullYear() !== year ||
-        provisional.getMonth() !== month ||
-        provisional.getDate() !== day
-      ) {
-        return null;
-      }
+      if (provisional.getMonth() !== parsed.month) return null;
 
-      if (!loggedQuestion && provisional < localDay(now)) {
+      if (!loggedQuestion && !pastTense && provisional < localDay(now)) {
         year++;
       }
     }
 
-    var start = new Date(year, month, day);
+    var start = new Date(year, parsed.month, parsed.day);
 
     if (
       start.getFullYear() !== year ||
-      start.getMonth() !== month ||
-      start.getDate() !== day
+      start.getMonth() !== parsed.month ||
+      start.getDate() !== parsed.day
     ) {
       return null;
     }
 
-    var due = !loggedQuestion && isScheduledDateQuestion(n);
-
     return {
       start: start,
-      end: new Date(year, month, day + 1),
-      label: day + ' ' +
-        MONTH_NAMES[month].charAt(0).toUpperCase() +
-        MONTH_NAMES[month].slice(1) + ' ' + year,
-      due: due,
+      end: new Date(year, parsed.month, parsed.day + 1),
+      label: parsed.day + ' ' +
+        MONTH_NAMES[parsed.month].charAt(0).toUpperCase() +
+        MONTH_NAMES[parsed.month].slice(1) + ' ' + year,
+      due: !loggedQuestion && isScheduledDateQuestion(n),
       explicit: true,
+      logged: loggedQuestion,
       year: year
     };
   }
 
-  function stem(w) {
+    function stem(w) {
     var irregular = {
-      paid: 'pay',
-      spent: 'spend',
-      spending: 'spend',
-      bought: 'buy',
-      buying: 'buy'
+      paid: 'pay', spent: 'spend', spending: 'spend',
+      bought: 'buy', buying: 'buy', kept: 'keep', left: 'leave'
     };
 
-    if (irregular[w]) return irregular[w];
+    if (irregular[w]) w = irregular[w];
 
-    // Keep common English plural endings consistent.
-    if (w.length > 4 && /ies$/.test(w)) {
-      return w.slice(0, -3) + 'y';
+    var base = w;
+
+    if (base.length > 4 && /ies$/.test(base)) {
+      base = base.slice(0, -3) + 'y';
+    } else if (base.length > 4 && /(ches|shes|sses|xes|zes)$/.test(base)) {
+      base = base.slice(0, -2);
+    } else if (base.length > 3 && /s$/.test(base) && !/ss$/.test(base)) {
+      base = base.slice(0, -1);
     }
 
-    if (w.length > 4 && /(ches|shes|sses|xes|zes)$/.test(w)) {
-      return w.slice(0, -2);
+    var verb = null;
+
+    if (base.length > 5 && /ing$/.test(base)) {
+      verb = base.slice(0, -3);
+    } else if (base.length > 4 && /ed$/.test(base)) {
+      verb = base.slice(0, -2);
     }
 
-    if (w.length > 3 && /s$/.test(w) && !/ss$/.test(w)) {
-      return w.slice(0, -1);
+    // Only accept the cut if a vowel remains ("string" stays "string").
+    if (verb && /[aeiouy]/.test(verb)) {
+      base = verb.replace(/([^aeiouylsz])\1$/, '$1'); // stopp -> stop
     }
 
-    // Handle common verb endings.
-    if (w.length > 5 && /ing$/.test(w)) {
-      return w.slice(0, -3);
+    // store/stored/storing all become "stor".
+    if (base.length > 3 && /e$/.test(base)) {
+      base = base.slice(0, -1);
     }
 
-    if (w.length > 4 && /ed$/.test(w)) {
-      return w.slice(0, -2);
-    }
-
-    return w;
+    return base;
   }
 
+  var ENTRY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
 
+  function entryStems(e) {
+    var tagText = Array.isArray(e.tags) ? e.tags.join(' ') : '';
+    var raw = String(e.text || '') + ' ' + tagText;
+    var hit = ENTRY_CACHE ? ENTRY_CACHE.get(e) : null;
+
+    if (hit && hit.raw === raw) return hit.stems;
+
+    var stems = norm(raw).split(' ').map(function (w) {
+      return stem(w);
+    });
+
+    if (ENTRY_CACHE) ENTRY_CACHE.set(e, { raw: raw, stems: stems });
+
+    return stems;
+  }
 
   function includesAllTerms(e, terms) {
     if (!terms.length) return true;
 
-    var tagText = Array.isArray(e.tags) ? e.tags.join(' ') : '';
-    var have = norm(String(e.text || '') + ' ' + tagText)
-      .split(' ')
-      .map(stem);
+    var have = entryStems(e);
 
-    return terms.every(function (term) {
-      var wanted = stem(term);
-
+    // Terms arrive already stemmed from queryTerms.
+    return terms.every(function (wanted) {
       if (have.indexOf(wanted) !== -1) return true;
+
+      var alts = ALIAS_MAP[wanted] || [];
+
+      for (var a = 0; a < alts.length; a++) {
+        if (have.indexOf(alts[a]) !== -1) return true;
+      }
 
       // Treat "pickup" and "pick up" as equivalent.
       if (wanted === 'pickup') {
-        return have.indexOf('pick') !== -1 &&
-          have.indexOf('up') !== -1;
+        return have.indexOf('pick') !== -1 && have.indexOf('up') !== -1;
       }
 
       if (wanted === 'pick') {
@@ -605,24 +607,131 @@ function textDateMatchesFilter(e, filter) {
     });
   }
 
+  function editDistance(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+
+    var prev2 = null;
+    var prev = [];
+    var i;
+    var j;
+
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+
+    for (i = 1; i <= a.length; i++) {
+      var cur = [i];
+
+      for (j = 1; j <= b.length; j++) {
+        var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+
+        // Swapped neighbouring letters count as one typo.
+        if (
+          i > 1 && j > 1 &&
+          a.charAt(i - 1) === b.charAt(j - 2) &&
+          a.charAt(i - 2) === b.charAt(j - 1)
+        ) {
+          cur[j] = Math.min(cur[j], prev2[j - 2] + 1);
+        }
+      }
+
+      prev2 = prev;
+      prev = cur;
+    }
+
+    return prev[b.length];
+  }
+
+  function termsClose(a, b) {
+    if (a === b) return true;
+
+    // Numbers and short words must match exactly.
+    if (/\d/.test(a) || /\d/.test(b)) return false;
+
+    var len = Math.min(a.length, b.length);
+
+    if (len < 5) return false;
+
+    var allowed = len >= 8 ? 2 : 1;
+
+    return editDistance(a, b, allowed) <= allowed;
+  }
+
+  // 1 = exact, 0.9 = alias, 0.7 = typo-close, 0 = no match.
+  function termStrength(term, have) {
+    if (have.indexOf(term) !== -1) return 1;
+
+    var alts = ALIAS_MAP[term] || [];
+
+    for (var i = 0; i < alts.length; i++) {
+      if (have.indexOf(alts[i]) !== -1) return 0.9;
+    }
+
+    for (var j = 0; j < have.length; j++) {
+      if (termsClose(term, have[j])) return 0.7;
+    }
+
+    return 0;
+  }
+
+  function rankedMatches(entries, terms, room) {
+    if (!terms.length || !entries.length) return [];
+
+    var stemmed = entries.map(entryStems);
+
+    // Rarer terms count for more (a simple IDF weight).
+    var weights = terms.map(function (term) {
+      var df = 0;
+
+      stemmed.forEach(function (have) {
+        if (have.indexOf(term) !== -1) df++;
+      });
+
+      return Math.log(1 + entries.length / (1 + df));
+    });
+
+    var total = weights.reduce(function (a, b) { return a + b; }, 0);
+    var scored = [];
+
+    entries.forEach(function (e, i) {
+      var got = 0;
+
+      terms.forEach(function (term, t) {
+        got += termStrength(term, stemmed[i]) * weights[t];
+      });
+
+      var coverage = total ? got / total : 0;
+
+      // Most of the question must be covered, or it is not a match.
+      if (coverage < 0.6) return;
+
+      scored.push({
+        entry: e,
+        score: coverage + (room && e.room === room ? 0.1 : 0)
+      });
+    });
+
+    scored.sort(function (a, b) {
+      return b.score - a.score || sortNewest(a.entry, b.entry);
+    });
+
+    return scored.slice(0, 5).map(function (s) {
+      return s.entry;
+    });
+  }
+
   function locationMatchScore(entry, terms) {
     var text = norm(String(entry.text || ''));
     var textWords = text.split(' ');
     var score = 0;
 
     terms.forEach(function (term) {
-      var wanted = stem(term);
       var exactWord = textWords.some(function (word) {
-        return stem(word) === wanted;
+        return stem(word) === term;
       });
 
       if (exactWord) {
         score += 10;
-      }
-
-      // Prefer entries whose wording matches the query directly.
-      if (new RegExp('\\b' + wanted + '\\b').test(text)) {
-        score += 5;
       }
     });
 
@@ -730,7 +839,14 @@ function textDateMatchesFilter(e, filter) {
 
     if (priced.length === 1) {
       var cost = Mopapa.rules.money(priced[0].text);
-      var subjectText = subjectTerms.join(' ');
+      var subjectWords = words(subject);
+      var subjectText = subjectTerms.map(function (t) {
+        var raw = subjectWords.filter(function (x) {
+          return stem(x) === t;
+        })[0];
+
+        return raw || t;
+      }).join(' ');
 
       if (/\b(spend|spent|spending)\b/.test(n)) {
         return {
@@ -791,9 +907,18 @@ function textDateMatchesFilter(e, filter) {
 
   function answer(q) {
     var now = new Date();
-    var all = Mopapa.entries.byRoom
-      ? Mopapa.store.data().entries.slice()
-      : [];
+    var storeData = Mopapa.store && Mopapa.store.data
+      ? Mopapa.store.data()
+      : null;
+
+    if (!storeData || !Array.isArray(storeData.entries)) {
+      return {
+        answer: 'I cannot read your saved entries right now.',
+        sources: []
+      };
+    }
+
+    var all = storeData.entries.slice();
 
     var room = roomForQuestion(q);
     var date = explicitDateFilter(q, now) || dateFilter(q, now);
@@ -836,6 +961,29 @@ function textDateMatchesFilter(e, filter) {
       matches = findMatches(null);
     }
 
+    // Nothing exact: look for close matches (typos, aliases, partial).
+    // The room guess only boosts the ranking here, it never hides entries.
+    if (!matches.length && terms.length) {
+      var closest = rankedMatches(
+        all.filter(function (e) {
+          return !date ||
+            loggedOn(e, date) ||
+            textDateMatchesFilter(e, date);
+        }),
+        terms,
+        room
+      );
+
+      if (closest.length) {
+        return {
+          answer: 'I could not find an exact match, but these are the closest saved entries:\n' +
+            closest.map(function (entry) {
+              return '• ' + entry.text;
+            }).join('\n'),
+          sources: closest
+        };
+      }
+    }
 
     // Prefer a saved entry whose subject directly matches the question.
     var isLocationQuestion =
@@ -906,12 +1054,25 @@ function textDateMatchesFilter(e, filter) {
     }
     
     if (asksWhoSomethingIsFor(q)) {
+      var forMatches = matches.filter(function (e) {
+        return /\bfor\s+[A-Z][a-z]+/.test(String(e.text || ''));
+      });
+
+      if (forMatches.length === 1) {
+        var forName = String(forMatches[0].text)
+          .match(/\bfor\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/)[1];
+
+        return {
+          answer: 'It looks like it is for ' + forName + '.',
+          sources: [forMatches[0]]
+        };
+      }
+
       return {
         answer: 'I could not find who that is for. I will not guess.',
-        sources: []
+        sources: forMatches.slice(0, 5)
       };
     }
-
 
     if (
       (/\bwhere\b/.test(norm(q)) ||
@@ -999,8 +1160,15 @@ function textDateMatchesFilter(e, filter) {
           first.hasTime
         );
 
+        var nextSubject = String(first.text || '')
+          .replace(/\s+(?:on|at)\s+\d.*$/i, '')
+          .replace(/[.!?]+$/, '')
+          .trim();
+
         return {
-          answer: 'The next one is ' + label + '.',
+          answer: nextSubject
+            ? '“' + nextSubject + '” is next: ' + label + '.'
+            : 'The next one is ' + label + '.',
           sources: dated.slice(0, 5)
         };
       }
@@ -1065,28 +1233,28 @@ function textDateMatchesFilter(e, filter) {
             ''
           ).trim();
 
-          var answer;
+          var reply;
 
           if (/\btomorrow\b/i.test(q)) {
-            answer = 'You need to take care of this tomorrow: ' +
+            reply = 'You need to take care of this tomorrow: ' +
               conciseText + '.';
           } else if (/\bwhen\b|\bwhat date\b|\bwhat time\b/i.test(q)) {
             if (/^(pay|renew|return|submit|call|book|check|pick up|follow up)\b/i.test(conciseText)) {
-              answer = 'You need to ' +
+              reply = 'You need to ' +
                 conciseText.charAt(0).toLowerCase() +
                 conciseText.slice(1) + ' on ' +
                 firstItem.date.label + '.';
             } else {
-              answer = conciseText + ' is on ' +
+              reply = conciseText + ' is on ' +
                 firstItem.date.label + '.';
             }
           } else {
-            answer = conciseText + ' on ' +
+            reply = conciseText + ' on ' +
               firstItem.date.label + '.';
           }
 
           return {
-            answer: answer,
+            answer: reply,
             sources: [firstEntry]
           };
         }
@@ -1254,6 +1422,7 @@ function textDateMatchesFilter(e, filter) {
   }
 
   return {
-    answer: answer
+    answer: answer,
+    addAlias: addAlias
   };
 })();
