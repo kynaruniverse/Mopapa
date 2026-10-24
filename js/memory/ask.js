@@ -577,6 +577,7 @@ function textDateMatchesFilter(e, filter) {
   }
 
 
+
   function includesAllTerms(e, terms) {
     if (!terms.length) return true;
 
@@ -603,6 +604,31 @@ function textDateMatchesFilter(e, filter) {
       return false;
     });
   }
+
+  function locationMatchScore(entry, terms) {
+    var text = norm(String(entry.text || ''));
+    var textWords = text.split(' ');
+    var score = 0;
+
+    terms.forEach(function (term) {
+      var wanted = stem(term);
+      var exactWord = textWords.some(function (word) {
+        return stem(word) === wanted;
+      });
+
+      if (exactWord) {
+        score += 10;
+      }
+
+      // Prefer entries whose wording matches the query directly.
+      if (new RegExp('\\b' + wanted + '\\b').test(text)) {
+        score += 5;
+      }
+    });
+
+    return score;
+  }
+
 
   function roomName(id) {
     var r = Mopapa.roomById(id);
