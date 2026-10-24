@@ -10,7 +10,7 @@ Mopapa.ask = (function () {
     'please logged log logbook entry entries item items any anything something everything ' +
     'about on in at for of to from with and or but last this that there here next due scheduled ' +
     'didnt dont doesnt isnt wasnt werent hasnt havent wouldnt couldnt shouldnt ' +
-    'have i ever been remember remind tell me put left kept keep myself today yesterday tomorrow ' +
+    'have i ever been remember remind tell me put left leave leaves leaving kept keep park parked parking store stored storing hide hidden hiding place placed placing myself today yesterday tomorrow ' +
     'save saved saving saves record records recorded recording records remember remembered ' +
     'add added adding create created creating get got retrieve retrieving'
   ).split(' ').reduce(function (o, w) {
