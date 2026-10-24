@@ -3,11 +3,12 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.ask = (function () {
   var STOP = (
     'a an the i me my mine we our you your he she it they them is are was were am ' +
-    'do does did have has had can could would should will what whats when whens ' +
+    'do does did have has had can could would should will need needs needed ' +
+    'what whats when whens ' +
     'know knows knowing knew understand understood ' +
     'where wheres who whos whose which why how many much often show tell find search ' +
     'please logged log logbook entry entries any anything something everything ' +
-    'about on in at for of to from with and or but last this that there here next ' +
+    'about on in at for of to from with and or but last this that there here next due scheduled ' +
     'didnt dont doesnt isnt wasnt werent hasnt havent wouldnt couldnt shouldnt ' +
     'have i ever been remember remind tell me put left kept keep myself today yesterday tomorrow ' +
     'save saved saving saves record records recorded recording records remember remembered ' +
@@ -57,8 +58,7 @@ Mopapa.ask = (function () {
       {
         id: 'todo',
         words: [
-          'to do', 'todo', 'todos', 'task', 'tasks',
-          'reminder', 'reminders'
+          'to do', 'todo', 'todos', 'task', 'tasks'
         ]
       },
       {
@@ -122,7 +122,7 @@ Mopapa.ask = (function () {
 
     all.forEach(function (w) {
       if (
-        w.length < 3 ||
+        (w.length < 3 && w !== 'gp') ||
         STOP[w] ||
         ['name', 'called', 'named'].indexOf(w) !== -1 ||
         /^\d+$/.test(w) ||
@@ -133,20 +133,7 @@ Mopapa.ask = (function () {
 
       var term = w;
 
-      if (term.length > 5 && /ies$/.test(term)) {
-        term = term.slice(0, -3) + 'y';
-      } else if (
-        term.length > 4 &&
-        /(ches|shes|sses|xes|zes)$/.test(term)
-      ) {
-        term = term.slice(0, -2);
-      } else if (
-        term.length > 3 &&
-        /s$/.test(term) &&
-        !/ss$/.test(term)
-      ) {
-        term = term.slice(0, -1);
-      }
+      term = stem(term);
 
       if (seen[term]) return;
       if (customNameWords.indexOf(term) !== -1) return;
@@ -218,13 +205,14 @@ Mopapa.ask = (function () {
   }
 
   function isScheduledDateQuestion(q) {
-    var n = norm(q);
-
-    if (isLoggedQuestion(n)) return false;
-
-    return isWhenQuestion(n) ||
-      /\b(due|scheduled|appointment|appointments)\b/.test(n);
+      var n = norm(q);
+  
+      if (isLoggedQuestion(n)) return false;
+  
+      return isWhenQuestion(n) ||
+        /\b(due|scheduled|appointment|appointments|reminder|reminders)\b/.test(n);
   }
+
 
   function dateFilter(q, now) {
     var n = norm(q);
@@ -270,7 +258,7 @@ Mopapa.ask = (function () {
           start.getDate() + 1
         ),
         label: 'yesterday',
-        due: false
+        due: due
       };
     }
 
@@ -322,20 +310,69 @@ Mopapa.ask = (function () {
       d < filter.end;
   }
 
+
   function extractTextDate(text) {
     var source = String(text || '');
     var match = source.match(
-      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+(\d{4}))?\b/i
+      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)(?:\s+(\d{4}))?\b/i
     );
+
+    var monthFirst = false;
+
+    if (!match) {
+      match = source.match(
+        /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:,?\s+(\d{4}))?\b/i
+      );
+      monthFirst = !!match;
+    }
+
+    var numeric = false;
+
+    if (!match) {
+      match = source.match(
+        /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/
+      );
+      numeric = !!match;
+    }
 
     if (!match) return null;
 
-    var day = parseInt(match[1], 10);
-    var monthName = match[2].toLowerCase();
-    var month = MONTH_NAMES.indexOf(monthName);
-    var year = match[3] ? parseInt(match[3], 10) : null;
+    var day;
+    var month;
+    var year;
 
-    if (month < 0 || day < 1 || day > 31) return null;
+    if (numeric) {
+      // Match the capture parser's day/month/year interpretation.
+      day = parseInt(match[1], 10);
+      month = parseInt(match[2], 10) - 1;
+      year = match[3] ? parseInt(match[3], 10) : null;
+
+      if (year !== null && year < 100) {
+        year += year < 50 ? 2000 : 1900;
+      }
+    } else if (monthFirst) {
+      day = parseInt(match[2], 10);
+      month = MONTH_NAMES.indexOf(
+        match[1].toLowerCase().slice(0, 3) === 'sep'
+          ? 'september'
+          : MONTH_NAMES.filter(function (name) {
+              return name.slice(0, 3) === match[1].toLowerCase().slice(0, 3);
+            })[0]
+      );
+      year = match[3] ? parseInt(match[3], 10) : null;
+    } else {
+      day = parseInt(match[1], 10);
+      month = MONTH_NAMES.indexOf(
+        MONTH_NAMES.filter(function (name) {
+          return name.slice(0, 3) === match[2].toLowerCase().slice(0, 3);
+        })[0]
+      );
+      year = match[3] ? parseInt(match[3], 10) : null;
+    }
+
+    if (month < 0 || month > 11 || day < 1 || day > 31) {
+      return null;
+    }
 
     var checkYear = year || 2000;
     var check = new Date(checkYear, month, day);
@@ -353,64 +390,130 @@ Mopapa.ask = (function () {
       month: month,
       year: year,
       label: day + ' ' +
-        monthName.charAt(0).toUpperCase() + monthName.slice(1) +
+        MONTH_NAMES[month].charAt(0).toUpperCase() +
+        MONTH_NAMES[month].slice(1) +
         (year ? ' ' + year : '')
     };
   }
 
-  function textDateMatchesFilter(e, filter) {
-    if (!filter || !filter.due || !filter.explicit) return false;
+
+  
+function textDateMatchesFilter(e, filter) {
+    if (!filter || !filter.due || !filter.start || !filter.end) {
+      return false;
+    }
 
     var parsed = extractTextDate(e.text);
-
     if (!parsed) return false;
 
-    var year = parsed.year || filter.start.getFullYear();
-    var d = new Date(year, parsed.month, parsed.day);
+    var year = parsed.year;
+
+    if (year === null || year === undefined) {
+      year = filter.start.getFullYear();
+    }
+
+    var date = new Date(year, parsed.month, parsed.day);
 
     if (
-      d.getFullYear() !== year ||
-      d.getMonth() !== parsed.month ||
-      d.getDate() !== parsed.day
+      date.getFullYear() !== year ||
+      date.getMonth() !== parsed.month ||
+      date.getDate() !== parsed.day
     ) {
       return false;
     }
 
-    return d >= filter.start && d < filter.end;
-  }
+    return date >= filter.start && date < filter.end;
+}
 
   function explicitDateFilter(q, now) {
+    var source = String(q || '');
     var n = norm(q);
     var months = {};
+    var match;
+    var day;
+    var month;
+    var year;
+    var loggedQuestion = isLoggedQuestion(n);
 
-    MONTH_NAMES.forEach(function (month, index) {
-      months[month] = index;
+    MONTH_NAMES.forEach(function (name, index) {
+      months[name] = index;
+      months[name.slice(0, 3)] = index;
+      if (name === 'september') months.sept = index;
     });
 
-    var match = n.match(
-      /\b(\d{1,2})(?:st|nd|rd|th)?\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?\b/
-    );
+    var monthPattern =
+      '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|' +
+      'may|june?|july?|aug(?:ust)?|sept?(?:ember)?|' +
+      'oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
 
-    if (!match) return null;
+    // Day first: 5 November 2026, 5th of November, 5 Nov
+    match = source.match(new RegExp(
+      '\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?' +
+      monthPattern + '(?:\\s+(\\d{4}))?\\b',
+      'i'
+    ));
 
-    var day = Number(match[1]);
-    var month = months[match[2]];
-    var year = match[3] ? Number(match[3]) : now.getFullYear();
-    var loggedQuestion = isLoggedQuestion(n);
-    var due = !loggedQuestion && isScheduledDateQuestion(n);
+    if (match) {
+      day = Number(match[1]);
+      month = months[match[2].toLowerCase()];
+      year = match[3] ? Number(match[3]) : null;
+    } else {
+      // Month first: Nov 5 2026, November 5th 2026
+      match = source.match(new RegExp(
+        '\\b' + monthPattern +
+        '\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b',
+        'i'
+      ));
 
-    if (!match[3] && !loggedQuestion) {
-      var candidate = new Date(year, month, day);
+      if (match) {
+        month = months[match[1].toLowerCase()];
+        day = Number(match[2]);
+        year = match[3] ? Number(match[3]) : null;
+      } else {
+        // Numeric dates use UK day/month/year order.
+        match = source.match(
+          /\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/
+        );
+
+        if (!match) return null;
+
+        day = Number(match[1]);
+        month = Number(match[2]) - 1;
+        year = match[3] ? Number(match[3]) : null;
+
+        if (year !== null && year < 100) {
+          year += year < 50 ? 2000 : 1900;
+        }
+      }
+    }
+
+    if (
+      !Number.isInteger(day) ||
+      !Number.isInteger(month) ||
+      month < 0 ||
+      month > 11 ||
+      day < 1 ||
+      day > 31
+    ) {
+      return null;
+    }
+
+    if (year === null) {
+      year = now.getFullYear();
+
+      var provisional = new Date(year, month, day);
 
       if (
-        candidate.getFullYear() !== year ||
-        candidate.getMonth() !== month ||
-        candidate.getDate() !== day
+        provisional.getFullYear() !== year ||
+        provisional.getMonth() !== month ||
+        provisional.getDate() !== day
       ) {
         return null;
       }
 
-      if (candidate < localDay(now)) year++;
+      if (!loggedQuestion && provisional < localDay(now)) {
+        year++;
+      }
     }
 
     var start = new Date(year, month, day);
@@ -423,12 +526,14 @@ Mopapa.ask = (function () {
       return null;
     }
 
+    var due = !loggedQuestion && isScheduledDateQuestion(n);
+
     return {
       start: start,
       end: new Date(year, month, day + 1),
       label: day + ' ' +
-        match[2].charAt(0).toUpperCase() + match[2].slice(1) +
-        ' ' + year,
+        MONTH_NAMES[month].charAt(0).toUpperCase() +
+        MONTH_NAMES[month].slice(1) + ' ' + year,
       due: due,
       explicit: true,
       year: year
@@ -436,17 +541,41 @@ Mopapa.ask = (function () {
   }
 
   function stem(w) {
-    var irr = {
+    var irregular = {
       paid: 'pay',
-      bought: 'buy'
+      spent: 'spend',
+      spending: 'spend',
+      bought: 'buy',
+      buying: 'buy'
     };
 
-    if (irr[w]) return irr[w];
+    if (irregular[w]) return irregular[w];
 
-    return w.length > 4
-      ? w.replace(/(ing|ed|es|s)$/, '')
-      : w.replace(/s$/, '');
+    // Keep common English plural endings consistent.
+    if (w.length > 4 && /ies$/.test(w)) {
+      return w.slice(0, -3) + 'y';
+    }
+
+    if (w.length > 4 && /(ches|shes|sses|xes|zes)$/.test(w)) {
+      return w.slice(0, -2);
+    }
+
+    if (w.length > 3 && /s$/.test(w) && !/ss$/.test(w)) {
+      return w.slice(0, -1);
+    }
+
+    // Handle common verb endings.
+    if (w.length > 5 && /ing$/.test(w)) {
+      return w.slice(0, -3);
+    }
+
+    if (w.length > 4 && /ed$/.test(w)) {
+      return w.slice(0, -2);
+    }
+
+    return w;
   }
+
 
   function includesAllTerms(e, terms) {
     if (!terms.length) return true;
@@ -457,7 +586,21 @@ Mopapa.ask = (function () {
       .map(stem);
 
     return terms.every(function (term) {
-      return have.indexOf(stem(term)) !== -1;
+      var wanted = stem(term);
+
+      if (have.indexOf(wanted) !== -1) return true;
+
+      // Treat "pickup" and "pick up" as equivalent.
+      if (wanted === 'pickup') {
+        return have.indexOf('pick') !== -1 &&
+          have.indexOf('up') !== -1;
+      }
+
+      if (wanted === 'pick') {
+        return have.indexOf('pickup') !== -1;
+      }
+
+      return false;
     });
   }
 
@@ -474,17 +617,37 @@ Mopapa.ask = (function () {
     return new Date(a.when) - new Date(b.when);
   }
 
-  function isCostQuestion(q) {
+  function isGeneralNextAppointmentQuestion(q) {
     var n = norm(q);
 
-    return /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|how much)\b/.test(n);
+    return /\bnext\b/.test(n) &&
+      /\b(appointment|appointments)\b/.test(n) &&
+      !/\b(dentist|doctor|gp|hospital|meeting|interview|vet)\b/.test(n);
+  }
+  
+  function isCostQuestion(q) {
+    var n = norm(q);
+  
+    // A date question should be handled by date retrieval.
+    if (isWhenQuestion(n)) {
+      return false;
+    }
+  
+    // Explicit requests for a price, cost, or amount.
+    if (/\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|payment|payments|how much|what amount|what did .* cost)\b/.test(n)) {
+      return true;
+    }
+  
+    // Payment and spending verbs count only when asking about an amount.
+    return /\b(pay|paid|spend|spent|spending)\b/.test(n) &&
+      /\b(amount|total|much|cost|price|money)\b/.test(n);
   }
 
   function answerCost(q, all, room, date) {
     var n = norm(q);
     var wantsLatest = /\b(latest|newest|most recent)\b/.test(n);
 
-    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|payment|payments|much|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|yesterday|today|tomorrow)\b/g;
+    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|yesterday|today|tomorrow)\b/g;
 
     var subject = n.replace(intent, ' ').replace(/\s+/g, ' ').trim();
     var subjectTerms = queryTerms(subject, room);
@@ -533,16 +696,26 @@ Mopapa.ask = (function () {
 
     if (wantsLatest) {
       return {
-        answer: 'The most recent matching entry records a cost of ' +
+        answer: 'The most recent cost was ' +
           Mopapa.rules.money(priced[0].text) + '.',
         sources: [priced[0]]
       };
     }
 
     if (priced.length === 1) {
+      var cost = Mopapa.rules.money(priced[0].text);
+      var subjectText = subjectTerms.join(' ');
+
+      if (/\b(spend|spent|spending)\b/.test(n)) {
+        return {
+          answer: 'You spent ' + cost +
+            (subjectText ? ' on ' + subjectText : '') + '.',
+          sources: [priced[0]]
+        };
+      }
+
       return {
-        answer: 'The saved entry records a cost of ' +
-          Mopapa.rules.money(priced[0].text) + '.',
+        answer: 'It cost ' + cost + '.',
         sources: [priced[0]]
       };
     }
@@ -600,34 +773,135 @@ Mopapa.ask = (function () {
     var date = explicitDateFilter(q, now) || dateFilter(q, now);
     var terms = queryTerms(q, room);
 
-    if (!terms.length && !room && !date) {
+    if (
+      !terms.length &&
+      !room &&
+      !date &&
+      !isLoggedQuestion(q)
+    ) {
       return {
         answer: 'Ask me about something specific, like “when is the dentist?”',
         sources: []
       };
     }
 
-    var matches = all.filter(function (e) {
-      if (room && e.room !== room) return false;
+    function findMatches(roomFilter) {
+      return all.filter(function (e) {
+        if (roomFilter && e.room !== roomFilter) return false;
 
-      if (
-        date &&
-        !loggedOn(e, date) &&
-        !textDateMatchesFilter(e, date)
-      ) {
-        return false;
-      }
+        if (
+          date &&
+          !loggedOn(e, date) &&
+          !textDateMatchesFilter(e, date)
+        ) {
+          return false;
+        }
 
-      return includesAllTerms(e, terms);
-    });
+        return includesAllTerms(e, terms);
+      });
+    }
+
+    var matches = findMatches(room);
+
+    // If a room guess produces no result, search all rooms.
+    // A guessed room must not hide a matching saved entry.
+    if (room && !matches.length) {
+      matches = findMatches(null);
+    }
+
 
     var askingWhen = isWhenQuestion(q);
 
+    if (isGeneralNextAppointmentQuestion(q)) {
+      var upcomingAppointments = all.filter(function (e) {
+        return e.room === 'appointments' &&
+          e.when &&
+          !Mopapa.rules.isPast(e.when, e.hasTime);
+      }).sort(sortByWhen);
+
+      if (upcomingAppointments.length) {
+        var nextAppointment = upcomingAppointments[0];
+        var nextLabel = Mopapa.rules.describe(
+          new Date(nextAppointment.when),
+          nextAppointment.hasTime
+        );
+
+        return {
+          answer: 'Your next appointment is ' +
+            String(nextAppointment.text || 'your appointment')
+              .replace(
+                /\s+on\s+\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+\d{4})?(?:\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))?/i,
+                ''
+              )
+              .trim() +
+            ' on ' + nextLabel + '.',
+          sources: [nextAppointment]
+        };
+      }
+    }
+    
     if (asksWhoSomethingIsFor(q)) {
       return {
         answer: 'I could not find who that is for. I will not guess.',
         sources: []
       };
+    }
+
+
+    if (
+      (/\bwhere\b/.test(norm(q)) ||
+       /\bwhich\s+(?:folder|drawer|room|place)\b/.test(norm(q))) &&
+      matches.length
+    ) {
+      var locationMatches = matches.filter(function (entry) {
+        return /\b(in|inside|on|under|behind|beside|next to|within)\b/i
+          .test(String(entry.text || ''));
+      });
+
+      if (locationMatches.length === 1) {
+        var locationText = String(locationMatches[0].text || '')
+          .trim()
+          .replace(/[.!?]+$/, '');
+
+        var locationAnswer = locationText.match(
+          /\b(is|are)\s+(?:located\s+)?(in|inside|on|under|behind|beside|next to|within)\s+(.+)$/i
+        );
+
+        if (locationAnswer) {
+          var savedText = String(locationMatches[0].text || '')
+            .trim()
+            .replace(/[.!?]+$/, '');
+
+          var subjectMatch = savedText.match(/^(.*?)\s+(?:is|are)\b/i);
+          var savedSubject = subjectMatch ? subjectMatch[1] : '';
+          var savedPlural = /\b(keys|shoes|boots|gloves|glasses|books|documents|certificates|papers|items)\b/i
+            .test(savedSubject);
+
+          var questionPlural = /\b(keys|shoes|boots|gloves|glasses|books|documents|certificates|papers|items)\b/i
+            .test(norm(q));
+
+          if (questionPlural && !savedPlural) {
+            return {
+              answer: 'I found this saved item: ' + savedText + '.',
+              sources: [locationMatches[0]]
+            };
+          }
+
+          return {
+            answer: (locationAnswer[1].toLowerCase() === 'are'
+              ? 'They are '
+              : 'It is ') +
+              locationAnswer[2].toLowerCase() + ' ' +
+              locationAnswer[3].replace(/[.!?]+$/, '') + '.',
+            sources: [locationMatches[0]]
+          };
+        }
+
+        return {
+          answer: locationText + '.',
+          sources: [locationMatches[0]]
+        };
+      }
     }
 
     if (askingWhen && matches.length) {
@@ -690,6 +964,7 @@ Mopapa.ask = (function () {
         }
       });
 
+
       if (textDated.length) {
         var distinctDates = [];
 
@@ -710,8 +985,51 @@ Mopapa.ask = (function () {
           };
         }
 
+        var firstItem = textDated[0];
+        var firstEntry = firstItem.entry;
+        var answerText = String(firstEntry.text || '').trim();
+
+
+        if (textDated.length === 1 && answerText) {
+          var conciseText = answerText.replace(
+            new RegExp(
+              '\\s+on\\s+' +
+              firstItem.date.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+              'i'
+            ),
+            ''
+          ).trim();
+
+          var answer;
+
+          if (/\btomorrow\b/i.test(q)) {
+            answer = 'You need to take care of this tomorrow: ' +
+              conciseText + '.';
+          } else if (/\bwhen\b|\bwhat date\b|\bwhat time\b/i.test(q)) {
+            if (/^(pay|renew|return|submit|call|book|check|pick up|follow up)\b/i.test(conciseText)) {
+              answer = 'You need to ' +
+                conciseText.charAt(0).toLowerCase() +
+                conciseText.slice(1) + ' on ' +
+                firstItem.date.label + '.';
+            } else {
+              answer = conciseText + ' is on ' +
+                firstItem.date.label + '.';
+            }
+          } else {
+            answer = conciseText + ' on ' +
+              firstItem.date.label + '.';
+          }
+
+          return {
+            answer: answer,
+            sources: [firstEntry]
+          };
+        }
+
+
         return {
-          answer: textDated[0].date.label + '.',
+          answer: 'I found ' + textDated.length +
+            ' matching items for ' + firstItem.date.label + '.',
           sources: textDated.slice(0, 5).map(function (item) {
             return item.entry;
           })
@@ -782,7 +1100,31 @@ Mopapa.ask = (function () {
       };
     }
 
-    var shown = matches.slice(0, 5);
+    var n = norm(q);
+
+    var directQuestion =
+      /\bwhat do i know\b/.test(n) ||
+      /\bwhat did i save\b/.test(n) ||
+      /\bwhat have i saved\b/.test(n) ||
+      /\bwhat did i record\b/.test(n) ||
+      /\bwhat have i recorded\b/.test(n) ||
+      /\bwhat did i log\b/.test(n) ||
+      /\bwhat have i logged\b/.test(n) ||
+      /\bwhat did i add\b/.test(n) ||
+      /\bwhat have i added\b/.test(n) ||
+      /\bwhat did i write\b/.test(n) ||
+      /\bwhat did i put\b/.test(n) ||
+      /\bwhat idea did i save\b/.test(n) ||
+      /\bwhat ideas did i save\b/.test(n) ||
+      /\bwhat is the idea i saved\b/.test(n) ||
+      /\bwhat are the ideas i saved\b/.test(n) ||
+      /\bwhat idea have i saved\b/.test(n) ||
+      /\bwhat ideas have i saved\b/.test(n) ||
+      /\bwhat gift ideas\b/.test(n);
+
+    var shown = directQuestion
+      ? matches
+      : matches.slice(0, 5);
     var roomText = room ? ' in ' + roomName(room) : '';
     var dateText = date ? ' for ' + date.label : '';
     var lead;
@@ -805,16 +1147,22 @@ Mopapa.ask = (function () {
       lead += ' Showing the newest ' + shown.length + '.';
     }
 
-    var directQuestion =
-      /\bwhat do i know\b/.test(norm(q)) ||
-      /\bwhat did i save\b/.test(norm(q)) ||
-      /\bwhat have i saved\b/.test(norm(q)) ||
-      /\bwhat did i record\b/.test(norm(q)) ||
-      /\bwhat did i log\b/.test(norm(q));
-
     if (directQuestion && shown.length === 1) {
       return {
-        answer: 'You saved: ' + shown[0].text,
+        answer: 'You saved this: ' + shown[0].text,
+        sources: shown
+      };
+    }
+
+    if (
+      directQuestion &&
+      shown.length > 1
+    ) {
+      return {
+        answer: 'You saved ' + shown.length + ' items:\n' +
+          shown.map(function (entry) {
+            return '• ' + entry.text;
+          }).join('\n'),
         sources: shown
       };
     }

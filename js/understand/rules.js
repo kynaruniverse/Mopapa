@@ -45,7 +45,18 @@ Mopapa.rules = (function () {
       if (u === 'hour' || u === 'hr') return { date: new Date(now.getTime() + n * 3600000), hasTime: true };
       if (u === 'day') date = addDays(today, n);
       else if (u === 'week') date = addDays(today, 7 * n);
-      else { date = new Date(today); date.setMonth(date.getMonth() + n); }
+      else {
+        var targetMonth = today.getMonth() + n;
+        var targetYear = today.getFullYear() + Math.floor(targetMonth / 12);
+        targetMonth = targetMonth % 12;
+
+        var lastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+        date = new Date(
+          targetYear,
+          targetMonth,
+          Math.min(today.getDate(), lastDay)
+        );
+      }
     }
 
     if (!date) {
@@ -66,8 +77,22 @@ Mopapa.rules = (function () {
     if (!date) {
       m = t.match(WD_RE);
       if (m) {
-        var diff = (DAYS.indexOf(m[2]) - today.getDay() + 7) % 7;
-        if (diff === 0) diff = 7;
+        var targetDay = DAYS.indexOf(m[2]);
+        var currentDay = today.getDay();
+        var diff = (targetDay - currentDay + 7) % 7;
+
+        if (m[1] === 'next') {
+          // "Next Friday" means the following Monday-to-Sunday week.
+          diff = diff + 7;
+        } else if (m[1] === 'this') {
+          // "This Friday" means the weekday in the current week.
+          diff = targetDay - currentDay;
+          if (diff < 0) diff += 7;
+        } else {
+          // A bare weekday means the next occurrence, excluding today.
+          if (diff === 0) diff = 7;
+        }
+
         date = addDays(today, diff);
         t = t.replace(m[0], ' ');
       }

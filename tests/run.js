@@ -46,6 +46,37 @@ test('date parser: tomorrow at 5pm', function () {
   assert.strictEqual(r.date.getHours(), 17);
 });
 
+
+test('ask recognises abbreviated, month-first and numeric dates in saved text', function () {
+  const cases = [
+    'Dentist appointment on Nov 5 2026',
+    'Dentist appointment on November 5th 2026',
+    'Dentist appointment on 5/11/2026'
+  ];
+
+  cases.forEach(function (text) {
+    const w = boot(stored([{
+      id: 'dentist',
+      text: text,
+      room: 'appointments',
+      created: new Date(2026, 9, 23, 10, 0).toISOString()
+    }]));
+
+    w.Mopapa.store.load();
+
+    const result = w.Mopapa.ask.answer(
+      'When is the dentist appointment on 5 November 2026?'
+    );
+
+    assert.strictEqual(
+      result.sources.length,
+      1,
+      'Expected Ask to recognise the date in: ' + text
+    );
+    assert.strictEqual(result.sources[0].id, 'dentist');
+  });
+});
+
 test('question-shaped text is not a dead end', function () {
   const w = boot({});
   assert.notStrictEqual(w.Mopapa.rules.questionLevel('What if I built a cat cafe?'), 'sure');
