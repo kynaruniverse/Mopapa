@@ -836,16 +836,30 @@ function textDateMatchesFilter(e, filter) {
       matches = findMatches(null);
     }
 
-    // Prefer the closest wording match for location questions.
+
+    // Prefer a saved entry whose subject directly matches the question.
     var isLocationQuestion =
       /\bwhere\b/.test(norm(q)) ||
       /\bwhich\s+(?:folder|drawer|room|place)\b/.test(norm(q));
 
     if (isLocationQuestion && matches.length > 1) {
       var scoredMatches = matches.map(function (entry) {
+        var text = norm(String(entry.text || ''));
+        var subject = text.split(/\b(?:is|are)\b/)[0].trim();
+        var score = locationMatchScore(entry, terms);
+
+        // Penalise extra subject words that the question did not ask for.
+        var subjectWords = subject.split(' ').filter(Boolean);
+        var extraWords = subjectWords.filter(function (word) {
+          return terms.indexOf(stem(word)) === -1 &&
+            ['my', 'the', 'a', 'an', 'spare'].indexOf(word) === -1;
+        });
+
+        score -= extraWords.length * 20;
+
         return {
           entry: entry,
-          score: locationMatchScore(entry, terms)
+          score: score
         };
       });
 
