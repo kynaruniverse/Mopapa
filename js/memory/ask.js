@@ -827,6 +827,7 @@ function textDateMatchesFilter(e, filter) {
       });
     }
 
+
     var matches = findMatches(room);
 
     // If a room guess produces no result, search all rooms.
@@ -835,6 +836,30 @@ function textDateMatchesFilter(e, filter) {
       matches = findMatches(null);
     }
 
+    // Prefer the closest wording match for location questions.
+    var isLocationQuestion =
+      /\bwhere\b/.test(norm(q)) ||
+      /\bwhich\s+(?:folder|drawer|room|place)\b/.test(norm(q));
+
+    if (isLocationQuestion && matches.length > 1) {
+      var scoredMatches = matches.map(function (entry) {
+        return {
+          entry: entry,
+          score: locationMatchScore(entry, terms)
+        };
+      });
+
+      scoredMatches.sort(function (a, b) {
+        return b.score - a.score;
+      });
+
+      if (
+        scoredMatches.length > 1 &&
+        scoredMatches[0].score > scoredMatches[1].score
+      ) {
+        matches = [scoredMatches[0].entry];
+      }
+    }
 
     var askingWhen = isWhenQuestion(q);
 
