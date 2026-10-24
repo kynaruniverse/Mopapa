@@ -1336,6 +1336,7 @@ function textDateMatchesFilter(e, filter) {
     var n = norm(q);
 
     var directQuestion =
+      /\bwhere did i leave\b/.test(n) ||
       /\bwhat do you remember about\b/.test(n) ||
       /\bwhat do i know\b/.test(n) ||
       /\bwhat did i save\b/.test(n) ||
