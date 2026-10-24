@@ -29,14 +29,7 @@ button{cursor:pointer}
 .den-speech{flex:1;min-width:0}
 #bubble{position:relative;background:var(--text);color:#2a2536;border-radius:var(--r);padding:10px 13px;min-height:44px}
 #bubble:before{content:"";position:absolute;left:-6px;top:18px;width:12px;height:12px;background:var(--text);transform:rotate(45deg);border-radius:2px}
-#answer-sources{
-  margin-top:10px;
-  padding:10px 12px;
-  background:var(--surface);
-  color:var(--text);
-  border:1px solid var(--line);
-  border-radius:var(--r);
-}
+#answer-sources{margin-top:10px}
 .source-heading{color:var(--dim);font-size:.85rem;margin-bottom:6px}
 .source-entry{border-left:2px solid var(--accent);padding:2px 0 2px 10px;margin:8px 0;overflow-wrap:anywhere}
 .source-meta{color:var(--dim);font-size:.85rem}
