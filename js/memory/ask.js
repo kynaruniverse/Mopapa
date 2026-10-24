@@ -7,7 +7,7 @@ Mopapa.ask = (function () {
     'what whats when whens ' +
     'know knows knowing knew understand understood ' +
     'where wheres who whos whose which why how many much often show tell find search ' +
-    'please logged log logbook entry entries any anything something everything ' +
+    'please logged log logbook entry entries item items any anything something everything ' +
     'about on in at for of to from with and or but last this that there here next due scheduled ' +
     'didnt dont doesnt isnt wasnt werent hasnt havent wouldnt couldnt shouldnt ' +
     'have i ever been remember remind tell me put left kept keep myself today yesterday tomorrow ' +
