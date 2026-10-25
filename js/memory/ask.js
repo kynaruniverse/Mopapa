@@ -1206,6 +1206,11 @@ function textDateMatchesFilter(e, filter) {
         return false;
       }
 
+      if (isGeneralSpendingTotal) {
+        return /\b(spend|spent|spending)\b/i.test(e.text) &&
+          !!Mopapa.rules.money(e.text);
+      }
+
       return subjectTerms.length > 0 &&
         includesAllTerms(e, subjectTerms);
     });
