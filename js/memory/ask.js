@@ -1182,7 +1182,13 @@ function textDateMatchesFilter(e, filter) {
     var subject = n.replace(intent, ' ').replace(/\s+/g, ' ').trim();
     var subjectTerms = queryTerms(subject, room);
 
-    if (!subjectTerms.length && !room) {
+    var isGeneralSpendingTotal =
+      !subjectTerms.length &&
+      !room &&
+      /\b(total|altogether)\b/.test(n) &&
+      /\b(spend|spent|spending)\b/.test(n);
+
+    if (!subjectTerms.length && !room && !isGeneralSpendingTotal) {
       return {
         answer: 'I can look up costs, but I need to know what the cost was for. Try “how much did the boiler cost?”',
         sources: []
