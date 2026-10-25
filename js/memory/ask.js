@@ -277,12 +277,87 @@ Mopapa.ask = (function () {
         /\b(due|scheduled|appointment|appointments|reminder|reminders)\b/.test(n);
   }
 
-
   function dateFilter(q, now) {
     var n = norm(q);
     var m;
     var start;
+    var end;
     var due = isScheduledDateQuestion(n);
+
+    function makeFilter(from, to, label, isDue) {
+      return {
+        start: from,
+        end: to,
+        label: label,
+        due: isDue === undefined ? due : isDue
+      };
+    }
+
+    function mondayOfWeek(day) {
+      var result = localDay(day);
+      var offset = (result.getDay() + 6) % 7;
+      result.setDate(result.getDate() - offset);
+      return result;
+    }
+
+    if (/\b(last|previous)\s+week\b/.test(n)) {
+      start = mondayOfWeek(now);
+      start.setDate(start.getDate() - 7);
+      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+      return makeFilter(start, end, 'last week');
+    }
+
+    if (/\b(this|current)\s+week\b/.test(n)) {
+      start = mondayOfWeek(now);
+      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+      return makeFilter(start, end, 'this week');
+    }
+
+    if (/\b(last|previous)\s+month\b/.test(n)) {
+      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      end = new Date(now.getFullYear(), now.getMonth(), 1);
+      return makeFilter(start, end, 'last month');
+    }
+
+    if (/\b(this|current)\s+month\b/.test(n)) {
+      start = new Date(now.getFullYear(), now.getMonth(), 1);
+      end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return makeFilter(start, end, 'this month');
+    }
+
+    if (/\bthis weekend\b/.test(n)) {
+      var day = localDay(now);
+      var weekday = day.getDay();
+
+      start = localDay(now);
+      if (weekday === 0) {
+        start.setDate(start.getDate() - 1);
+      } else if (weekday !== 6) {
+        start.setDate(start.getDate() + (6 - weekday));
+      }
+
+      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 2);
+      return makeFilter(start, end, 'this weekend');
+    }
+
+    if (/\blast weekend\b/.test(n)) {
+      var thisSaturday = localDay(now);
+      var todayDay = thisSaturday.getDay();
+
+      if (todayDay === 0) {
+        thisSaturday.setDate(thisSaturday.getDate() - 1);
+      } else if (todayDay !== 6) {
+        thisSaturday.setDate(thisSaturday.getDate() + (6 - todayDay));
+      }
+
+      start = new Date(
+        thisSaturday.getFullYear(),
+        thisSaturday.getMonth(),
+        thisSaturday.getDate() - 7
+      );
+      end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 2);
+      return makeFilter(start, end, 'last weekend');
+    }
 
     m = n.match(
       /\blast\s+(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/
@@ -298,63 +373,60 @@ Mopapa.ask = (function () {
       start = localDay(now);
       start.setDate(start.getDate() - back);
 
-      return {
-        start: start,
-        end: new Date(
+      return makeFilter(
+        start,
+        new Date(
           start.getFullYear(),
           start.getMonth(),
           start.getDate() + 1
         ),
-        label: 'last ' + m[1],
-        due: due
-      };
+        'last ' + m[1]
+      );
     }
 
     if (/\byesterday\b/.test(n)) {
       start = localDay(now);
       start.setDate(start.getDate() - 1);
 
-      return {
-        start: start,
-        end: new Date(
+      return makeFilter(
+        start,
+        new Date(
           start.getFullYear(),
           start.getMonth(),
           start.getDate() + 1
         ),
-        label: 'yesterday',
-        due: due
-      };
+        'yesterday'
+      );
     }
 
     if (/\btomorrow\b/.test(n)) {
       start = localDay(now);
       start.setDate(start.getDate() + 1);
 
-      return {
-        start: start,
-        end: new Date(
+      return makeFilter(
+        start,
+        new Date(
           start.getFullYear(),
           start.getMonth(),
           start.getDate() + 1
         ),
-        label: 'tomorrow',
-        due: true
-      };
+        'tomorrow',
+        true
+      );
     }
 
     if (/\btoday\b/.test(n)) {
       start = localDay(now);
 
-      return {
-        start: start,
-        end: new Date(
+      return makeFilter(
+        start,
+        new Date(
           start.getFullYear(),
           start.getMonth(),
           start.getDate() + 1
         ),
-        label: 'today',
-        due: due
-      };
+        'today'
+      );
     }
 
     return null;
@@ -1154,6 +1226,13 @@ function textDateMatchesFilter(e, filter) {
       /\b(appointment|appointments)\b/.test(n) &&
       !/\b(dentist|doctor|gp|hospital|meeting|interview|vet)\b/.test(n);
   }
+
+  function isOverdueTaskQuestion(q) {
+    var n = norm(q);
+
+    return /\b(overdue|over due|overdue tasks|overdue todos|past due)\b/.test(n) ||
+      /\b(which|what|show|list)\b.*\b(tasks|todos|to do|reminders)\b.*\b(overdue|past due)\b/.test(n);
+  }
   
   function isCostQuestion(q) {
     var n = norm(q);
@@ -1514,6 +1593,32 @@ function textDateMatchesFilter(e, filter) {
       }
     }
     
+    if (isOverdueTaskQuestion(q)) {
+      var overdueTasks = all.filter(function (e) {
+        return e.room === 'todo' &&
+          e.when &&
+          Mopapa.rules.isPast(e.when, e.hasTime);
+      }).sort(sortByWhen);
+
+      if (overdueTasks.length) {
+        return {
+          answer: 'You have ' + overdueTasks.length +
+            ' overdue ' +
+            (overdueTasks.length === 1 ? 'task' : 'tasks') +
+            ':\n' +
+            overdueTasks.map(function (e) {
+              return '• ' + e.text;
+            }).join('\n'),
+          sources: overdueTasks.slice(0, 8)
+        };
+      }
+
+      return {
+        answer: 'I could not find any overdue tasks with a saved date.',
+        sources: []
+      };
+    }
+
     if (asksWhoSomethingIsFor(q)) {
       var forMatches = matches.filter(function (e) {
         return /\bfor\s+[A-Z][a-z]+/.test(String(e.text || ''));

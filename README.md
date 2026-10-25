@@ -1,11 +1,38 @@
+
 # Mopapa
 
-Mopapa is a local-first web app prototype for saving entries in rooms, searching and asking questions about saved memories, keeping user-pinned keepsakes, tagging memories, tracking dated to-dos and appointments, and resurfacing older entries.
+Mopapa is a local-first web app prototype for saving entries in rooms, asking questions about saved memories, keeping pinned keepsakes, tagging memories, tracking dated tasks and appointments, and resurfacing older entries.
 
 ## Run
 
-Open `index.html` in a modern browser or use SPCK's preview. Data is stored in that browser's local storage. Use **Export backup** before changing devices or making major edits; imports replace the current local data.
+Open `index.html` in a modern browser or use SPCK's preview. Data is stored in that browser's local storage.
 
-## Status
+Use **Export backup** before changing devices or making major edits. Keep a backup somewhere safe. Importing a backup replaces the current local data, so check the selected file before importing.
 
-Prototype. Data lives only in this browser's local storage (plaintext, no sync), so export backups regularly. There are no reminders or notifications yet. The Tag Explorer is installed. Run the tests with `node tests/run.js`; CI runs them on every push.
+## Asking questions
+
+Ask questions in ordinary language about entries saved in Mopapa. Answers are based on saved entries, and matching entries can be shown as sources so you can check what the answer came from.
+
+When several saved entries could match a question, select the entry you meant if Mopapa offers that choice. Mopapa can learn supported aliases and confirmed source choices on the device. You can review and clear the available Ask learning data in the learning interface.
+
+Mopapa is a prototype. Its interpretation of dates, questions and saved text can be imperfect. Check the displayed source entries rather than treating an answer as guaranteed.
+
+## Privacy and data
+
+The current prototype stores data in the browser's local storage. Data is not synchronised between devices by this storage mechanism. Anyone with access to the same browser profile may be able to access the stored data.
+
+Export backups are files you control. Store them securely because they may contain personal information.
+
+## Status and limitations
+
+Mopapa is a prototype. Browser storage is local and is not a substitute for a secure, synchronised account system. Do not assume that reminders or notifications will be delivered. Keep regular backups.
+
+## Tests
+
+Run the automated test suite from the repository root:
+
+```sh
+node tests/run.js
+```
+
+The repository's CI workflow is intended to run tests on pushes. A successful local test run does not, by itself, establish that a deployment is working.

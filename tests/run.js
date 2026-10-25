@@ -46,6 +46,7 @@ test('corrupt storage is backed up, not lost', function () {
   assert.ok(Object.keys(w.localStorage._).some(function (k) { return k.indexOf('mopapa.v1.corrupt.') === 0; }));
 });
 
+
 test('date parser: tomorrow at 5pm', function () {
   const w = boot({});
   const r = w.Mopapa.rules.parse('call mum tomorrow at 5pm', new Date(2026, 9, 21, 10, 0));
@@ -54,6 +55,133 @@ test('date parser: tomorrow at 5pm', function () {
   assert.strictEqual(r.date.getHours(), 17);
 });
 
+test('ask date ranges: last week filters logged entries to the previous Monday-Sunday', function () {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const thisMonday = new Date(today);
+  thisMonday.setDate(thisMonday.getDate() - mondayOffset);
+
+  const previousMonday = new Date(thisMonday);
+  previousMonday.setDate(previousMonday.getDate() - 7);
+
+  const previousSunday = new Date(previousMonday);
+  previousSunday.setDate(previousSunday.getDate() + 6);
+
+  const beforePreviousWeek = new Date(previousMonday);
+  beforePreviousWeek.setDate(beforePreviousWeek.getDate() - 1);
+
+  const w = boot(stored([
+    {
+      id: 'previous-monday',
+      text: 'Saved entry from previous Monday',
+      room: 'notes',
+      created: previousMonday.toISOString()
+    },
+    {
+      id: 'previous-sunday',
+      text: 'Saved entry from previous Sunday',
+      room: 'notes',
+      created: previousSunday.toISOString()
+    },
+    {
+      id: 'older',
+      text: 'Saved entry from before previous week',
+      room: 'notes',
+      created: beforePreviousWeek.toISOString()
+    },
+    {
+      id: 'today',
+      text: 'Saved entry from today',
+      room: 'notes',
+      created: today.toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer('What did I save last week?');
+  const ids = result.sources.map(function (entry) { return entry.id; });
+
+  assert.ok(ids.includes('previous-monday'), result.answer);
+  assert.ok(ids.includes('previous-sunday'), result.answer);
+  assert.ok(!ids.includes('older'), result.answer);
+  assert.ok(!ids.includes('today'), result.answer);
+});
+
+test('ask date ranges: this month excludes entries from the previous month', function () {
+  const now = new Date();
+  const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+  const firstLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  const w = boot(stored([
+    {
+      id: 'this-month',
+      text: 'Saved entry from this month',
+      room: 'notes',
+      created: firstThisMonth.toISOString()
+    },
+    {
+      id: 'last-month',
+      text: 'Saved entry from last month',
+      room: 'notes',
+      created: firstLastMonth.toISOString()
+    },
+    {
+      id: 'last-day-last-month',
+      text: 'Saved entry on the last day of last month',
+      room: 'notes',
+      created: lastMonth.toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer('What did I save this month?');
+  const ids = result.sources.map(function (entry) { return entry.id; });
+
+  assert.ok(ids.includes('this-month'), result.answer);
+  assert.ok(!ids.includes('last-month'), result.answer);
+  assert.ok(!ids.includes('last-day-last-month'), result.answer);
+});
+
+test('ask date ranges: last month includes entries from that month only', function () {
+  const now = new Date();
+  const firstLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const w = boot(stored([
+    {
+      id: 'last-month-start',
+      text: 'Saved entry at start of last month',
+      room: 'notes',
+      created: firstLastMonth.toISOString()
+    },
+    {
+      id: 'last-month-end',
+      text: 'Saved entry at end of last month',
+      room: 'notes',
+      created: lastMonthEnd.toISOString()
+    },
+    {
+      id: 'this-month',
+      text: 'Saved entry from this month',
+      room: 'notes',
+      created: firstThisMonth.toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer('What did I save last month?');
+  const ids = result.sources.map(function (entry) { return entry.id; });
+
+  assert.ok(ids.includes('last-month-start'), result.answer);
+  assert.ok(ids.includes('last-month-end'), result.answer);
+  assert.ok(!ids.includes('this-month'), result.answer);
+});
 
 test('ask recognises abbreviated, month-first and numeric dates in saved text', function () {
   const cases = [
