@@ -1212,6 +1212,13 @@ function textDateMatchesFilter(e, filter) {
 
     candidates.sort(sortNewest);
 
+    if (isGeneralSpendingTotal && !candidates.length) {
+      return {
+        answer: 'I could not find any saved entries that explicitly record spending.',
+        sources: []
+      };
+    }
+    
     var priced = candidates.filter(function (e) {
       return !!Mopapa.rules.money(e.text);
     });
