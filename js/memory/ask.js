@@ -14,7 +14,7 @@ Mopapa.ask = (function () {
     'save saved saving saves record records recorded recording records remember remembered ' +
     'add added adding create created creating get got retrieve retrieving ' +
     'leave leaving leaves park parked parking store stored storing ' +
-    'hide hid hidden place placed thing things object objects stuff' + 
+    'hide hid hidden place placed thing things object objects stuff ' + 
     'week weeks weekend weekends month months previous current'
   ).split(' ').reduce(function (o, w) {
     o[w] = true;
