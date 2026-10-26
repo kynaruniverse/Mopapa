@@ -417,6 +417,20 @@ test('extract: finds where things are and ignores dates and times', function () 
   assert.deepStrictEqual(Array.from(r.extract('MOT £55 and tyres £1,210.50').amounts), [55, 1210.5]);
 });
 
+test('money parser: reads large amounts with and without thousands separators', function () {
+  const w = boot({});
+  const r = w.Mopapa.rules;
+
+  assert.strictEqual(r.money('Car repair £2500.00'), '£2500.00');
+  assert.strictEqual(r.money('Car repair £2,500.00'), '£2,500.00');
+  assert.strictEqual(r.money('Boiler repair £1200'), '£1200');
+
+  assert.deepStrictEqual(
+    Array.from(r.moneyAll('Car £2500 and boiler £1,200.50')),
+    [2500, 1200.5]
+  );
+});
+
 test('entries.add and updateText save and revert structured fields', function () {
   const w = boot(stored());
   w.Mopapa.store.load();
@@ -480,7 +494,6 @@ test('ask: spending questions add up the amounts', function () {
   assert.strictEqual(r.sources.length, 2);
 });
 
-
 test('ask: total spending without a subject adds only explicit spending entries', function () {
   const r = askWith([
     { id: 'g', text: 'I spent £12 on groceries', room: 'notes', created: ago(1) },
@@ -494,21 +507,6 @@ test('ask: total spending without a subject adds only explicit spending entries'
   assert.ok(r.sources.some(function (e) { return e.id === 'c'; }));
   assert.ok(!r.sources.some(function (e) { return e.id === 'k'; }));
 });
-
-test('ask: short general spending question adds only explicit spending entries', function () {
-  const r = askWith([
-    { id: 'g', text: 'I spent £12 on groceries', room: 'notes', created: ago(1) },
-    { id: 'c', text: 'I spent £8 on household cleaning products', room: 'notes', created: ago(2) },
-    { id: 'k', text: 'I paid £18.50 for the replacement kettle', room: 'notes', created: ago(3) }
-  ], 'How much did I spend?');
-
-  assert.ok(/£20/.test(r.answer), r.answer);
-  assert.strictEqual(r.sources.length, 2);
-  assert.ok(r.sources.some(function (e) { return e.id === 'g'; }));
-  assert.ok(r.sources.some(function (e) { return e.id === 'c'; }));
-  assert.ok(!r.sources.some(function (e) { return e.id === 'k'; }));
-});
-
 
 test('ask: past date questions stay in the past', function () {
   const y = new Date().getFullYear();

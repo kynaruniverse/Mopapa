@@ -145,14 +145,14 @@ Mopapa.rules = (function () {
   }
 
   function money(text) {
-    var m = String(text).match(/£\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/);
+    var m = String(text).match(/£\s?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?![\d,])/);
     return m ? '£' + m[1] : null;
   }
 
   // Every £ amount in the text, as numbers.
   function moneyAll(text) {
     var out = [], m;
-    var re = /£\s?(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g;
+    var re = /£\s?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?![\d,])/g;
     while ((m = re.exec(String(text))) !== null) {
       out.push(parseFloat(m[1].replace(/,/g, '')));
     }
