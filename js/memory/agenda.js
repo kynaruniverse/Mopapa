@@ -19,7 +19,10 @@ Mopapa.agenda = (function () {
       if (isNaN(date.getTime())) return;
 
       var dayOffset = localDayNumber(date) - todayNumber;
-      var overdue = Mopapa.rules.isPast(entry.when, entry.hasTime);
+      var overdue = entry.hasTime
+        ? date < now
+        : dayOffset < 0;
+
       if (!overdue && (dayOffset < 0 || dayOffset > DAYS_AHEAD)) return;
 
       var label;
