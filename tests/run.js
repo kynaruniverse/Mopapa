@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -54,6 +54,47 @@ test('date parser: tomorrow at 5pm', function () {
   assert.ok(r && r.hasTime);
   assert.strictEqual(r.date.getDate(), 22);
   assert.strictEqual(r.date.getHours(), 17);
+});
+
+
+test('ask date-filter module calculates date ranges', function () {
+  const w = boot({});
+  const filter = w.Mopapa.askParts.dateFilter.dateFilter;
+  const norm = w.Mopapa.askParts.text.norm;
+  const isScheduledDateQuestion = function (q) {
+    return /\b(when|due|scheduled|appointment|reminder)\b/.test(q);
+  };
+  const now = new Date(2026, 9, 21, 12, 0, 0, 0);
+
+  const tomorrow = filter(
+    'What is due tomorrow?',
+    now,
+    norm,
+    isScheduledDateQuestion
+  );
+
+  assert.ok(tomorrow);
+  assert.strictEqual(tomorrow.label, 'tomorrow');
+  assert.strictEqual(tomorrow.due, true);
+  assert.strictEqual(tomorrow.start.getDate(), 22);
+  assert.strictEqual(tomorrow.start.getMonth(), 9);
+
+  const lastWeek = filter(
+    'What did I save last week?',
+    now,
+    norm,
+    isScheduledDateQuestion
+  );
+
+  assert.ok(lastWeek);
+  assert.strictEqual(lastWeek.label, 'last week');
+  assert.strictEqual(lastWeek.start.getDay(), 1);
+  assert.strictEqual(lastWeek.end - lastWeek.start, 7 * 24 * 60 * 60 * 1000);
+
+  assert.strictEqual(
+    filter('Tell me about my car', now, norm, isScheduledDateQuestion),
+    null
+  );
 });
 
 test('ask date ranges: last week filters logged entries to the previous Monday-Sunday', function () {
