@@ -1329,7 +1329,13 @@ function textDateMatchesFilter(e, filter) {
       };
     }
 
-    if (priced.length === 1) {
+    if (
+      priced.length === 1 &&
+      !(
+        /\b(total|altogether|spend|spent|spending)\b/.test(n) &&
+        Mopapa.rules.moneyAll(priced[0].text).length > 1
+      )
+    ) {
       var cost = Mopapa.rules.money(priced[0].text);
       var subjectWords = words(subject);
       var subjectText = subjectTerms.map(function (t) {
