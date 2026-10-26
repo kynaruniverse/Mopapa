@@ -7,7 +7,7 @@ Mopapa is a local-first web app prototype for saving entries in rooms, asking qu
 
 Open `index.html` in a modern browser or use SPCK's preview. Data is stored in that browser's local storage.
 
-Use **Export backup** before changing devices or making major edits. Keep a backup somewhere safe. Importing a backup replaces the current local data, so check the selected file before importing.
+Use **Back up data** regularly and before changing devices or making major edits. Mopapa currently supports exporting a backup, but restoring a backup through the app is not available in the current interface. Keep exported files somewhere safe. Backups may contain personal information, so store them securely.
 
 ## Asking questions
 
