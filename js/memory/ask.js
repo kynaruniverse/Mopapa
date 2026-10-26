@@ -1406,60 +1406,6 @@ function textDateMatchesFilter(e, filter) {
     };
   }
 
-  function isNameQuestion(q) {
-    var n = norm(q);
-
-    return /\bwhat(?: is| was|s)\s+the .+\s+called\b/.test(n) ||
-      /\bwhat(?: is| was|s)\s+the .+\s+name\b/.test(n) ||
-      /\bwhat(?: is| was|s)\s+the .+ name\b/.test(n) ||
-      /\bwhat is the .+ called\b/.test(n) ||
-      /\bwhat is the name of\b/.test(n) ||
-      /\bwhat is .+ name\b/.test(n);
-  }
-
-
-function asksWhoSomethingIsFor(q) {
-    return /\bwho\b.*\b(?:is|was|will be)\b.*\bfor\b/.test(norm(q));
-  }
-
-  function extractForPerson(text) {
-    var match = String(text || '').replace(/\s+/g, ' ').match(
-      /\bfor\s+([a-z][a-z'-]*(?:\s+(?!(?:at|on|in|by|from|until|tomorrow|today|tonight|yesterday|next|this|last|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)\b)[a-z][a-z'-]*)?)/i
-    );
-
-    if (!match) return null;
-
-    var name = match[1].trim();
-    var first = name.split(/\s+/)[0].toLowerCase();
-    var nonNames = /^(a|an|the|my|your|our|their|his|her|this|that|these|those|someone|anyone|everyone|nobody|something|anything|everything|appointment|delivery|parcel|package|collection|pickup|dropoff|work|home|office|school|hospital|doctor|dentist|meeting|event|trip|holiday|tomorrow|today)$/;
-
-    if (nonNames.test(first)) return null;
-
-    return name;
-  }
-
-  function extractCalledPerson(text) {
-    var source = String(text || '').replace(/\s+/g, ' ').trim();
-
-    var match = source.match(
-      /\bthe\s+([a-z][a-z-]{0,20})\s+(?:is|was)\s+called\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*){0,2})(?=[.,!?;]|$)/i
-    );
-
-    if (!match) return null;
-
-    var role = match[1].trim();
-    var name = match[2].trim();
-
-    var monthPattern = /^(january|february|march|april|may|june|july|august|september|october|november|december)$/i;
-
-    if (!role || !name || monthPattern.test(name)) return null;
-
-    return {
-      role: role,
-      name: name
-    };
-  }
-
   function answer(q) {
     var now = new Date();
     var storeData = Mopapa.store && Mopapa.store.data
@@ -1487,7 +1433,7 @@ function asksWhoSomethingIsFor(q) {
       !room &&
       !date &&
       !isLoggedQuestion(q) &&
-      !asksWhoSomethingIsFor(q)
+      !Mopapa.askParts.people.asksWhoSomethingIsFor(q)
     ) {
       return {
         answer: 'Ask me about something specific, like “when is the dentist?”',
@@ -1652,13 +1598,13 @@ function asksWhoSomethingIsFor(q) {
     }
 
 
-if (asksWhoSomethingIsFor(q)) {
+if (Mopapa.askParts.people.asksWhoSomethingIsFor(q)) {
       var forMatches = matches.filter(function (e) {
-        return extractForPerson(e.text) !== null;
+        return Mopapa.askParts.people.extractForPerson(e.text) !== null;
       });
 
       if (forMatches.length === 1) {
-        var forName = extractForPerson(forMatches[0].text);
+        var forName = Mopapa.askParts.people.extractForPerson(forMatches[0].text);
 
         return {
           answer: 'It looks like it is for ' + forName + '.',
@@ -1883,11 +1829,11 @@ if (asksWhoSomethingIsFor(q)) {
       };
     }
 
-    if (matches.length && isNameQuestion(q)) {
+    if (matches.length && Mopapa.askParts.people.isNameQuestion(q)) {
       var namedMatches = [];
 
       matches.forEach(function (entry) {
-        var person = extractCalledPerson(entry.text);
+        var person = Mopapa.askParts.people.extractCalledPerson(entry.text);
 
         if (person) {
           namedMatches.push({

@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-people', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -504,34 +504,54 @@ test('ask identifies people in for-phrases regardless of name capitalisation', f
   assert.ok(/for Jasmine Smith\./.test(fullName.answer), fullName.answer);
 });
 
+test('ask people module handles names and question types directly', function () {
+  const w = boot({});
+  const people = w.Mopapa.askParts.people;
 
-test('ask does not include following time or date words in a person name', function () {
-  const cases = [
+  assert.strictEqual(
+    people.asksWhoSomethingIsFor('Who is this for?'),
+    true
+  );
+
+  assert.strictEqual(
+    people.asksWhoSomethingIsFor('Where is the dentist?'),
+    false
+  );
+
+  assert.strictEqual(
+    people.isNameQuestion('What is the dentist called?'),
+    true
+  );
+
+  assert.strictEqual(
+    people.extractForPerson('The appointment is for John at 5pm'),
+    'John'
+  );
+
+  assert.strictEqual(
+    people.extractForPerson('The parcel is for Jasmine tomorrow'),
+    'Jasmine'
+  );
+
+  assert.strictEqual(
+    people.extractForPerson('The appointment is for the dentist'),
+    null
+  );
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(
+      people.extractCalledPerson('The dentist is called Dr Smith.')
+    )),
     {
-      text: 'The appointment is for John at 5pm',
-      expected: 'John'
-    },
-    {
-      text: 'The parcel is for Jasmine tomorrow',
-      expected: 'Jasmine'
+      role: 'dentist',
+      name: 'Dr Smith'
     }
-  ];
+  );
 
-  cases.forEach(function (item, index) {
-    const r = askWith([
-      {
-        id: 'person-' + index,
-        text: item.text,
-        room: 'notes',
-        created: ago(1)
-      }
-    ], 'Who is this for?');
-
-    assert.ok(
-      r.answer.includes('for ' + item.expected + '.'),
-      item.text + ' -> ' + r.answer
-    );
-  });
+  assert.strictEqual(
+    people.extractCalledPerson('An appointment is tomorrow'),
+    null
+  );
 });
 
 test('ask does not mistake ordinary for-phrases for people', function () {
