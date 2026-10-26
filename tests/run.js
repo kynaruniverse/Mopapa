@@ -407,6 +407,45 @@ function askWith(entries, question) {
 function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
 
 
+test('agenda includes the correct date range and orders overdue items first', function () {
+  const w = boot({});
+  const now = new Date();
+  now.setHours(12, 0, 0, 0);
+
+  function dateAt(offset) {
+    const date = new Date(now);
+    date.setDate(date.getDate() + offset);
+    return date.toISOString();
+  }
+
+  const entries = [
+    { id: 'old', text: 'Older overdue task', room: 'todo', when: dateAt(-2), hasTime: false, done: false },
+    { id: 'recent', text: 'Recently overdue task', room: 'todo', when: dateAt(-1), hasTime: false, done: false },
+    { id: 'today', text: 'Task due today', room: 'todo', when: dateAt(0), hasTime: false, done: false },
+    { id: 'tomorrow', text: 'Task due tomorrow', room: 'todo', when: dateAt(1), hasTime: false, done: false },
+    { id: 'week', text: 'Task due in seven days', room: 'todo', when: dateAt(7), hasTime: false, done: false },
+    { id: 'outside', text: 'Task due in eight days', room: 'todo', when: dateAt(8), hasTime: false, done: false },
+    { id: 'done', text: 'Completed task', room: 'todo', when: dateAt(0), hasTime: false, done: true }
+  ];
+
+  w.localStorage.setItem('mopapa.v1', JSON.stringify({
+    entries: entries,
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  }));
+  w.Mopapa.store.load();
+
+  const items = Array.from(w.Mopapa.agenda.getItems(now));
+  const ids = items.map(function (item) { return item.entry.id; });
+
+  assert.deepStrictEqual(ids, ['old', 'recent', 'today', 'tomorrow', 'week']);
+  assert.deepStrictEqual(
+    items.map(function (item) { return item.label; }),
+    ['Overdue', 'Overdue', 'Due today', 'Tomorrow', 'Coming up']
+  );
+});
+
 test('ask identifies people in for-phrases regardless of name capitalisation', function () {
   const lowercase = askWith([
     { id: 'a', text: 'The parcel is for jasmine', room: 'notes', created: ago(1) }
