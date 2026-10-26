@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -504,6 +504,27 @@ test('ask identifies people in for-phrases regardless of name capitalisation', f
   assert.ok(/for Jasmine Smith\./.test(fullName.answer), fullName.answer);
 });
 
+test('ask match module detects typos without relaxing short words or numbers', function () {
+  const w = boot({});
+  const match = w.Mopapa.askParts.match;
+
+  assert.strictEqual(match.editDistance('cat', 'cat', 1), 0);
+  assert.strictEqual(match.editDistance('cat', 'car', 1), 1);
+  assert.strictEqual(match.editDistance('form', 'from', 1), 1);
+
+  assert.strictEqual(match.termsClose('dentist', 'dentist'), true);
+  assert.strictEqual(match.termsClose('dentist', 'dentits'), true);
+  assert.strictEqual(match.termsClose('kitchen', 'kichen'), true);
+
+  // Short words must not be treated as fuzzy matches.
+  assert.strictEqual(match.termsClose('cat', 'car'), false);
+
+  // Numeric terms must match exactly.
+  assert.strictEqual(match.termsClose('room12', 'room13'), false);
+
+  // Larger differences should not be accepted as typos.
+  assert.strictEqual(match.termsClose('dentist', 'computer'), false);
+});
 
 test('ask text module normalises text and matches words consistently', function () {
   const w = boot({});
