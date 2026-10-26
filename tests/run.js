@@ -600,6 +600,17 @@ test('learning: a tapped source settles a "which do you mean" cost question', fu
   assert.ok(/Which job or purchase/.test(w.Mopapa.ask.answer(q).answer));
 });
 
+test('ask does not assume a single priced entry is unambiguous', function () {
+  const r = askWith([
+    { id: 'a', text: 'Car service £150', room: 'notes', created: ago(2) },
+    { id: 'b', text: 'Car service booked for Friday', room: 'notes', created: ago(1) }
+  ], 'How much did the car service cost?');
+
+  assert.ok(/Which job or purchase/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 1);
+  assert.strictEqual(r.sources[0].id, 'a');
+});
+
 test('cost questions get a price, not a closest-matches list', function () {
   const r = askWith([
     { id: 'a', text: 'Boiler service visit £120', room: 'notes', created: ago(3) },

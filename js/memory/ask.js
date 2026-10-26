@@ -1331,6 +1331,7 @@ function textDateMatchesFilter(e, filter) {
 
     if (
       priced.length === 1 &&
+      candidates.length === 1 &&
       !(
         /\b(total|altogether|spend|spent|spending)\b/.test(n) &&
         Mopapa.rules.moneyAll(priced[0].text).length > 1
