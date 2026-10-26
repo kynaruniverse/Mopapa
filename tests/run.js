@@ -407,6 +407,50 @@ function askWith(entries, question) {
 function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
 
 
+test('agenda determines timed deadlines using the supplied reference time', function () {
+  const w = boot({});
+  const now = new Date(2026, 0, 1, 12, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'future',
+      text: 'Task due tomorrow afternoon',
+      room: 'todo',
+      when: new Date(2026, 0, 2, 15, 0, 0, 0).toISOString(),
+      hasTime: true,
+      done: false
+    },
+    {
+      id: 'past',
+      text: 'Task due this morning',
+      room: 'todo',
+      when: new Date(2026, 0, 1, 10, 0, 0, 0).toISOString(),
+      hasTime: true,
+      done: false
+    }
+  ];
+
+  w.localStorage.setItem('mopapa.v1', JSON.stringify({
+    entries: entries,
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  }));
+  w.Mopapa.store.load();
+
+  const items = Array.from(w.Mopapa.agenda.getItems(now));
+
+  assert.deepStrictEqual(
+    items.map(function (item) {
+      return [item.entry.id, item.overdue, item.label];
+    }),
+    [
+      ['past', true, 'Overdue'],
+      ['future', false, 'Tomorrow']
+    ]
+  );
+});
+
 test('agenda includes the correct date range and orders overdue items first', function () {
   const w = boot({});
   const now = new Date();
