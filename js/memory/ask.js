@@ -1265,7 +1265,6 @@ function textDateMatchesFilter(e, filter) {
     var isGeneralSpendingTotal =
       !subjectTerms.length &&
       !room &&
-      /\b(total|altogether)\b/.test(n) &&
       /\b(spend|spent|spending)\b/.test(n);
 
     if (!subjectTerms.length && !room && !isGeneralSpendingTotal) {
