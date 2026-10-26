@@ -508,6 +508,21 @@ test('ask: total spending without a subject adds only explicit spending entries'
   assert.ok(!r.sources.some(function (e) { return e.id === 'k'; }));
 });
 
+test('ask: total spending includes multiple amounts in one entry', function () {
+  const r = askWith([
+    {
+      id: 'a',
+      text: 'I spent £55 on the MOT and £210 on tyres',
+      room: 'notes',
+      created: ago(1)
+    }
+  ], 'How much did I spend in total?');
+
+  assert.ok(/£265/.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 1);
+  assert.strictEqual(r.sources[0].id, 'a');
+});
+
 test('ask: past date questions stay in the past', function () {
   const y = new Date().getFullYear();
   const r = askWith([

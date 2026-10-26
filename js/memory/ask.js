@@ -1360,16 +1360,23 @@ function textDateMatchesFilter(e, filter) {
       var counted = [];
 
       priced.forEach(function (e) {
-        var v = parseFloat(
-          String(Mopapa.rules.money(e.text)).replace(/[£,]/g, '')
-        );
+        var amounts = Mopapa.rules.moneyAll(e.text);
+        var entryTotal = 0;
+        var hasAmount = false;
 
-        if (!isNaN(v)) {
-          sum += v;
+        amounts.forEach(function (v) {
+          if (!isNaN(v)) {
+            entryTotal += v;
+            hasAmount = true;
+          }
+        });
+
+        if (hasAmount) {
+          sum += entryTotal;
           counted.push(e);
         }
       });
-
+      
       return {
         answer: 'You spent ' + formatMoney(sum) + ' in total across ' +
           counted.length + ' entries.',
