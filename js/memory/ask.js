@@ -1417,8 +1417,25 @@ function textDateMatchesFilter(e, filter) {
       /\bwhat is .+ name\b/.test(n);
   }
 
-  function asksWhoSomethingIsFor(q) {
+
+function asksWhoSomethingIsFor(q) {
     return /\bwho\b.*\b(?:is|was|will be)\b.*\bfor\b/.test(norm(q));
+  }
+
+  function extractForPerson(text) {
+    var match = String(text || '').replace(/\s+/g, ' ').match(
+      /\bfor\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*)?)/i
+    );
+
+    if (!match) return null;
+
+    var name = match[1].trim();
+    var first = name.split(/\s+/)[0].toLowerCase();
+    var nonNames = /^(a|an|the|my|your|our|their|his|her|this|that|these|those|someone|anyone|everyone|nobody|something|anything|everything|appointment|delivery|parcel|package|collection|pickup|dropoff|work|home|office|school|hospital|doctor|dentist|meeting|event|trip|holiday|tomorrow|today)$/;
+
+    if (nonNames.test(first)) return null;
+
+    return name;
   }
 
   function extractCalledPerson(text) {
@@ -1633,14 +1650,14 @@ function textDateMatchesFilter(e, filter) {
       };
     }
 
-    if (asksWhoSomethingIsFor(q)) {
+
+if (asksWhoSomethingIsFor(q)) {
       var forMatches = matches.filter(function (e) {
-        return /\bfor\s+[A-Z][a-z]+/.test(String(e.text || ''));
+        return extractForPerson(e.text) !== null;
       });
 
       if (forMatches.length === 1) {
-        var forName = String(forMatches[0].text)
-          .match(/\bfor\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/)[1];
+        var forName = extractForPerson(forMatches[0].text);
 
         return {
           answer: 'It looks like it is for ' + forName + '.',
@@ -1653,6 +1670,7 @@ function textDateMatchesFilter(e, filter) {
         sources: forMatches.slice(0, 5)
       };
     }
+
 
     if (
       (/\bwhere\b/.test(norm(q)) ||

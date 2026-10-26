@@ -405,6 +405,35 @@ function askWith(entries, question) {
 
 function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
 
+
+test('ask identifies people in for-phrases regardless of name capitalisation', function () {
+  const lowercase = askWith([
+    { id: 'a', text: 'The parcel is for jasmine', room: 'notes', created: ago(1) }
+  ], 'Who is the parcel for?');
+
+  assert.ok(/for jasmine\./i.test(lowercase.answer), lowercase.answer);
+
+  const fullName = askWith([
+    { id: 'b', text: 'The parcel is for Jasmine Smith', room: 'notes', created: ago(1) }
+  ], 'Who is the parcel for?');
+
+  assert.ok(/for Jasmine Smith\./.test(fullName.answer), fullName.answer);
+});
+
+test('ask does not mistake ordinary for-phrases for people', function () {
+  [
+    'The parcel is for the appointment',
+    'The parcel is for a delivery'
+  ].forEach(function (entry) {
+    const r = askWith([
+      { id: 'a', text: entry, room: 'notes', created: ago(1) }
+    ], 'Who is the parcel for?');
+
+    assert.ok(/I could not find who that is for/.test(r.answer), r.answer);
+    assert.strictEqual(r.sources.length, 0);
+  });
+});
+
 test('extract: finds where things are and ignores dates and times', function () {
   const w = boot({});
   const r = w.Mopapa.rules;
