@@ -65,6 +65,20 @@ Mopapa.askParts.dateFilter = (function () {
       year: year
     };
   }
+
+  function loggedOn(e, filter) {
+    if (!filter) return true;
+
+    var value = filter.due ? e.when : e.created;
+
+    if (filter.due && !value) return false;
+
+    var d = new Date(value);
+
+    return !isNaN(d.getTime()) &&
+      d >= filter.start &&
+      d < filter.end;
+  }
   
   function dateFilter(q, now, norm, isScheduledDateQuestion) {
     var n = norm(q);
@@ -220,8 +234,9 @@ Mopapa.askParts.dateFilter = (function () {
     return null;
   }
 
-    return {
+  return {
     dateFilter: dateFilter,
-    explicitDateFilter: explicitDateFilter
+    explicitDateFilter: explicitDateFilter,
+    loggedOn: loggedOn
   };
 })();

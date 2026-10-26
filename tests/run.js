@@ -56,6 +56,58 @@ test('date parser: tomorrow at 5pm', function () {
   assert.strictEqual(r.date.getHours(), 17);
 });
 
+test('ask date-filter module filters entries by logged and due dates', function () {
+  const w = boot({});
+  const loggedOn = w.Mopapa.askParts.dateFilter.loggedOn;
+
+  const start = new Date(2026, 9, 21);
+  const end = new Date(2026, 9, 22);
+
+  const filter = {
+    start: start,
+    end: end,
+    due: false
+  };
+
+  assert.strictEqual(
+    loggedOn({ created: new Date(2026, 9, 21, 12).toISOString() }, filter),
+    true
+  );
+
+  assert.strictEqual(
+    loggedOn({ created: new Date(2026, 9, 22, 0).toISOString() }, filter),
+    false
+  );
+
+  assert.strictEqual(
+    loggedOn({ created: 'invalid date' }, filter),
+    false
+  );
+
+  assert.strictEqual(loggedOn({}, null), true);
+
+  const dueFilter = {
+    start: start,
+    end: end,
+    due: true
+  };
+
+  assert.strictEqual(
+    loggedOn({
+      created: new Date(2026, 9, 21, 12).toISOString(),
+      when: new Date(2026, 9, 21, 15).toISOString()
+    }, dueFilter),
+    true
+  );
+
+  assert.strictEqual(
+    loggedOn({
+      created: new Date(2026, 9, 21, 12).toISOString()
+    }, dueFilter),
+    false
+  );
+});
+
 test('ask date-filter module handles explicit dates', function () {
   const w = boot({});
   const dateParts = w.Mopapa.askParts.dateFilter;

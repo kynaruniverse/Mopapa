@@ -8,6 +8,7 @@ Mopapa.ask = (function () {
   var textDateMatchesFilter = Mopapa.askParts.dateText.textDateMatchesFilter;
   var dateFilter = Mopapa.askParts.dateFilter.dateFilter;
   var explicitDateFilter = Mopapa.askParts.dateFilter.explicitDateFilter;
+  var loggedOn = Mopapa.askParts.dateFilter.loggedOn;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
@@ -260,20 +261,6 @@ Mopapa.ask = (function () {
   
       return isWhenQuestion(n) ||
         /\b(due|scheduled|appointment|appointments|reminder|reminders)\b/.test(n);
-  }
-
-  function loggedOn(e, filter) {
-    if (!filter) return true;
-
-    var value = filter.due ? e.when : e.created;
-
-    if (filter.due && !value) return false;
-
-    var d = new Date(value);
-
-    return !isNaN(d.getTime()) &&
-      d >= filter.start &&
-      d < filter.end;
   }
 
   var ENTRY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
