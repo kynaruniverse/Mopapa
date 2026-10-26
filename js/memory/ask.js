@@ -1486,7 +1486,8 @@ function asksWhoSomethingIsFor(q) {
       !terms.length &&
       !room &&
       !date &&
-      !isLoggedQuestion(q)
+      !isLoggedQuestion(q) &&
+      !asksWhoSomethingIsFor(q)
     ) {
       return {
         answer: 'Ask me about something specific, like “when is the dentist?”',
