@@ -554,6 +554,37 @@ test('ask people module handles names and question types directly', function () 
   );
 });
 
+
+test('ask does not include following time or date words in a person name', function () {
+  const cases = [
+    {
+      text: 'The appointment is for John at 5pm',
+      expected: 'John'
+    },
+    {
+      text: 'The parcel is for Jasmine tomorrow',
+      expected: 'Jasmine'
+    }
+  ];
+
+  cases.forEach(function (item, index) {
+    const r = askWith([
+      {
+        id: 'person-' + index,
+        text: item.text,
+        room: 'notes',
+        created: ago(1)
+      }
+    ], 'Who is this for?');
+
+    assert.ok(
+      r.answer.includes('for ' + item.expected + '.'),
+      item.text + ' -> ' + r.answer
+    );
+  });
+});
+
+
 test('ask does not mistake ordinary for-phrases for people', function () {
   [
     'The parcel is for the appointment',
