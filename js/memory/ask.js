@@ -1424,7 +1424,7 @@ function asksWhoSomethingIsFor(q) {
 
   function extractForPerson(text) {
     var match = String(text || '').replace(/\s+/g, ' ').match(
-      /\bfor\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*)?)/i
+      /\bfor\s+([a-z][a-z'-]*(?:\s+(?!(?:at|on|in|by|from|until|tomorrow|today|tonight|yesterday|next|this|last|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)\b)[a-z][a-z'-]*)?)/i
     );
 
     if (!match) return null;
