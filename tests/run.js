@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-people', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -502,6 +502,43 @@ test('ask identifies people in for-phrases regardless of name capitalisation', f
   ], 'Who is the parcel for?');
 
   assert.ok(/for Jasmine Smith\./.test(fullName.answer), fullName.answer);
+});
+
+
+test('ask text module normalises text and matches words consistently', function () {
+  const w = boot({});
+  const text = w.Mopapa.askParts.text;
+
+  assert.strictEqual(
+    text.norm("  John's KEYS   are here! "),
+    'johns keys are here'
+  );
+
+  assert.deepStrictEqual(
+    Array.from(text.words('Keys are in the kitchen')),
+    ['keys', 'are', 'in', 'the', 'kitchen']
+  );
+
+  assert.strictEqual(
+    text.hasPhrase('Keys are in the kitchen drawer', 'kitchen drawer'),
+    true
+  );
+
+  assert.strictEqual(
+    text.hasPhrase('Keys are in the kitchen drawer', 'kitchen'),
+    true
+  );
+
+  assert.strictEqual(
+    text.hasPhrase('Keys are in the kitchen drawer', 'kit'),
+    false
+  );
+
+  assert.strictEqual(text.stem('keys'), 'key');
+  assert.strictEqual(text.stem('paid'), 'pay');
+  assert.strictEqual(text.stem('spending'), 'spend');
+  assert.strictEqual(text.stem('bought'), 'buy');
+  assert.strictEqual(text.stem('string'), 'string');
 });
 
 test('ask people module handles names and question types directly', function () {
