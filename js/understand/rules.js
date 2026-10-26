@@ -162,7 +162,7 @@ Mopapa.rules = (function () {
   // "Keys are in the kitchen drawer", "Car is parked on level 3"
   var FACT_RE = /^(.+?)\s+(is|are)\s+(?:now\s+|currently\s+|always\s+|still\s+)?(?:(?:kept|left|stored|put|placed|parked|hidden|sitting|located)\s+)?(in|inside|on|under|behind|beside|next to|within|at)\s+(.+?)[.!?\s]*$/i;
   var NOT_SUBJECT_RE = /^(?:i|we|you|he|she|they|it|there|this|that|these|those|what|who|where|when|why|how)\b/i;
-  var TIMEISH_RE = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|june|july|august|september|october|november|december|tomorrow|today|tonight|yesterday|noon|midday)\b|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\b\d{1,2}(?:st|nd|rd|th)\b|\d{1,2}\/\d{1,2}|^\d{1,2}(?::\d{2})?$/i;
+  var TIMEISH_RE = /\b(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december|tomorrow|today|tonight|yesterday|noon|midday)\b|\b\d{1,2}(?::\d{2})?\s*(?:am|pm)\b|\b\d{1,2}(?:st|nd|rd|th)\b|\d{1,2}\/\d{1,2}|^\d{1,2}(?::\d{2})?$/i;
   var LEAD_DET_RE = /^(?:the|my|our|a|an)\s+/i;
 
   // Pulls structure out of a saved sentence. Returns { fact, amounts }.

@@ -412,6 +412,7 @@ test('extract: finds where things are and ignores dates and times', function () 
   assert.strictEqual(r.extract('Passport and charger are in the top drawer').fact.items.length, 2);
   assert.strictEqual(r.extract('Car is parked on level 3').fact.where, 'level 3');
   assert.strictEqual(r.extract('Dentist appointment is on 5 November').fact, null);
+  assert.strictEqual(r.extract('Dentist appointment is on 5 May').fact, null);
   assert.strictEqual(r.extract('Meeting is at 3pm').fact, null);
   assert.strictEqual(r.extract('I think the plan is on track').fact, null);
   assert.deepStrictEqual(Array.from(r.extract('MOT £55 and tyres £1,210.50').amounts), [55, 1210.5]);
