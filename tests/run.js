@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -182,6 +182,47 @@ test('ask date ranges: last month includes entries from that month only', functi
   assert.ok(ids.includes('last-month-start'), result.answer);
   assert.ok(ids.includes('last-month-end'), result.answer);
   assert.ok(!ids.includes('this-month'), result.answer);
+});
+
+test('ask date-text module parses valid dates and rejects invalid dates', function () {
+  const w = boot({});
+  const dates = w.Mopapa.askParts.dateText;
+
+  const dayFirst = dates.extractTextDate('Dentist appointment on 5 November');
+  assert.ok(dayFirst);
+  assert.strictEqual(dayFirst.day, 5);
+  assert.strictEqual(dayFirst.month, 10);
+
+  const monthFirst = dates.extractTextDate('Appointment on May 5, 2027');
+  assert.ok(monthFirst);
+  assert.strictEqual(monthFirst.day, 5);
+  assert.strictEqual(monthFirst.month, 4);
+  assert.strictEqual(monthFirst.year, 2027);
+
+  const numeric = dates.extractTextDate('Appointment on 05/11/2026');
+  assert.ok(numeric);
+  assert.strictEqual(numeric.day, 5);
+  assert.strictEqual(numeric.month, 10);
+  assert.strictEqual(numeric.year, 2026);
+
+  assert.strictEqual(dates.extractTextDate('Appointment on 31 February'), null);
+  assert.strictEqual(dates.extractTextDate('No date mentioned'), null);
+
+  const filter = {
+    start: new Date(2026, 10, 1),
+    end: new Date(2026, 11, 1),
+    due: true
+  };
+
+  assert.strictEqual(
+    dates.textDateMatchesFilter({ text: 'Dentist on 5 November' }, filter),
+    true
+  );
+
+  assert.strictEqual(
+    dates.textDateMatchesFilter({ text: 'Dentist on 5 May' }, filter),
+    false
+  );
 });
 
 test('ask recognises abbreviated, month-first and numeric dates in saved text', function () {
