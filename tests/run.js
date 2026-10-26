@@ -56,6 +56,54 @@ test('date parser: tomorrow at 5pm', function () {
   assert.strictEqual(r.date.getHours(), 17);
 });
 
+test('ask date-filter module handles explicit dates', function () {
+  const w = boot({});
+  const dateParts = w.Mopapa.askParts.dateFilter;
+  const norm = w.Mopapa.askParts.text.norm;
+  const extractTextDate = w.Mopapa.askParts.dateText.extractTextDate;
+  const MONTH_NAMES = w.Mopapa.askParts.dateText.MONTH_NAMES;
+
+  const isLoggedQuestion = function (q) {
+    return /\bwhat did i save\b/.test(q);
+  };
+
+  const isScheduledDateQuestion = function (q) {
+    return /\b(when|due|scheduled|appointment|reminder)\b/.test(q);
+  };
+
+  const now = new Date(2026, 9, 21, 12, 0, 0, 0);
+
+  const result = dateParts.explicitDateFilter(
+    'When is my dentist appointment on 5 November?',
+    now,
+    norm,
+    extractTextDate,
+    isLoggedQuestion,
+    isScheduledDateQuestion,
+    MONTH_NAMES
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.label, '5 November 2026');
+  assert.strictEqual(result.start.getFullYear(), 2026);
+  assert.strictEqual(result.start.getMonth(), 10);
+  assert.strictEqual(result.start.getDate(), 5);
+  assert.strictEqual(result.due, true);
+  assert.strictEqual(result.explicit, true);
+
+  assert.strictEqual(
+    dateParts.explicitDateFilter(
+      'When is my dentist appointment?',
+      now,
+      norm,
+      extractTextDate,
+      isLoggedQuestion,
+      isScheduledDateQuestion,
+      MONTH_NAMES
+    ),
+    null
+  );
+});
 
 test('ask date-filter module calculates date ranges', function () {
   const w = boot({});

@@ -7,6 +7,7 @@ Mopapa.ask = (function () {
   var extractTextDate = Mopapa.askParts.dateText.extractTextDate;
   var textDateMatchesFilter = Mopapa.askParts.dateText.textDateMatchesFilter;
   var dateFilter = Mopapa.askParts.dateFilter.dateFilter;
+  var explicitDateFilter = Mopapa.askParts.dateFilter.explicitDateFilter;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
@@ -209,10 +210,6 @@ Mopapa.ask = (function () {
     return out;
   }
 
-  function localDay(d) {
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-
   function isLoggedQuestion(q) {
     var n = norm(q);
 
@@ -277,51 +274,6 @@ Mopapa.ask = (function () {
     return !isNaN(d.getTime()) &&
       d >= filter.start &&
       d < filter.end;
-  }
-
-  function explicitDateFilter(q, now) {
-    var n = norm(q);
-    var parsed = extractTextDate(q);
-
-    if (!parsed) return null;
-
-    var loggedQuestion = isLoggedQuestion(n);
-    var pastTense = /\b(did|was|were|paid|spent|bought|saved|logged|recorded)\b/.test(n);
-    var year = parsed.year;
-
-    if (year === null) {
-      year = now.getFullYear();
-
-      var provisional = new Date(year, parsed.month, parsed.day);
-
-      if (provisional.getMonth() !== parsed.month) return null;
-
-      if (!loggedQuestion && !pastTense && provisional < localDay(now)) {
-        year++;
-      }
-    }
-
-    var start = new Date(year, parsed.month, parsed.day);
-
-    if (
-      start.getFullYear() !== year ||
-      start.getMonth() !== parsed.month ||
-      start.getDate() !== parsed.day
-    ) {
-      return null;
-    }
-
-    return {
-      start: start,
-      end: new Date(year, parsed.month, parsed.day + 1),
-      label: parsed.day + ' ' +
-        MONTH_NAMES[parsed.month].charAt(0).toUpperCase() +
-        MONTH_NAMES[parsed.month].slice(1) + ' ' + year,
-      due: !loggedQuestion && isScheduledDateQuestion(n),
-      explicit: true,
-      logged: loggedQuestion,
-      year: year
-    };
   }
 
   var ENTRY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
@@ -1061,7 +1013,15 @@ Mopapa.ask = (function () {
     var all = storeData.entries.slice();
 
     var room = roomForQuestion(q);
-    var date = explicitDateFilter(q, now) || dateFilter(q, now, norm, isScheduledDateQuestion);
+    var date = explicitDateFilter(
+      q,
+      now,
+      norm,
+      extractTextDate,
+      isLoggedQuestion,
+      isScheduledDateQuestion,
+      MONTH_NAMES
+    ) || dateFilter(q, now, norm, isScheduledDateQuestion);
     applyLearned();
 
     var terms = queryTerms(q, room);

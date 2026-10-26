@@ -13,6 +13,59 @@ Mopapa.askParts.dateFilter = (function () {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
 
+  function explicitDateFilter(
+    q,
+    now,
+    norm,
+    extractTextDate,
+    isLoggedQuestion,
+    isScheduledDateQuestion,
+    MONTH_NAMES
+  ) {
+    var n = norm(q);
+    var parsed = extractTextDate(q);
+
+    if (!parsed) return null;
+
+    var loggedQuestion = isLoggedQuestion(n);
+    var pastTense = /\b(did|was|were|paid|spent|bought|saved|logged|recorded)\b/.test(n);
+    var year = parsed.year;
+
+    if (year === null) {
+      year = now.getFullYear();
+
+      var provisional = new Date(year, parsed.month, parsed.day);
+
+      if (provisional.getMonth() !== parsed.month) return null;
+
+      if (!loggedQuestion && !pastTense && provisional < localDay(now)) {
+        year++;
+      }
+    }
+
+    var start = new Date(year, parsed.month, parsed.day);
+
+    if (
+      start.getFullYear() !== year ||
+      start.getMonth() !== parsed.month ||
+      start.getDate() !== parsed.day
+    ) {
+      return null;
+    }
+
+    return {
+      start: start,
+      end: new Date(year, parsed.month, parsed.day + 1),
+      label: parsed.day + ' ' +
+        MONTH_NAMES[parsed.month].charAt(0).toUpperCase() +
+        MONTH_NAMES[parsed.month].slice(1) + ' ' + year,
+      due: !loggedQuestion && isScheduledDateQuestion(n),
+      explicit: true,
+      logged: loggedQuestion,
+      year: year
+    };
+  }
+  
   function dateFilter(q, now, norm, isScheduledDateQuestion) {
     var n = norm(q);
     var m;
@@ -167,7 +220,8 @@ Mopapa.askParts.dateFilter = (function () {
     return null;
   }
 
-  return {
-    dateFilter: dateFilter
+    return {
+    dateFilter: dateFilter,
+    explicitDateFilter: explicitDateFilter
   };
 })();
