@@ -47,7 +47,7 @@ Mopapa.askParts.dateText = (function () {
         year = match[3] ? Number(match[3]) : null;
       } else {
         // Numeric dates use UK day/month/year order.
-        match = source.match(/\\b(\\d{1,2})\\/(\\d{1,2})(?:\\/(\\d{2,4}))?\\b/);
+        match = source.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/);
 
         if (!match) return null;
 
