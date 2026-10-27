@@ -64,7 +64,8 @@ Mopapa.agendaUI = (function () {
       });
       actions.appendChild(openButton);
 
-      if (Mopapa.roomById(entry.room).dated) {
+      var entryRoom = Mopapa.roomById(entry.room);
+      if (entryRoom && entryRoom.dated) {
         var doneButton = document.createElement('button');
         doneButton.type = 'button';
         doneButton.className = 'agenda-button done-button';

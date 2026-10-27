@@ -789,12 +789,15 @@ Mopapa.ask = (function () {
     var askingWhen = isWhenQuestion(q);
 
     if (isGeneralNextAppointmentQuestion(q)) {
+
       var upcomingAppointments = all.filter(function (e) {
         return e.room === 'appointments' &&
           !e.done &&
           e.when &&
+          !isNaN(new Date(e.when).getTime()) &&
           !Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);
+
 
       if (upcomingAppointments.length) {
         var nextAppointment = upcomingAppointments[0];

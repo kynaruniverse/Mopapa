@@ -1370,6 +1370,28 @@ test('ask: next appointment reports no active appointment when all are completed
   );
 });
 
+
+test('ask: next appointment ignores invalid saved dates', function () {
+  const result = askWith([
+    {
+      id: 'invalid',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: 'not-a-valid-date',
+      hasTime: false,
+      done: false,
+      created: ago(2)
+    }
+  ], 'What is my next appointment?');
+
+  assert.strictEqual(result.sources.length, 0);
+
+  assert.ok(
+    /could not find any upcoming appointments/i.test(result.answer),
+    result.answer
+  );
+});
+
 test('ask: overdue task list excludes completed tasks', function () {
   const past = new Date(Date.now() - 4 * 86400000).toISOString();
 
@@ -1404,7 +1426,6 @@ test('ask: overdue task list excludes completed tasks', function () {
     'open'
   );
 
-
   assert.ok(/1 overdue task/.test(result.answer), result.answer);
 
   const allCompleted = askWith([
@@ -1424,6 +1445,22 @@ test('ask: overdue task list excludes completed tasks', function () {
   assert.ok(
     /could not find any overdue tasks/i.test(allCompleted.answer),
     allCompleted.answer
+  );
+});
+
+
+test('agenda UI guards entries whose room is unavailable', function () {
+  const agendaUI = fs.readFileSync(
+    __dirname + '/../js/ui/agenda.js',
+    'utf8'
+  );
+
+  assert.ok(
+    agendaUI.includes('var entryRoom = Mopapa.roomById(entry.room);')
+  );
+
+  assert.ok(
+    agendaUI.includes('if (entryRoom && entryRoom.dated)')
   );
 });
 
