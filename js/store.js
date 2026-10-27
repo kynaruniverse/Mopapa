@@ -49,9 +49,38 @@ Mopapa.store = (function () {
     return out;
   }
 
-  function cleanEntries(list) {
+function cleanEntries(list) {
   return list.filter(function (e) {
     return e && typeof e === 'object' && typeof e.text === 'string';
+  });
+}
+
+function validImportedEntries(list) {
+  if (!Array.isArray(list)) return false;
+
+  var ids = Object.create(null);
+
+  return list.every(function (entry) {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      Array.isArray(entry) ||
+      typeof entry.id !== 'string' ||
+      !entry.id.trim() ||
+      entry.id.length > 100 ||
+      typeof entry.text !== 'string' ||
+      !entry.text.trim() ||
+      entry.text.length > 1000 ||
+      typeof entry.room !== 'string' ||
+      !entry.room.trim() ||
+      entry.room.length > 50
+    ) {
+      return false;
+    }
+
+    if (ids[entry.id]) return false;
+    ids[entry.id] = true;
+    return true;
   });
 }
 
@@ -113,7 +142,9 @@ function load() {
     r.onload = function () {
       try {
         var p = JSON.parse(r.result);
-        if (!p || !Array.isArray(p.entries)) throw new Error('bad file');
+        if (!p || !validImportedEntries(p.entries)) {
+          throw new Error('bad file');
+        }
         var previous = data;
         data = {
           entries: cleanEntries(p.entries),
