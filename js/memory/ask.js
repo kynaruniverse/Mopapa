@@ -683,42 +683,13 @@ Mopapa.ask = (function () {
 
     var askingWhen = isWhenQuestion(q);
 
-    if (isGeneralNextAppointmentQuestion(q)) {
+    var nextAppointmentAnswer = Mopapa.askParts.dateIntent.answerNextAppointment(
+      q,
+      all,
+      sortByWhen
+    );
 
-      var upcomingAppointments = all.filter(function (e) {
-        return e.room === 'appointments' &&
-          !e.done &&
-          e.when &&
-          !isNaN(new Date(e.when).getTime()) &&
-          !Mopapa.rules.isPast(e.when, e.hasTime);
-      }).sort(sortByWhen);
-
-
-      if (upcomingAppointments.length) {
-        var nextAppointment = upcomingAppointments[0];
-        var nextLabel = Mopapa.rules.describe(
-          new Date(nextAppointment.when),
-          nextAppointment.hasTime
-        );
-
-        return {
-          answer: 'Your next appointment is ' +
-            String(nextAppointment.text || 'your appointment')
-              .replace(
-                /\s+on\s+\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+\d{4})?(?:\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))?/i,
-                ''
-              )
-              .trim() +
-            ' on ' + nextLabel + '.',
-          sources: [nextAppointment]
-        };
-      }
-
-      return {
-        answer: 'I could not find any upcoming appointments with a saved date.',
-        sources: []
-      };
-    }
+    if (nextAppointmentAnswer) return nextAppointmentAnswer;
 
     var overdueAnswer = Mopapa.askParts.dateIntent.answerOverdueTasks(
       q,

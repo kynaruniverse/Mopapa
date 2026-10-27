@@ -72,6 +72,43 @@ Mopapa.askParts.dateIntent = (function () {
     return /\b(overdue|over due|overdue tasks|overdue todos|past due)\b/.test(n) ||
       /\b(which|what|show|list)\b.*\b(tasks|todos|to do|reminders)\b.*\b(overdue|past due)\b/.test(n);
   }
+
+  function answerNextAppointment(q, all, sortByWhen) {
+    if (!isGeneralNextAppointmentQuestion(q)) return null;
+
+    var upcomingAppointments = all.filter(function (e) {
+      return e.room === 'appointments' &&
+        !e.done &&
+        e.when &&
+        !isNaN(new Date(e.when).getTime()) &&
+        !Mopapa.rules.isPast(e.when, e.hasTime);
+    }).sort(sortByWhen);
+
+    if (upcomingAppointments.length) {
+      var nextAppointment = upcomingAppointments[0];
+      var nextLabel = Mopapa.rules.describe(
+        new Date(nextAppointment.when),
+        nextAppointment.hasTime
+      );
+
+      return {
+        answer: 'Your next appointment is ' +
+          String(nextAppointment.text || 'your appointment')
+            .replace(
+              /\s+on\s+\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:January|February|March|April|May|June|July|August|September|October|November|December)(?:\s+\d{4})?(?:\s+at\s+\d{1,2}(?::\d{2})?\s*(?:am|pm))?/i,
+              ''
+            )
+            .trim() +
+          ' on ' + nextLabel + '.',
+        sources: [nextAppointment]
+      };
+    }
+
+    return {
+      answer: 'I could not find any upcoming appointments with a saved date.',
+      sources: []
+    };
+  }
   
   function answerOverdueTasks(q, all, sortByWhen) {
     if (!isOverdueTaskQuestion(q)) return null;
@@ -108,6 +145,7 @@ Mopapa.askParts.dateIntent = (function () {
     isScheduledDateQuestion: isScheduledDateQuestion,
     isGeneralNextAppointmentQuestion: isGeneralNextAppointmentQuestion,
     isOverdueTaskQuestion: isOverdueTaskQuestion,
-    answerOverdueTasks: answerOverdueTasks
+    answerOverdueTasks: answerOverdueTasks,
+    answerNextAppointment: answerNextAppointment
   };
 })();
