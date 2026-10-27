@@ -23,6 +23,44 @@ function boot(storage) {
 const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
+test('memory ask modules are loaded once and before ask.js', function () {
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  const modules = [
+    'ask-text.js',
+    'ask-people.js',
+    'ask-match.js',
+    'ask-ranking.js',
+    'ask-facts.js',
+    'ask-date-text.js',
+    'ask-date-filter.js',
+    'ask-date-intent.js',
+    'ask-money-intent.js',
+    'ask-money-answer.js',
+    'ask-money-format.js'
+  ];
+
+  const askPosition = html.indexOf(
+    '<script src="js/memory/ask.js"></script>'
+  );
+
+  assert.ok(askPosition !== -1, 'ask.js must be loaded');
+
+  modules.forEach(function (file) {
+    const tag = '<script src="js/memory/' + file + '"></script>';
+    const first = html.indexOf(tag);
+
+    assert.ok(first !== -1, file + ' must be loaded');
+    assert.strictEqual(
+      html.indexOf(tag, first + tag.length),
+      -1,
+      file + ' must not be loaded more than once'
+    );
+    assert.ok(
+      first < askPosition,
+      file + ' must load before ask.js'
+    );
+  });
+});
 
 function stored(entries, learned, ask) {
   return {
