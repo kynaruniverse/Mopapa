@@ -139,7 +139,113 @@ test('ask date-intent module distinguishes logged questions from scheduled quest
   assert.strictEqual(
     intent.isOverdueTaskQuestion('What are my tasks?'),
     false
-  );  
+  );
+});
+
+test('date-intent next appointment handler selects the earliest upcoming appointment', function () {
+  const w = boot({});
+  const intent = w.Mopapa.askParts.dateIntent;
+
+  const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+  const later = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const entries = [
+    {
+      id: 'later',
+      text: 'Hospital appointment',
+      room: 'appointments',
+      when: later,
+      hasTime: false,
+      done: false
+    },
+    {
+      id: 'sooner',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: soon,
+      hasTime: false,
+      done: false
+    }
+  ];
+
+  const result = intent.answerNextAppointment(
+    'What is my next appointment?',
+    entries,
+    function (a, b) {
+      return new Date(a.when) - new Date(b.when);
+    }
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'sooner');
+  assert.ok(/Dentist check-up/.test(result.answer), result.answer);
+
+  assert.strictEqual(
+    intent.answerNextAppointment(
+      'What is my next dentist appointment?',
+      entries,
+      function (a, b) {
+        return new Date(a.when) - new Date(b.when);
+      }
+    ),
+    null
+  );
+});
+
+test('date-intent overdue handler excludes completed and non-task entries', function () {
+  const w = boot({});
+  const intent = w.Mopapa.askParts.dateIntent;
+  const past = new Date(Date.now() - 4 * 86400000).toISOString();
+
+  const entries = [
+    {
+      id: 'overdue',
+      text: 'Renew insurance',
+      room: 'todo',
+      when: past,
+      hasTime: false,
+      done: false
+    },
+    {
+      id: 'completed',
+      text: 'Pay completed bill',
+      room: 'todo',
+      when: past,
+      hasTime: false,
+      done: true
+    },
+    {
+      id: 'appointment',
+      text: 'Old dentist appointment',
+      room: 'appointments',
+      when: past,
+      hasTime: false,
+      done: false
+    }
+  ];
+
+  const result = intent.answerOverdueTasks(
+    'Show me my overdue tasks',
+    entries,
+    function (a, b) {
+      return new Date(a.when) - new Date(b.when);
+    }
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'overdue');
+  assert.ok(/1 overdue task/.test(result.answer), result.answer);
+
+  assert.strictEqual(
+    intent.answerOverdueTasks(
+      'What are my tasks?',
+      entries,
+      function (a, b) {
+        return new Date(a.when) - new Date(b.when);
+      }
+    ),
+    null
+  );
 });
 
 test('ask money-intent module distinguishes cost questions from date questions', function () {
