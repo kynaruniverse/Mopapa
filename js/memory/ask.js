@@ -6,9 +6,12 @@ Mopapa.ask = (function () {
   var termsClose = Mopapa.askParts.match.termsClose;
   var extractTextDate = Mopapa.askParts.dateText.extractTextDate;
   var textDateMatchesFilter = Mopapa.askParts.dateText.textDateMatchesFilter;
-  var dateFilter = Mopapa.askParts.dateFilter.dateFilter;
+    var dateFilter = Mopapa.askParts.dateFilter.dateFilter;
   var explicitDateFilter = Mopapa.askParts.dateFilter.explicitDateFilter;
   var loggedOn = Mopapa.askParts.dateFilter.loggedOn;
+  var isLoggedQuestion = Mopapa.askParts.dateIntent.isLoggedQuestion;
+  var isWhenQuestion = Mopapa.askParts.dateIntent.isWhenQuestion;
+  var isScheduledDateQuestion = Mopapa.askParts.dateIntent.isScheduledDateQuestion;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
@@ -209,58 +212,6 @@ Mopapa.ask = (function () {
     });
 
     return out;
-  }
-
-  function isLoggedQuestion(q) {
-    var n = norm(q);
-
-    return /\bwhat did i save\b/.test(n) ||
-      /\bwhat have i saved\b/.test(n) ||
-      /\bwhat did i log\b/.test(n) ||
-      /\bwhat have i logged\b/.test(n) ||
-      /\bwhat did i record\b/.test(n) ||
-      /\bwhat have i recorded\b/.test(n) ||
-      /\bwhat did i add\b/.test(n) ||
-      /\bwhat have i added\b/.test(n) ||
-      /\bwhat did i write\b/.test(n) ||
-      /\bwhat did i put\b/.test(n) ||
-      /\bwhat did i note\b/.test(n) ||
-      /\bwhat was saved\b/.test(n) ||
-      /\bwhat was logged\b/.test(n) ||
-      /\bwhat was recorded\b/.test(n) ||
-      /\bentries did i\b/.test(n) ||
-      /\bsaved on\b/.test(n) ||
-      /\blogged on\b/.test(n) ||
-      /\brecorded on\b/.test(n);
-  }
-
-  function isWhenQuestion(q) {
-    var n = norm(q);
-
-    if (isLoggedQuestion(n)) return false;
-
-    if (
-      /\bnext\b/.test(n) &&
-      /\b(wishlist|wish list|idea|ideas|task|tasks|reminder|reminders)\b/.test(n) &&
-      !/\b(appointment|dentist|doctor|vet|meeting|interview|due|date|time)\b/.test(n)
-    ) {
-      return false;
-    }
-
-    return /\b(when|what time|what date|next)\b/.test(n) ||
-      /\bwhat is due\b/.test(n) ||
-      /\bwhat's due\b/.test(n) ||
-      /\bwhen is\b/.test(n) ||
-      /\bwhen are\b/.test(n);
-  }
-
-  function isScheduledDateQuestion(q) {
-      var n = norm(q);
-  
-      if (isLoggedQuestion(n)) return false;
-  
-      return isWhenQuestion(n) ||
-        /\b(due|scheduled|appointment|appointments|reminder|reminders)\b/.test(n);
   }
 
   var ENTRY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;

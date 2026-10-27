@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -54,6 +54,28 @@ test('date parser: tomorrow at 5pm', function () {
   assert.ok(r && r.hasTime);
   assert.strictEqual(r.date.getDate(), 22);
   assert.strictEqual(r.date.getHours(), 17);
+});
+
+
+test('ask date-intent module distinguishes logged questions from scheduled questions', function () {
+  const w = boot({});
+  const intent = w.Mopapa.askParts.dateIntent;
+
+  assert.strictEqual(intent.isLoggedQuestion('What did I save?'), true);
+  assert.strictEqual(intent.isLoggedQuestion('What have I logged?'), true);
+  assert.strictEqual(intent.isLoggedQuestion('What did I log on Monday?'), true);
+  assert.strictEqual(intent.isLoggedQuestion('When is the dentist?'), false);
+
+  assert.strictEqual(intent.isWhenQuestion('When is the dentist?'), true);
+  assert.strictEqual(intent.isWhenQuestion('What time is the appointment?'), true);
+  assert.strictEqual(intent.isWhenQuestion('What did I save yesterday?'), false);
+  assert.strictEqual(intent.isWhenQuestion('What is next on my wishlist?'), false);
+  assert.strictEqual(intent.isWhenQuestion('What is my next appointment?'), true);
+
+  assert.strictEqual(intent.isScheduledDateQuestion('When is the dentist?'), true);
+  assert.strictEqual(intent.isScheduledDateQuestion('What is due tomorrow?'), true);
+  assert.strictEqual(intent.isScheduledDateQuestion('What did I log yesterday?'), false);
+  assert.strictEqual(intent.isScheduledDateQuestion('Show me my saved notes'), false);
 });
 
 test('ask date-filter module filters entries by logged and due dates', function () {
