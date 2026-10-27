@@ -1659,6 +1659,30 @@ test('ask: next appointment ignores invalid saved dates', function () {
   );
 });
 
+test('ask: invalid scheduled dates are not reported as past dates', function () {
+  const result = askWith([
+    {
+      id: 'invalid',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: 'not-a-valid-date',
+      hasTime: false,
+      done: false,
+      created: ago(2)
+    }
+  ], 'When is the dentist?');
+
+  assert.ok(
+    !/date has already passed/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    /date I can read/i.test(result.answer),
+    result.answer
+  );
+});
+
 test('ask: overdue task list excludes completed tasks', function () {
   const past = new Date(Date.now() - 4 * 86400000).toISOString();
 

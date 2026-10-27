@@ -817,7 +817,8 @@ Mopapa.ask = (function () {
       }
 
       var pastDated = matches.filter(function (e) {
-        return !!e.when;
+        return e.when &&
+          !isNaN(new Date(e.when).getTime());
       }).sort(sortByWhen);
 
       if (pastDated.length) {
