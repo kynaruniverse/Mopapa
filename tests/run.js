@@ -14,7 +14,27 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask-money-format', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  [
+    'understand/rooms',
+    'store',
+    'understand/rules',
+    'understand/custom-rooms',
+    'understand/sorter',
+    'memory/entries',
+    'ask/ask-text',
+    'ask/ask-people',
+    'ask/ask-match',
+    'ask/ask-ranking',
+    'ask/ask-facts',
+    'ask/ask-date-text',
+    'ask/ask-date-filter',
+    'ask/ask-date-intent',
+    'ask/ask-money-intent',
+    'ask/ask-money-answer',
+    'ask/ask-money-format',
+    'ask/ask',
+    'memory/agenda'
+  ].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -23,48 +43,52 @@ function boot(storage) {
 const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
 
-test('memory ask modules are loaded once and before ask.js', function () {
+test('ask modules are loaded once and before ask.js', function () {
   const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+
   const modules = [
-    'ask-text.js',
-    'ask-people.js',
-    'ask-match.js',
-    'ask-ranking.js',
-    'ask-facts.js',
-    'ask-date-text.js',
-    'ask-date-filter.js',
-    'ask-date-intent.js',
-    'ask-money-intent.js',
-    'ask-money-answer.js',
-    'ask-money-format.js'
+    'js/ask/ask-text.js',
+    'js/ask/ask-people.js',
+    'js/ask/ask-match.js',
+    'js/ask/ask-ranking.js',
+    'js/ask/ask-facts.js',
+    'js/ask/ask-date-text.js',
+    'js/ask/ask-date-filter.js',
+    'js/ask/ask-date-intent.js',
+    'js/ask/ask-money-intent.js',
+    'js/ask/ask-money-answer.js',
+    'js/ask/ask-money-format.js'
   ];
 
-  const askPosition = html.indexOf(
-    '<script src="js/memory/ask.js"></script>'
-  );
+  const askTag = '<script src="js/ask/ask.js"></script>';
+  const askPosition = html.indexOf(askTag);
 
   assert.ok(askPosition !== -1, 'ask.js must be loaded');
+  assert.strictEqual(
+    html.indexOf(askTag, askPosition + askTag.length),
+    -1,
+    'ask.js must not be loaded more than once'
+  );
 
   let previousPosition = -1;
 
-  modules.forEach(function (file) {
-    const tag = '<script src="js/memory/' + file + '"></script>';
+  modules.forEach(function (src) {
+    const tag = '<script src="' + src + '"></script>';
     const first = html.indexOf(tag);
 
-    assert.ok(first !== -1, file + ' must be loaded');
+    assert.ok(first !== -1, src + ' must be loaded');
     assert.strictEqual(
       html.indexOf(tag, first + tag.length),
       -1,
-      file + ' must not be loaded more than once'
+      src + ' must not be loaded more than once'
     );
     assert.ok(
       first < askPosition,
-      file + ' must load before ask.js'
+      src + ' must load before ask.js'
     );
-
     assert.ok(
       first > previousPosition,
-      file + ' must load after the preceding module'
+      src + ' must load after the preceding module'
     );
 
     previousPosition = first;
@@ -1530,8 +1554,8 @@ test('all local scripts exist and load in dependency order', function () {
     'js/understand/custom-rooms.js',
     'js/understand/sorter.js',
     'js/memory/entries.js',
-    'js/memory/ask-text.js',
-    'js/memory/ask.js',
+    'js/ask/ask-text.js',
+    'js/ask/ask.js',
     'js/ui/talk.js',
     'js/ui/room.js',
     'js/main.js'
