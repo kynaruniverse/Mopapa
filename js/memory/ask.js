@@ -930,9 +930,12 @@ if (Mopapa.askParts.people.asksWhoSomethingIsFor(q)) {
       }
     }
 
+
     if (askingWhen && matches.length) {
       var dated = matches.filter(function (e) {
-        return e.when &&
+        return !e.done &&
+          e.when &&
+          !isNaN(new Date(e.when).getTime()) &&
           !Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);
 

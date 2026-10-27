@@ -1307,6 +1307,72 @@ test('all local scripts exist and load in dependency order', function () {
   });
 });
 
+test('ask: general date questions ignore completed appointments', function () {
+  const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+  const later = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const result = askWith([
+    {
+      id: 'completed',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: soon,
+      hasTime: false,
+      done: true,
+      created: ago(3)
+    },
+    {
+      id: 'open',
+      text: 'Dentist hygiene visit',
+      room: 'appointments',
+      when: later,
+      hasTime: false,
+      done: false,
+      created: ago(2)
+    }
+  ], 'When is the dentist?');
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'open');
+  assert.ok(
+    result.answer.includes('Dentist hygiene visit'),
+    result.answer
+  );
+});
+
+test('ask: general date questions ignore invalid saved dates', function () {
+  const later = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const result = askWith([
+    {
+      id: 'invalid',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: 'not-a-valid-date',
+      hasTime: false,
+      done: false,
+      created: ago(3)
+    },
+    {
+      id: 'open',
+      text: 'Dentist hygiene visit',
+      room: 'appointments',
+      when: later,
+      hasTime: false,
+      done: false,
+      created: ago(2)
+    }
+  ], 'When is the dentist?');
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'open');
+  assert.ok(
+    result.answer.includes('Dentist hygiene visit'),
+    result.answer
+  );
+  assert.ok(!/Invalid Date/i.test(result.answer), result.answer);
+});
+
 test('ask: next appointment ignores completed appointments', function () {
   const soon = new Date(Date.now() + 2 * 86400000).toISOString();
   const later = new Date(Date.now() + 5 * 86400000).toISOString();
