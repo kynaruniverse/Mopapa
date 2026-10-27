@@ -282,68 +282,10 @@ Mopapa.ask = (function () {
 
   // ---- Structured facts (where things are) ----
 
-  var DETS = { the: 1, my: 1, our: 1, a: 1, an: 1 };
-
-  function factOf(e) {
-    if (e && e.fact && e.fact.attr === 'location' && Array.isArray(e.fact.items)) {
-      return e.fact;
-    }
-
-    var info = Mopapa.rules && Mopapa.rules.extract
-      ? Mopapa.rules.extract(e && e.text)
-      : null;
-
-    return info && info.fact ? info.fact : null;
-  }
-
-  function itemStems(item) {
-    return words(item).map(stem);
-  }
-
-  function entryOrder(all) {
-    // Oldest first. On equal timestamps the later array slot is older,
-    // because new entries are added at the front.
-    return all.map(function (e, i) { return { e: e, i: i }; })
-      .sort(function (a, b) {
-        return (new Date(a.e.created) - new Date(b.e.created)) || (b.i - a.i);
-      })
-      .map(function (x) { return x.e; });
-  }
-
-  // The newest saved location for every item.
-  function currentLocations(all) {
-    var map = {};
-
-    entryOrder(all).forEach(function (e) {
-      var f = e && factOf(e);
-      if (!f) return;
-
-      f.items.forEach(function (item) {
-        var stems = itemStems(item);
-        if (!stems.length) return;
-        map[stems.join(' ')] = { item: item, stems: stems, entry: e, fact: f };
-      });
-    });
-
-    return map;
-  }
-
-  function isStale(e, map) {
-    var f = factOf(e);
-    if (!f) return false;
-
-    return f.items.every(function (item) {
-      var hit = map[itemStems(item).join(' ')];
-      return !!hit && hit.entry !== e;
-    });
-  }
-
-  function whereStems(c) {
-    return words(c.fact.where).map(stem).filter(function (w) {
-      return !DETS[w];
-    });
-  }
-
+  var currentLocations = Mopapa.askParts.facts.currentLocations;
+  var isStale = Mopapa.askParts.facts.isStale;
+  var whereStems = Mopapa.askParts.facts.whereStems;
+  var DETS = Mopapa.askParts.facts.dets;
 
   function structuredWhere(terms, all) {
     return Mopapa.askParts.facts.structuredWhere(

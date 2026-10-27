@@ -6,6 +6,70 @@ Mopapa.askParts = Mopapa.askParts || {};
 Mopapa.askParts.facts = (function () {
   var PLACE_Q = /^what(?:s| is| are)?\s+(?:the\s+)?(?:(?:items?|things?|stuff|objects?)\s+)?(?:(?:is|are)\s+)?(?:(?:did\s+i|have\s+i)\s+(?:put|leave|store|keep|hide|park)\s+)?(in|inside|on|under|behind|beside|within|at)\s+(.+)$/;
 
+  var words = Mopapa.askParts.text.words;
+  var stem = Mopapa.askParts.text.stem;
+
+  var DETS = { the: 1, my: 1, our: 1, a: 1, an: 1 };
+
+  function factOf(e) {
+    if (e && e.fact && e.fact.attr === 'location' && Array.isArray(e.fact.items)) {
+      return e.fact;
+    }
+
+    var info = Mopapa.rules && Mopapa.rules.extract
+      ? Mopapa.rules.extract(e && e.text)
+      : null;
+
+    return info && info.fact ? info.fact : null;
+  }
+
+  function itemStems(item) {
+    return words(item).map(stem);
+  }
+
+  function entryOrder(all) {
+    // Oldest first. On equal timestamps the later array slot is older,
+    // because new entries are added at the front.
+    return all.map(function (e, i) { return { e: e, i: i }; })
+      .sort(function (a, b) {
+        return (new Date(a.e.created) - new Date(b.e.created)) || (b.i - a.i);
+      })
+      .map(function (x) { return x.e; });
+  }
+
+  function currentLocations(all) {
+    var map = {};
+
+    entryOrder(all).forEach(function (e) {
+      var f = e && factOf(e);
+      if (!f) return;
+
+      f.items.forEach(function (item) {
+        var stems = itemStems(item);
+        if (!stems.length) return;
+        map[stems.join(' ')] = { item: item, stems: stems, entry: e, fact: f };
+      });
+    });
+
+    return map;
+  }
+
+  function isStale(e, map) {
+    var f = factOf(e);
+    if (!f) return false;
+
+    return f.items.every(function (item) {
+      var hit = map[itemStems(item).join(' ')];
+      return !!hit && hit.entry !== e;
+    });
+  }
+
+  function whereStems(c) {
+    return words(c.fact.where).map(stem).filter(function (w) {
+      return !DETS[w];
+    });
+  }
+  
   function structuredWhere(terms, all, helpers) {
     if (!terms.length) return null;
 
@@ -118,6 +182,10 @@ Mopapa.askParts.facts = (function () {
 
   return {
     structuredWhere: structuredWhere,
-    structuredItems: structuredItems
+    structuredItems: structuredItems,
+    currentLocations: currentLocations,
+    isStale: isStale,
+    whereStems: whereStems,
+    dets: DETS
   };
 })();
