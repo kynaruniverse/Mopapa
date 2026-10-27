@@ -34,9 +34,9 @@ Mopapa.askParts.people = (function () {
 
   function extractForPerson(text) {
     var pattern = new RegExp(
-      '\\bfor\\s+([a-z][a-z\\'-]*(?:\\s+(?!(?:' +
+      "\\bfor\\s+([a-z][a-z'-]*(?:\\s+(?!(?:" +
       PERSON_STOP_WORDS +
-      ')\\b)[a-z][a-z\\'-]*)?)',
+      ")\\b)[a-z][a-z'-]*)?)",
       'i'
     );
 
