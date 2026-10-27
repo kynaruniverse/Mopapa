@@ -578,6 +578,8 @@ Mopapa.ask = (function () {
       return all.filter(function (e) {
         if (roomFilter && e.room !== roomFilter) return false;
 
+        if (date && date.due && e.done) return false;
+
         if (
           date &&
           !loggedOn(e, date) &&
@@ -604,6 +606,8 @@ Mopapa.ask = (function () {
     if (!matches.length && terms.length && !isCostQuestion(q)) {
       var closest = rankedMatches(
         all.filter(function (e) {
+          if (date && date.due && e.done) return false;
+
           return !date ||
             loggedOn(e, date) ||
             textDateMatchesFilter(e, date);

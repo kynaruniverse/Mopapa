@@ -1730,6 +1730,88 @@ test('ask: completed past appointments are not reported as past dates', function
   );
 });
 
+test('ask: explicit scheduled-date search excludes completed entries', function () {
+  const appointmentDate = new Date(2026, 10, 5, 12).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'completed-dentist',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: appointmentDate,
+      hasTime: false,
+      done: true,
+      created: ago(7)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer(
+    'When is my dentist appointment on 5 November 2026?'
+  );
+
+  assert.strictEqual(result.sources.length, 0, result.answer);
+});
+
+test('ask: explicit scheduled-date search still finds open entries', function () {
+  const appointmentDate = new Date(2026, 10, 5, 12).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'open-dentist',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: appointmentDate,
+      hasTime: false,
+      done: false,
+      created: ago(7)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer(
+    'When is my dentist appointment on 5 November 2026?'
+  );
+
+  assert.ok(
+    result.sources.some(function (entry) {
+      return entry.id === 'open-dentist';
+    }),
+    result.answer
+  );
+});
+
+test('ask: completed entries remain searchable as saved history', function () {
+  const appointmentDate = new Date(2026, 10, 5, 12).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'historical-dentist',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: appointmentDate,
+      hasTime: false,
+      done: true,
+      created: ago(7)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.ask.answer(
+    'What did I save on 5 November 2026?'
+  );
+
+  assert.ok(
+    result.sources.some(function (entry) {
+      return entry.id === 'historical-dentist';
+    }),
+    result.answer
+  );
+});
+
 test('ask: completed entries are excluded from text-date fallback', function () {
   const result = askWith([
     {
