@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-money-format', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -107,6 +107,12 @@ test('ask money-intent module distinguishes cost questions from date questions',
   assert.strictEqual(isCostQuestion('Did I pay the bill?'), false);
 });
 
+test('ask money format module exposes its formatter', function () {
+    const w = boot({});
+    const moneyFormat = w.Mopapa.askParts.moneyFormat;
+  
+    assert.strictEqual(typeof moneyFormat.formatMoney, 'function');
+  });
 
 test('ask money-answer module exposes its cost-answer function', function () {
   const w = boot({});

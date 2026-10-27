@@ -373,14 +373,8 @@ Mopapa.ask = (function () {
   }
 
   function formatMoney(n) {
-    var whole = Math.round(n * 100) % 100 === 0;
-
-    return '£' + n.toLocaleString('en-GB', {
-      minimumFractionDigits: whole ? 0 : 2,
-      maximumFractionDigits: 2
-    });
+    return Mopapa.askParts.moneyFormat.formatMoney(n);
   }
-
   // ---- Learning from the person (saved in store.ask) ----
 
   function learnedData() {
