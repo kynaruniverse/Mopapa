@@ -58,14 +58,11 @@
             return;
           }
 
+          M.customRooms.reload();
           M.room.renderRooms();
-          M.keepsakesUI.render();
-          M.tagExplorerUI.render();
-          M.agendaUI.render();
-          M.searchUI.refresh();
-          M.resurfaceUI.refresh();
+          M.refreshPanels();
           M.askLearningUI.render();
-
+          
           M.pet.say('Backup restored successfully. Your saved data has been replaced with the backup.');
         });
       },
