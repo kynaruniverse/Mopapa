@@ -77,6 +77,50 @@ Mopapa.askParts.people = (function () {
     };
   }
 
+    function answerCalledName(q, matches) {
+    if (!matches.length || !isNameQuestion(q)) return null;
+
+    var namedMatches = [];
+
+    matches.forEach(function (entry) {
+      var person = extractCalledPerson(entry.text);
+
+      if (person) {
+        namedMatches.push({
+          entry: entry,
+          person: person
+        });
+      }
+    });
+
+    if (!namedMatches.length) return null;
+
+    var distinctNames = [];
+
+    namedMatches.forEach(function (item) {
+      var key = item.person.name.toLowerCase();
+
+      if (distinctNames.indexOf(key) === -1) {
+        distinctNames.push(key);
+      }
+    });
+
+    if (distinctNames.length > 1) {
+      return {
+        answer: 'I found more than one possible person in your saved entries. Which job or appointment do you mean?',
+        sources: namedMatches.slice(0, 5).map(function (item) {
+          return item.entry;
+        })
+      };
+    }
+
+    return {
+      answer: 'The ' + namedMatches[0].person.role +
+        ' is called ' + namedMatches[0].person.name + '.',
+      sources: [namedMatches[0].entry]
+    };
+  }
+
   function extractCalledPerson(text) {
     var source = String(text || '').replace(/\s+/g, ' ').trim();
 
@@ -103,6 +147,7 @@ Mopapa.askParts.people = (function () {
     isNameQuestion: isNameQuestion,
     asksWhoSomethingIsFor: asksWhoSomethingIsFor,
     answerWhoSomethingIsFor: answerWhoSomethingIsFor,
+    answerCalledName: answerCalledName,
     extractForPerson: extractForPerson,
     extractCalledPerson: extractCalledPerson
   };

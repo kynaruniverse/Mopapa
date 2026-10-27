@@ -968,47 +968,12 @@ Mopapa.ask = (function () {
       };
     }
 
-    if (matches.length && Mopapa.askParts.people.isNameQuestion(q)) {
-      var namedMatches = [];
+    var calledNameAnswer = Mopapa.askParts.people.answerCalledName(
+      q,
+      matches
+    );
 
-      matches.forEach(function (entry) {
-        var person = Mopapa.askParts.people.extractCalledPerson(entry.text);
-
-        if (person) {
-          namedMatches.push({
-            entry: entry,
-            person: person
-          });
-        }
-      });
-
-      if (namedMatches.length) {
-        var distinctNames = [];
-
-        namedMatches.forEach(function (item) {
-          var key = item.person.name.toLowerCase();
-
-          if (distinctNames.indexOf(key) === -1) {
-            distinctNames.push(key);
-          }
-        });
-
-        if (distinctNames.length > 1) {
-          return {
-            answer: 'I found more than one possible person in your saved entries. Which job or appointment do you mean?',
-            sources: namedMatches.slice(0, 5).map(function (item) {
-              return item.entry;
-            })
-          };
-        }
-
-        return {
-          answer: 'The ' + namedMatches[0].person.role +
-            ' is called ' + namedMatches[0].person.name + '.',
-          sources: [namedMatches[0].entry]
-        };
-      }
-    }
+    if (calledNameAnswer) return calledNameAnswer;
 
     matches.sort(sortNewest);
 
