@@ -958,13 +958,186 @@ test('failed custom-room creation leaves no in-memory or stored room', function 
   assert.strictEqual(JSON.parse(w.localStorage._['mopapa.v1']).customRooms.length, 0);
 });
 
-test('normal interface has no import controls or backup-success timestamp', function () {
+test('backup interface supports export and restore without claiming a backup timestamp', function () {
   const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
   const main = fs.readFileSync(__dirname + '/../js/main.js', 'utf8');
-  assert.ok(!html.includes('id="btn-import"'));
-  assert.ok(!html.includes('id="file-import"'));
+
+  assert.ok(html.includes('id="btn-export"'));
+  assert.ok(html.includes('id="btn-import"'));
+  assert.ok(html.includes('id="file-import"'));
+  assert.ok(html.includes('accept=".json,application/json"'));
+
+  assert.ok(main.includes('M.store.exportJSON()'));
+  assert.ok(main.includes('M.store.importJSON(file'));
+  assert.ok(main.includes('Restoring this backup will replace all Mopapa data'));
+  assert.ok(main.includes('The existing saved data has been kept.'));
+  assert.ok(main.includes('Backup restored successfully.'));
+  assert.ok(main.includes('file.size > 5 * 1024 * 1024'));
   assert.ok(!main.includes('mopapa.lastBackup'));
   assert.ok(main.includes('Backup download started. Check your Downloads folder before relying on it.'));
+});
+
+test('restore imports entries, room-learning data and Ask learning data', function () {
+  const w = boot(stored([
+    { id: 'old', text: 'Existing entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const backup = {
+    entries: [
+      { id: 'restored', text: 'Restored entry', room: 'notes' }
+    ],
+    learned: { example: 2 },
+    customRooms: [{ id: 'books', name: 'Books', icon: 'book' }],
+    ask: {
+      aliases: [['gp', 'doctor']],
+      boosts: {},
+      unanswered: [{ q: 'Who was that?', at: '2026-01-01' }]
+    }
+  };
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 100, content: JSON.stringify(backup) },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'restored');
+  assert.strictEqual(w.Mopapa.store.data().learned.example, 2);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().ask.aliases[0][0], 'gp');
+  assert.strictEqual(w.Mopapa.store.data().ask.unanswered.length, 1);
+
+  const saved = JSON.parse(w.localStorage._['mopapa.v1']);
+  assert.strictEqual(saved.entries[0].id, 'restored');
+});
+
+test('restore rejects malformed JSON without changing existing data', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      this.result = '{"entries":';
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 20 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore rejects JSON without an entries array', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 30, content: JSON.stringify({ entries: 'not-an-array' }) },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore rolls back in-memory data when local storage refuses the write', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  w.localStorage.failWrites = true;
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Replacement entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore rejects files larger than 5 MB before reading them', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  let readerCreated = false;
+  let result = null;
+
+  w.FileReader = function () {
+    readerCreated = true;
+  };
+
+  w.Mopapa.store.importJSON(
+    { size: 5 * 1024 * 1024 + 1 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(readerCreated, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
 });
 
 test('capture code preserves text after failed save and does not ask for a room when uncertain', function () {

@@ -20,12 +20,56 @@
     ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
     : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only. Use Back up data to start a download you can keep separately.");
 
-  document.getElementById('btn-export').addEventListener('click', function () {
+    document.getElementById('btn-export').addEventListener('click', function () {
     try {
       M.store.exportJSON();
       M.pet.say('Backup download started. Check your Downloads folder before relying on it.');
     } catch (e) {
       M.pet.say("I couldn't start the backup download. Your saved data is still in this browser.");
     }
+  });
+
+  var importButton = document.getElementById('btn-import');
+  var importInput = document.getElementById('file-import');
+
+  importButton.addEventListener('click', function () {
+    importInput.value = '';
+    importInput.click();
+  });
+
+  importInput.addEventListener('change', function () {
+    var file = importInput.files && importInput.files[0];
+    if (!file) return;
+
+    importInput.value = '';
+
+    if (file.size > 5 * 1024 * 1024) {
+      M.pet.say('That backup is larger than 5 MB. Choose a smaller backup file.');
+      return;
+    }
+
+    M.dialog.confirm(
+      'Restoring this backup will replace all Mopapa data currently saved in this browser. Back up your current data first if you want to keep it.',
+      'Restore backup',
+      function () {
+        M.store.importJSON(file, function (ok) {
+          if (!ok) {
+            M.pet.say("I couldn't restore that backup. The existing saved data has been kept.");
+            return;
+          }
+
+          M.room.renderRooms();
+          M.keepsakesUI.render();
+          M.tagExplorerUI.render();
+          M.agendaUI.render();
+          M.searchUI.refresh();
+          M.resurfaceUI.refresh();
+          M.askLearningUI.render();
+
+          M.pet.say('Backup restored successfully. Your saved data has been replaced with the backup.');
+        });
+      },
+      true
+    );
   });
 })();

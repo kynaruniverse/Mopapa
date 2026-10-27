@@ -101,6 +101,14 @@ function load() {
   }
 
   function importJSON(file, cb) {
+    if (
+      !file ||
+      (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
+    ) {
+      cb(false);
+      return;
+    }
+
     var r = new FileReader();
     r.onload = function () {
       try {
