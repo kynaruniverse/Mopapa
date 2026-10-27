@@ -832,6 +832,8 @@ Mopapa.ask = (function () {
       var textDated = [];
 
       matches.forEach(function (e) {
+        if (e.done) return;
+
         var foundDate = extractTextDate(e.text);
 
         if (foundDate) {
@@ -841,7 +843,6 @@ Mopapa.ask = (function () {
           });
         }
       });
-
 
       if (textDated.length) {
         var distinctDates = [];

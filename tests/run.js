@@ -1704,6 +1704,27 @@ test('ask: future completed appointments are not reported as past dates', functi
   );
 });
 
+test('ask: completed entries are excluded from text-date fallback', function () {
+  const result = askWith([
+    {
+      id: 'completed-text-date',
+      text: 'Dentist check-up on 15 November 2026',
+      room: 'appointments',
+      when: '',
+      hasTime: false,
+      done: true,
+      created: ago(2)
+    }
+  ], 'When is the dentist?');
+
+  assert.ok(
+    !/Dentist check-up is on 15 November 2026/i.test(result.answer),
+    result.answer
+  );
+
+  assert.strictEqual(result.sources[0].id, 'completed-text-date');
+});
+
 test('ask: overdue task list excludes completed tasks', function () {
   const past = new Date(Date.now() - 4 * 86400000).toISOString();
 
