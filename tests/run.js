@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-money-format', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask-money-format', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
