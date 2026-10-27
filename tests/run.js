@@ -1334,11 +1334,11 @@ test('ask: next appointment ignores completed appointments', function () {
 
   const result = askWith(entries, 'What is my next appointment?');
 
-  assert.deepStrictEqual(
-    result.sources.map(function (entry) {
+  assert.strictEqual(
+    Array.from(result.sources, function (entry) {
       return entry.id;
-    }),
-    ['open']
+    }).join(','),
+    'open'
   );
 
   assert.ok(
