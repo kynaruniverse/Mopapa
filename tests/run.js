@@ -154,12 +154,17 @@ test('ask money-intent module distinguishes cost questions from date questions',
   assert.strictEqual(isCostQuestion('Did I pay the bill?'), false);
 });
 
-test('ask money format module exposes its formatter', function () {
-    const w = boot({});
-    const moneyFormat = w.Mopapa.askParts.moneyFormat;
-  
-    assert.strictEqual(typeof moneyFormat.formatMoney, 'function');
-  });
+test('ask money format module formats pounds correctly', function () {
+  const w = boot({});
+  const formatMoney = w.Mopapa.askParts.moneyFormat.formatMoney;
+
+  assert.strictEqual(typeof formatMoney, 'function');
+  assert.strictEqual(formatMoney(0), '£0');
+  assert.strictEqual(formatMoney(12), '£12');
+  assert.strictEqual(formatMoney(12.5), '£12.50');
+  assert.strictEqual(formatMoney(12.99), '£12.99');
+  assert.strictEqual(formatMoney(1234.56), '£1,234.56');
+});
 
 test('ask money-answer module exposes its cost-answer function', function () {
   const w = boot({});
