@@ -1704,6 +1704,32 @@ test('ask: future completed appointments are not reported as past dates', functi
   );
 });
 
+test('ask: completed past appointments are not reported as past dates', function () {
+  const past = new Date(Date.now() - 5 * 86400000).toISOString();
+
+  const result = askWith([
+    {
+      id: 'completed-past-appointment',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: past,
+      hasTime: false,
+      done: true,
+      created: ago(7)
+    }
+  ], 'When is the dentist?');
+
+  assert.ok(
+    !/date has already passed/i.test(result.answer),
+    result.answer
+  );
+
+  assert.strictEqual(
+    result.sources[0].id,
+    'completed-past-appointment'
+  );
+});
+
 test('ask: completed entries are excluded from text-date fallback', function () {
   const result = askWith([
     {
