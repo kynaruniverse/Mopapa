@@ -1396,12 +1396,14 @@ test('ask: overdue task list excludes completed tasks', function () {
 
   const result = askWith(entries, 'Show me my overdue tasks');
 
-  assert.deepStrictEqual(
-    result.sources.map(function (entry) {
+
+  assert.strictEqual(
+    Array.from(result.sources, function (entry) {
       return entry.id;
-    }),
-    ['open']
+    }).join(','),
+    'open'
   );
+
 
   assert.ok(/1 overdue task/.test(result.answer), result.answer);
 
