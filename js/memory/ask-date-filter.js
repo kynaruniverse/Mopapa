@@ -38,8 +38,15 @@ Mopapa.askParts.dateFilter = (function () {
 
       if (provisional.getMonth() !== parsed.month) return null;
 
-      if (!loggedQuestion && !pastTense && provisional < localDay(now)) {
-        year++;
+      var today = localDay(now);
+
+      if (provisional < today) {
+        if (!loggedQuestion && !pastTense) year++;
+      } else if (
+        (loggedQuestion || pastTense) &&
+        provisional > today
+      ) {
+        year--;
       }
     }
 

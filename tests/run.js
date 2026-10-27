@@ -411,6 +411,35 @@ test('ask date-filter module handles explicit dates', function () {
     ),
     null
   );
+
+  const historical = dateParts.explicitDateFilter(
+    'What happened on 5 November?',
+    now,
+    norm,
+    w.Mopapa.askParts.dateText.extractTextDate,
+    w.Mopapa.askParts.dateIntent.isLoggedQuestion,
+    w.Mopapa.askParts.dateIntent.isScheduledDateQuestion,
+    MONTH_NAMES
+  );
+
+  assert.ok(historical);
+  assert.strictEqual(historical.label, '5 November 2025');
+  assert.strictEqual(historical.logged, true);
+  assert.strictEqual(historical.due, false);
+
+  const upcoming = dateParts.explicitDateFilter(
+    'When is my dentist appointment on 5 November?',
+    new Date(2026, 11, 1, 12, 0, 0, 0),
+    norm,
+    extractTextDate,
+    w.Mopapa.askParts.dateIntent.isLoggedQuestion,
+    w.Mopapa.askParts.dateIntent.isScheduledDateQuestion,
+    MONTH_NAMES
+  );
+
+  assert.ok(upcoming);
+  assert.strictEqual(upcoming.label, '5 November 2027');
+  assert.strictEqual(upcoming.due, true);
 });
 
 test('ask date-filter module calculates date ranges', function () {
