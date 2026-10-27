@@ -1783,7 +1783,7 @@ test('ask: explicit scheduled-date search still finds open entries', function ()
   );
 });
 
-test('ask: completed entries remain searchable as saved history', function () {
+test('ask: completed entries remain searchable by subject', function () {
   const appointmentDate = new Date(2026, 10, 5, 12).toISOString();
 
   const w = boot(stored([
@@ -1801,7 +1801,7 @@ test('ask: completed entries remain searchable as saved history', function () {
   w.Mopapa.store.load();
 
   const result = w.Mopapa.ask.answer(
-    'What did I save on 5 November 2026?'
+    'What do you know about my dentist appointment?'
   );
 
   assert.ok(
