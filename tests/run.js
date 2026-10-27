@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -767,6 +767,15 @@ test('ask match module detects typos without relaxing short words or numbers', f
 
   // Larger differences should not be accepted as typos.
   assert.strictEqual(match.termsClose('dentist', 'computer'), false);
+});
+
+
+test('ask ranking module exposes its matching functions', function () {
+  const w = boot({});
+  const ranking = w.Mopapa.askParts.ranking;
+
+  assert.strictEqual(typeof ranking.termStrength, 'function');
+  assert.strictEqual(typeof ranking.rankedMatches, 'function');
 });
 
 test('ask text module normalises text and matches words consistently', function () {

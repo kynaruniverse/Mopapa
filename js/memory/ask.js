@@ -263,72 +263,21 @@ Mopapa.ask = (function () {
     });
   }
 
-  function termStrength(term, have) {
-    if (have.indexOf(term) !== -1) return 1;
-
-    var alts = ALIAS_MAP[term] || [];
-
-    for (var i = 0; i < alts.length; i++) {
-      if (have.indexOf(alts[i]) !== -1) return 0.9;
-    }
-
-    for (var j = 0; j < have.length; j++) {
-      if (termsClose(term, have[j])) return 0.7;
-    }
-
-    return 0;
-  }
 
   function rankedMatches(entries, terms, room, sig) {
-    if (!terms.length || !entries.length) return [];
-
-    var s = learnedData();
-    var tapped = s && sig && s.boosts[sig] ? s.boosts[sig] : {};
-
-    var stemmed = entries.map(entryStems);
-
-    // Rarer terms count for more (a simple IDF weight).
-    var weights = terms.map(function (term) {
-      var df = 0;
-
-      stemmed.forEach(function (have) {
-        if (have.indexOf(term) !== -1) df++;
-      });
-
-      return Math.log(1 + entries.length / (1 + df));
-    });
-
-    var total = weights.reduce(function (a, b) { return a + b; }, 0);
-    var scored = [];
-
-    entries.forEach(function (e, i) {
-      var got = 0;
-
-      terms.forEach(function (term, t) {
-        got += termStrength(term, stemmed[i]) * weights[t];
-      });
-
-      var coverage = total ? got / total : 0;
-
-      // Most of the question must be covered, or it is not a match.
-      var wasTapped = tapped[e.id] > 0;
-      
-      // An entry the person tapped before for this question always qualifies.
-      if (coverage < (wasTapped ? 0.3 : 0.6)) return;
-
-      scored.push({
-        entry: e,
-        score: coverage + (room && e.room === room ? 0.1 : 0) + (wasTapped ? 0.3 : 0)
-      });
-    });
-
-    scored.sort(function (a, b) {
-      return b.score - a.score || sortNewest(a.entry, b.entry);
-    });
-
-    return scored.slice(0, 5).map(function (s) {
-      return s.entry;
-    });
+    return Mopapa.askParts.ranking.rankedMatches(
+      entries,
+      terms,
+      room,
+      sig,
+      {
+        aliases: ALIAS_MAP,
+        termsClose: termsClose,
+        learnedData: learnedData,
+        entryStems: entryStems,
+        sortNewest: sortNewest
+      }
+    );
   }
 
   // ---- Structured facts (where things are) ----
