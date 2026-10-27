@@ -26,9 +26,9 @@ Mopapa.askParts.dateFilter = (function () {
     var parsed = extractTextDate(q);
 
     if (!parsed) return null;
-
     var loggedQuestion = isLoggedQuestion(n);
-    var pastTense = /\b(did|was|were|paid|spent|bought|saved|logged|recorded)\b/.test(n);
+    var pastTense = loggedQuestion ||
+      /\b(did|was|were|happened|took place|paid|spent|bought|saved|logged|recorded)\b/.test(n);
     var year = parsed.year;
 
     if (year === null) {

@@ -9,7 +9,11 @@ Mopapa.askParts.dateIntent = (function () {
   function isLoggedQuestion(q) {
     var n = norm(q);
 
-    return /\bwhat did i save\b/.test(n) ||
+    return /\bwhat happened on\b/.test(n) ||
+      /\bwhat happened at\b/.test(n) ||
+      /\bwhat took place on\b/.test(n) ||
+      /\bwhat did i do on\b/.test(n) ||
+      /\bwhat did i save\b/.test(n) ||
       /\bwhat have i saved\b/.test(n) ||
       /\bwhat did i log\b/.test(n) ||
       /\bwhat have i logged\b/.test(n) ||

@@ -142,6 +142,27 @@ test('ask date-intent module distinguishes logged questions from scheduled quest
   );
 });
 
+test('ask: historical event questions are treated as logged questions', function () {
+  const w = boot({});
+
+  const intent = w.Mopapa.askParts.dateIntent;
+
+  assert.strictEqual(
+    intent.isLoggedQuestion('What happened on 5 November?'),
+    true
+  );
+
+  assert.strictEqual(
+    intent.isLoggedQuestion('What took place on 5 November?'),
+    true
+  );
+
+  assert.strictEqual(
+    intent.isLoggedQuestion('What did I do on 5 November?'),
+    true
+  );
+});
+
 test('date-intent next appointment handler selects the earliest upcoming appointment', function () {
   const w = boot({});
   const intent = w.Mopapa.askParts.dateIntent;
