@@ -217,53 +217,19 @@ Mopapa.ask = (function () {
     return out;
   }
 
-  var ENTRY_CACHE = typeof WeakMap === 'function' ? new WeakMap() : null;
-
   function entryStems(e) {
-    var tagText = Array.isArray(e.tags) ? e.tags.join(' ') : '';
-    var raw = String(e.text || '') + ' ' + tagText;
-    var hit = ENTRY_CACHE ? ENTRY_CACHE.get(e) : null;
-
-    if (hit && hit.raw === raw) return hit.stems;
-
-    var stems = norm(raw).split(' ').map(function (w) {
-      return stem(w);
-    });
-
-    if (ENTRY_CACHE) ENTRY_CACHE.set(e, { raw: raw, stems: stems });
-
-    return stems;
+    return Mopapa.askParts.match.entryStems(e, norm, stem);
   }
 
   function includesAllTerms(e, terms) {
-    if (!terms.length) return true;
-
-    var have = entryStems(e);
-
-    // Terms arrive already stemmed from queryTerms.
-    return terms.every(function (wanted) {
-      if (have.indexOf(wanted) !== -1) return true;
-
-      var alts = ALIAS_MAP[wanted] || [];
-
-      for (var a = 0; a < alts.length; a++) {
-        if (have.indexOf(alts[a]) !== -1) return true;
-      }
-
-      // Treat "pickup" and "pick up" as equivalent.
-      if (wanted === 'pickup') {
-        return have.indexOf('pick') !== -1 && have.indexOf('up') !== -1;
-      }
-
-      if (wanted === 'pick') {
-        return have.indexOf('pickup') !== -1;
-      }
-
-      return false;
-    });
-  }
-
-
+    return Mopapa.askParts.match.includesAllTerms(
+      e,
+      terms,
+      entryStems,
+      ALIAS_MAP
+    );
+  }  
+  
   function rankedMatches(entries, terms, room, sig) {
     return Mopapa.askParts.ranking.rankedMatches(
       entries,
