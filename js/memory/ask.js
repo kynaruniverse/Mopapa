@@ -14,6 +14,7 @@ Mopapa.ask = (function () {
   var isScheduledDateQuestion = Mopapa.askParts.dateIntent.isScheduledDateQuestion;
   var isGeneralNextAppointmentQuestion = Mopapa.askParts.dateIntent.isGeneralNextAppointmentQuestion;
   var isOverdueTaskQuestion = Mopapa.askParts.dateIntent.isOverdueTaskQuestion;
+  var isCostQuestion = Mopapa.askParts.moneyIntent.isCostQuestion;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
@@ -749,24 +750,6 @@ Mopapa.ask = (function () {
 
   function sortByWhen(a, b) {
     return new Date(a.when) - new Date(b.when);
-  }
-
-  function isCostQuestion(q) {
-    var n = norm(q);
-  
-    // A date question should be handled by date retrieval.
-    if (isWhenQuestion(n)) {
-      return false;
-    }
-  
-    // Explicit requests for a price, cost, or amount.
-    if (/\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|payment|payments|how much|what amount|what did .* cost)\b/.test(n)) {
-      return true;
-    }
-  
-    // Payment and spending verbs count only when asking about an amount.
-    return /\b(pay|paid|spend|spent|spending)\b/.test(n) &&
-      /\b(amount|total|much|cost|price|money)\b/.test(n);
   }
 
   function answerCost(q, all, room, date) {

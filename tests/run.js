@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -93,6 +93,18 @@ test('ask date-intent module distinguishes logged questions from scheduled quest
     intent.isOverdueTaskQuestion('What are my tasks?'),
     false
   );  
+});
+
+test('ask money-intent module distinguishes cost questions from date questions', function () {
+  const w = boot({});
+  const isCostQuestion = w.Mopapa.askParts.moneyIntent.isCostQuestion;
+
+  assert.strictEqual(isCostQuestion('How much did the car cost?'), true);
+  assert.strictEqual(isCostQuestion('What was the price?'), true);
+  assert.strictEqual(isCostQuestion('How much did I spend in total?'), true);
+  assert.strictEqual(isCostQuestion('When is the dentist?'), false);
+  assert.strictEqual(isCostQuestion('What is my next appointment?'), false);
+  assert.strictEqual(isCostQuestion('Did I pay the bill?'), false);
 });
 
 test('ask date-filter module filters entries by logged and due dates', function () {
