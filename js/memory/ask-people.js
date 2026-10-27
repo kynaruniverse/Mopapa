@@ -4,13 +4,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.askParts = Mopapa.askParts || {};
 
 Mopapa.askParts.people = (function () {
-  function norm(s) {
-    return String(s || '').toLowerCase()
-      .replace(/[’']/g, '')
-      .replace(/[^a-z0-9£]+/g, ' ')
-      .trim()
-      .replace(/\s+/g, ' ');
-  }
+  var norm = Mopapa.askParts.text.norm;
 
   function isNameQuestion(q) {
     var n = norm(q);
@@ -27,10 +21,28 @@ Mopapa.askParts.people = (function () {
     return /\bwho\b.*\b(?:is|was|will be)\b.*\bfor\b/.test(norm(q));
   }
 
+  var PERSON_STOP_WORDS = [
+    'at', 'on', 'in', 'by', 'from', 'until',
+    'tomorrow', 'today', 'tonight', 'yesterday',
+    'next', 'this', 'last',
+    'monday', 'tuesday', 'wednesday', 'thursday',
+    'friday', 'saturday', 'sunday',
+    'january', 'february', 'march', 'april', 'may',
+    'june', 'july', 'august', 'september', 'october',
+    'november', 'december'
+  ].join('|');
+
   function extractForPerson(text) {
-    var match = String(text || '').replace(/\s+/g, ' ').match(
-      /\bfor\s+([a-z][a-z'-]*(?:\s+(?!(?:at|on|in|by|from|until|tomorrow|today|tonight|yesterday|next|this|last|monday|tuesday|wednesday|thursday|friday|saturday|sunday|january|february|march|april|may|june|july|august|september|october|november|december)\b)[a-z][a-z'-]*)?)/i
+    var pattern = new RegExp(
+      '\\bfor\\s+([a-z][a-z\\'-]*(?:\\s+(?!(?:' +
+      PERSON_STOP_WORDS +
+      ')\\b)[a-z][a-z\\'-]*)?)',
+      'i'
     );
+
+    var match = String(text || '')
+      .replace(/\s+/g, ' ')
+      .match(pattern);
 
     if (!match) return null;
 
