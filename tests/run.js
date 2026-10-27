@@ -45,6 +45,8 @@ test('memory ask modules are loaded once and before ask.js', function () {
 
   assert.ok(askPosition !== -1, 'ask.js must be loaded');
 
+  let previousPosition = -1;
+
   modules.forEach(function (file) {
     const tag = '<script src="js/memory/' + file + '"></script>';
     const first = html.indexOf(tag);
@@ -59,6 +61,13 @@ test('memory ask modules are loaded once and before ask.js', function () {
       first < askPosition,
       file + ' must load before ask.js'
     );
+
+    assert.ok(
+      first > previousPosition,
+      file + ' must load after the preceding module'
+    );
+
+    previousPosition = first;
   });
 });
 
