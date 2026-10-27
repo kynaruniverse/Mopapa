@@ -344,107 +344,32 @@ Mopapa.ask = (function () {
     });
   }
 
+
   function structuredWhere(terms, all) {
-    if (!terms.length) return null;
-
-    var map = currentLocations(all);
-    var cands = Object.keys(map).map(function (k) { return map[k]; })
-      .filter(function (c) {
-        return terms.every(function (t) {
-          return c.stems.indexOf(t) !== -1 ||
-            (ALIAS_MAP[t] || []).some(function (a) {
-              return c.stems.indexOf(a) !== -1;
-            });
-        });
-      });
-
-    if (!cands.length) return null;
-
-    var exact = cands.filter(function (c) {
-      return c.stems.length === terms.length;
-    });
-    var use = exact.length ? exact : cands;
-    var entries = [];
-
-    use.forEach(function (c) {
-      if (entries.indexOf(c.entry) === -1) entries.push(c.entry);
-    });
-
-        if (entries.length > 1) {
-      var tappedEntry = confirmedBySig(entries, terms.slice().sort().join(' '));
-
-      if (tappedEntry) {
-        entries = [tappedEntry];
-        use = use.filter(function (c) { return c.entry === tappedEntry; });
+    return Mopapa.askParts.facts.structuredWhere(
+      terms,
+      all,
+      {
+        currentLocations: currentLocations,
+        aliases: ALIAS_MAP,
+        confirmedBySig: confirmedBySig
       }
-    }
-
-    if (entries.length > 1) {
-      return {
-        answer: 'I found more than one saved place that could match. Which do you mean?',
-        sources: entries.slice(0, 5)
-      };
-    }
-
-    return {
-      answer: (use[0].fact.plural ? 'They are ' : 'It is ') +
-        use[0].fact.value + '.',
-      sources: [entries[0]]
-    };
+    );
   }
 
-  var PLACE_Q = /^what(?:s| is| are)?\s+(?:the\s+)?(?:(?:items?|things?|stuff|objects?)\s+)?(?:(?:is|are)\s+)?(?:(?:did\s+i|have\s+i)\s+(?:put|leave|store|keep|hide|park)\s+)?(in|inside|on|under|behind|beside|within|at)\s+(.+)$/;
-
   function structuredItems(q, all) {
-    var m = norm(q).match(PLACE_Q);
-    if (!m) return null;
-
-    var placeStems = words(m[2]).map(stem).filter(function (w) {
-      return !DETS[w];
-    });
-
-    if (!placeStems.length) return null;
-
-    var map = currentLocations(all);
-    var hits = Object.keys(map).map(function (k) { return map[k]; })
-      .filter(function (c) {
-        var have = whereStems(c);
-        return placeStems.every(function (p) {
-          return have.indexOf(p) !== -1;
-        });
-      });
-
-    if (!hits.length) return null;
-
-    var values = [];
-    hits.forEach(function (c) {
-      if (values.indexOf(c.fact.value) === -1) values.push(c.fact.value);
-    });
-
-    var names = [];
-    hits.forEach(function (c) {
-      var label = values.length > 1
-        ? c.item + ' (' + c.fact.value + ')'
-        : c.item;
-
-      if (names.indexOf(label) === -1) names.push(label);
-    });
-
-    var more = names.length > 8 ? names.length - 8 : 0;
-    var list = names.slice(0, 8).join(', ') +
-      (more ? ' and ' + more + ' more' : '');
-    var sources = [];
-
-    hits.forEach(function (c) {
-      if (sources.indexOf(c.entry) === -1) sources.push(c.entry);
-    });
-
-    return {
-      answer: values.length === 1
-        ? values[0].charAt(0).toUpperCase() + values[0].slice(1) + ': ' + list + '.'
-        : 'Saved items matching that place: ' + list + '.',
-      sources: sources.slice(0, 8)
-    };
+    return Mopapa.askParts.facts.structuredItems(
+      q,
+      all,
+      {
+        norm: norm,
+        words: words,
+        stem: stem,
+        dets: DETS,
+        currentLocations: currentLocations,
+        whereStems: whereStems
+      }
+    );
   }
 
   function formatMoney(n) {

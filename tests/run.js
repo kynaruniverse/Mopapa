@@ -14,7 +14,7 @@ function boot(storage) {
   win.window = win;
   vm.createContext(win);
 
-  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
+  ['understand/rooms', 'store', 'understand/rules', 'understand/custom-rooms', 'understand/sorter', 'memory/entries', 'memory/ask-text', 'memory/ask-people', 'memory/ask-match', 'memory/ask-ranking', 'memory/ask-facts', 'memory/ask-date-text', 'memory/ask-date-filter', 'memory/ask-date-intent', 'memory/ask-money-intent', 'memory/ask-money-answer', 'memory/ask', 'memory/agenda'].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
   return win;
@@ -776,6 +776,14 @@ test('ask ranking module exposes its matching functions', function () {
 
   assert.strictEqual(typeof ranking.termStrength, 'function');
   assert.strictEqual(typeof ranking.rankedMatches, 'function');
+});
+
+test('ask facts module exposes structured answer functions', function () {
+  const w = boot({});
+  const facts = w.Mopapa.askParts.facts;
+
+  assert.strictEqual(typeof facts.structuredWhere, 'function');
+  assert.strictEqual(typeof facts.structuredItems, 'function');
 });
 
 test('ask text module normalises text and matches words consistently', function () {
