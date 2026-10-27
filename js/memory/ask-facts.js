@@ -180,12 +180,31 @@ Mopapa.askParts.facts = (function () {
     };
   }
 
+  function locationMatchScore(entry, terms, norm, stem) {
+    var text = norm(String(entry.text || ''));
+    var textWords = text.split(' ');
+    var score = 0;
+
+    terms.forEach(function (term) {
+      var exactWord = textWords.some(function (word) {
+        return stem(word) === term;
+      });
+
+      if (exactWord) {
+        score += 10;
+      }
+    });
+
+    return score;
+  }
+
   return {
     structuredWhere: structuredWhere,
     structuredItems: structuredItems,
     currentLocations: currentLocations,
     isStale: isStale,
     whereStems: whereStems,
+    locationMatchScore: locationMatchScore,
     dets: DETS
   };
 })();

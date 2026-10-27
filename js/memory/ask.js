@@ -496,24 +496,6 @@ Mopapa.ask = (function () {
   }
 
 
-  function locationMatchScore(entry, terms) {
-    var text = norm(String(entry.text || ''));
-    var textWords = text.split(' ');
-    var score = 0;
-
-    terms.forEach(function (term) {
-      var exactWord = textWords.some(function (word) {
-        return stem(word) === term;
-      });
-
-      if (exactWord) {
-        score += 10;
-      }
-    });
-
-    return score;
-  }
-
 
   function roomName(id) {
     var r = Mopapa.roomById(id);
@@ -653,7 +635,12 @@ Mopapa.ask = (function () {
       var scoredMatches = matches.map(function (entry) {
         var text = norm(String(entry.text || ''));
         var subject = text.split(/\b(?:is|are)\b/)[0].trim();
-        var score = locationMatchScore(entry, terms);
+        var score = Mopapa.askParts.facts.locationMatchScore(
+          entry,
+          terms,
+          norm,
+          stem
+        );
 
         // Penalise extra subject words that the question did not ask for.
         var subjectWords = subject.split(' ').filter(Boolean);
