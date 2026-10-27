@@ -791,6 +791,7 @@ Mopapa.ask = (function () {
     if (isGeneralNextAppointmentQuestion(q)) {
       var upcomingAppointments = all.filter(function (e) {
         return e.room === 'appointments' &&
+          !e.done &&
           e.when &&
           !Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);
@@ -814,11 +815,17 @@ Mopapa.ask = (function () {
           sources: [nextAppointment]
         };
       }
+
+      return {
+        answer: 'I could not find any upcoming appointments with a saved date.',
+        sources: []
+      };
     }
-    
+
     if (isOverdueTaskQuestion(q)) {
       var overdueTasks = all.filter(function (e) {
         return e.room === 'todo' &&
+          !e.done &&
           e.when &&
           Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);

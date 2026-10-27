@@ -1249,6 +1249,182 @@ test('learning screen is wired in and teaches without touching room learning', f
   assert.ok(main.includes('M.askLearningUI.init();'));
 });
 
+test('all local scripts exist and load in dependency order', function () {
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  const scripts = Array.from(
+    html.matchAll(/<script src="([^"]+)"><\/script>/g)
+  ).map(function (match) {
+    return match[1];
+  });
+
+  assert.ok(scripts.length > 0, 'The app must load local scripts');
+
+  assert.strictEqual(
+    new Set(scripts).size,
+    scripts.length,
+    'Local script paths must not be duplicated'
+  );
+
+  scripts.forEach(function (src) {
+    assert.ok(
+      fs.existsSync(__dirname + '/../' + src),
+      src + ' must exist'
+    );
+  });
+
+  const requiredOrder = [
+    'js/store.js',
+    'js/understand/rooms.js',
+    'js/understand/rules.js',
+    'js/understand/custom-rooms.js',
+    'js/understand/sorter.js',
+    'js/memory/entries.js',
+    'js/memory/ask-text.js',
+    'js/memory/ask.js',
+    'js/ui/talk.js',
+    'js/ui/room.js',
+    'js/main.js'
+  ];
+
+  const positions = requiredOrder.map(function (src) {
+    return scripts.indexOf(src);
+  });
+
+  positions.forEach(function (position, index) {
+    assert.notStrictEqual(
+      position,
+      -1,
+      requiredOrder[index] + ' must be loaded'
+    );
+
+    if (index > 0) {
+      assert.ok(
+        position > positions[index - 1],
+        requiredOrder[index] + ' must load after ' +
+          requiredOrder[index - 1]
+      );
+    }
+  });
+});
+
+test('ask: next appointment ignores completed appointments', function () {
+  const soon = new Date(Date.now() + 2 * 86400000).toISOString();
+  const later = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const entries = [
+    {
+      id: 'completed',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: soon,
+      hasTime: false,
+      done: true,
+      created: ago(3)
+    },
+    {
+      id: 'open',
+      text: 'Dentist hygiene visit',
+      room: 'appointments',
+      when: later,
+      hasTime: false,
+      done: false,
+      created: ago(2)
+    }
+  ];
+
+  const result = askWith(entries, 'What is my next appointment?');
+
+  assert.deepStrictEqual(
+    result.sources.map(function (entry) {
+      return entry.id;
+    }),
+    ['open']
+  );
+
+  assert.ok(
+    result.answer.includes('Dentist hygiene visit'),
+    result.answer
+  );
+});
+
+test('ask: next appointment reports no active appointment when all are completed', function () {
+  const future = new Date(Date.now() + 2 * 86400000).toISOString();
+
+  const result = askWith([
+    {
+      id: 'completed',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: future,
+      hasTime: false,
+      done: true,
+      created: ago(3)
+    }
+  ], 'What is my next appointment?');
+
+  assert.strictEqual(result.sources.length, 0);
+
+  assert.ok(
+    /could not find any upcoming appointments/i.test(result.answer),
+    result.answer
+  );
+});
+
+test('ask: overdue task list excludes completed tasks', function () {
+  const past = new Date(Date.now() - 4 * 86400000).toISOString();
+
+  const entries = [
+    {
+      id: 'completed',
+      text: 'Pay completed bill',
+      room: 'todo',
+      when: past,
+      hasTime: false,
+      done: true,
+      created: ago(6)
+    },
+    {
+      id: 'open',
+      text: 'Renew overdue insurance',
+      room: 'todo',
+      when: past,
+      hasTime: false,
+      done: false,
+      created: ago(5)
+    }
+  ];
+
+  const result = askWith(entries, 'Show me my overdue tasks');
+
+  assert.deepStrictEqual(
+    result.sources.map(function (entry) {
+      return entry.id;
+    }),
+    ['open']
+  );
+
+  assert.ok(/1 overdue task/.test(result.answer), result.answer);
+
+  const allCompleted = askWith([
+    {
+      id: 'completed',
+      text: 'Pay completed bill',
+      room: 'todo',
+      when: past,
+      hasTime: false,
+      done: true,
+      created: ago(6)
+    }
+  ], 'Show me my overdue tasks');
+
+  assert.strictEqual(allCompleted.sources.length, 0);
+
+  assert.ok(
+    /could not find any overdue tasks/i.test(allCompleted.answer),
+    allCompleted.answer
+  );
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }
