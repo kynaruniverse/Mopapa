@@ -55,6 +55,28 @@ Mopapa.askParts.people = (function () {
     return name;
   }
 
+  function answerWhoSomethingIsFor(q, matches) {
+    if (!asksWhoSomethingIsFor(q)) return null;
+
+    var forMatches = matches.filter(function (e) {
+      return extractForPerson(e.text) !== null;
+    });
+
+    if (forMatches.length === 1) {
+      var forName = extractForPerson(forMatches[0].text);
+
+      return {
+        answer: 'It looks like it is for ' + forName + '.',
+        sources: [forMatches[0]]
+      };
+    }
+
+    return {
+      answer: 'I could not find who that is for. I will not guess.',
+      sources: forMatches.slice(0, 5)
+    };
+  }
+
   function extractCalledPerson(text) {
     var source = String(text || '').replace(/\s+/g, ' ').trim();
 
@@ -80,6 +102,7 @@ Mopapa.askParts.people = (function () {
   return {
     isNameQuestion: isNameQuestion,
     asksWhoSomethingIsFor: asksWhoSomethingIsFor,
+    answerWhoSomethingIsFor: answerWhoSomethingIsFor,
     extractForPerson: extractForPerson,
     extractCalledPerson: extractCalledPerson
   };

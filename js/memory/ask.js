@@ -748,26 +748,12 @@ Mopapa.ask = (function () {
     }
 
 
-if (Mopapa.askParts.people.asksWhoSomethingIsFor(q)) {
-      var forMatches = matches.filter(function (e) {
-        return Mopapa.askParts.people.extractForPerson(e.text) !== null;
-      });
+    var whoForAnswer = Mopapa.askParts.people.answerWhoSomethingIsFor(
+      q,
+      matches
+    );
 
-      if (forMatches.length === 1) {
-        var forName = Mopapa.askParts.people.extractForPerson(forMatches[0].text);
-
-        return {
-          answer: 'It looks like it is for ' + forName + '.',
-          sources: [forMatches[0]]
-        };
-      }
-
-      return {
-        answer: 'I could not find who that is for. I will not guess.',
-        sources: forMatches.slice(0, 5)
-      };
-    }
-
+    if (whoForAnswer) return whoForAnswer;
 
     if (
       (/\bwhere\b/.test(norm(q)) ||
