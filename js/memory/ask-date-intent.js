@@ -58,9 +58,26 @@ Mopapa.askParts.dateIntent = (function () {
       /\b(due|scheduled|appointment|appointments|reminder|reminders)\b/.test(n);
   }
 
+  function isGeneralNextAppointmentQuestion(q) {
+    var n = norm(q);
+
+    return /\bnext\b/.test(n) &&
+      /\b(appointment|appointments)\b/.test(n) &&
+      !/\b(dentist|doctor|gp|hospital|meeting|interview|vet)\b/.test(n);
+  }
+
+  function isOverdueTaskQuestion(q) {
+    var n = norm(q);
+
+    return /\b(overdue|over due|overdue tasks|overdue todos|past due)\b/.test(n) ||
+      /\b(which|what|show|list)\b.*\b(tasks|todos|to do|reminders)\b.*\b(overdue|past due)\b/.test(n);
+  }
+  
   return {
     isLoggedQuestion: isLoggedQuestion,
     isWhenQuestion: isWhenQuestion,
-    isScheduledDateQuestion: isScheduledDateQuestion
+    isScheduledDateQuestion: isScheduledDateQuestion,
+    isGeneralNextAppointmentQuestion: isGeneralNextAppointmentQuestion,
+    isOverdueTaskQuestion: isOverdueTaskQuestion
   };
 })();

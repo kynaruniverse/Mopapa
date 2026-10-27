@@ -76,6 +76,23 @@ test('ask date-intent module distinguishes logged questions from scheduled quest
   assert.strictEqual(intent.isScheduledDateQuestion('What is due tomorrow?'), true);
   assert.strictEqual(intent.isScheduledDateQuestion('What did I log yesterday?'), false);
   assert.strictEqual(intent.isScheduledDateQuestion('Show me my saved notes'), false);
+  assert.strictEqual(
+    intent.isGeneralNextAppointmentQuestion('What is my next appointment?'),
+    true
+  );
+  assert.strictEqual(
+    intent.isGeneralNextAppointmentQuestion('When is my next dentist appointment?'),
+    false
+  );
+
+  assert.strictEqual(
+    intent.isOverdueTaskQuestion('Show me my overdue tasks'),
+    true
+  );
+  assert.strictEqual(
+    intent.isOverdueTaskQuestion('What are my tasks?'),
+    false
+  );  
 });
 
 test('ask date-filter module filters entries by logged and due dates', function () {

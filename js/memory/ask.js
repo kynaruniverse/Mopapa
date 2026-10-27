@@ -12,6 +12,8 @@ Mopapa.ask = (function () {
   var isLoggedQuestion = Mopapa.askParts.dateIntent.isLoggedQuestion;
   var isWhenQuestion = Mopapa.askParts.dateIntent.isWhenQuestion;
   var isScheduledDateQuestion = Mopapa.askParts.dateIntent.isScheduledDateQuestion;
+  var isGeneralNextAppointmentQuestion = Mopapa.askParts.dateIntent.isGeneralNextAppointmentQuestion;
+  var isOverdueTaskQuestion = Mopapa.askParts.dateIntent.isOverdueTaskQuestion;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
@@ -749,21 +751,6 @@ Mopapa.ask = (function () {
     return new Date(a.when) - new Date(b.when);
   }
 
-  function isGeneralNextAppointmentQuestion(q) {
-    var n = norm(q);
-
-    return /\bnext\b/.test(n) &&
-      /\b(appointment|appointments)\b/.test(n) &&
-      !/\b(dentist|doctor|gp|hospital|meeting|interview|vet)\b/.test(n);
-  }
-
-  function isOverdueTaskQuestion(q) {
-    var n = norm(q);
-
-    return /\b(overdue|over due|overdue tasks|overdue todos|past due)\b/.test(n) ||
-      /\b(which|what|show|list)\b.*\b(tasks|todos|to do|reminders)\b.*\b(overdue|past due)\b/.test(n);
-  }
-  
   function isCostQuestion(q) {
     var n = norm(q);
   
