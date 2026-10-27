@@ -818,7 +818,8 @@ Mopapa.ask = (function () {
 
       var pastDated = matches.filter(function (e) {
         return e.when &&
-          !isNaN(new Date(e.when).getTime());
+          !isNaN(new Date(e.when).getTime()) &&
+          Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(sortByWhen);
 
       if (pastDated.length) {

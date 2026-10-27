@@ -1683,6 +1683,27 @@ test('ask: invalid scheduled dates are not reported as past dates', function () 
   );
 });
 
+test('ask: future completed appointments are not reported as past dates', function () {
+  const future = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const result = askWith([
+    {
+      id: 'completed-future',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: future,
+      hasTime: false,
+      done: true,
+      created: ago(2)
+    }
+  ], 'When is the dentist?');
+
+  assert.ok(
+    !/date has already passed/i.test(result.answer),
+    result.answer
+  );
+});
+
 test('ask: overdue task list excludes completed tasks', function () {
   const past = new Date(Date.now() - 4 * 86400000).toISOString();
 
