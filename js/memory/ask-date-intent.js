@@ -73,11 +73,41 @@ Mopapa.askParts.dateIntent = (function () {
       /\b(which|what|show|list)\b.*\b(tasks|todos|to do|reminders)\b.*\b(overdue|past due)\b/.test(n);
   }
   
+  function answerOverdueTasks(q, all, sortByWhen) {
+    if (!isOverdueTaskQuestion(q)) return null;
+
+    var overdueTasks = all.filter(function (e) {
+      return e.room === 'todo' &&
+        !e.done &&
+        e.when &&
+        Mopapa.rules.isPast(e.when, e.hasTime);
+    }).sort(sortByWhen);
+
+    if (overdueTasks.length) {
+      return {
+        answer: 'You have ' + overdueTasks.length +
+          ' overdue ' +
+          (overdueTasks.length === 1 ? 'task' : 'tasks') +
+          ':\n' +
+          overdueTasks.map(function (e) {
+            return '• ' + e.text;
+          }).join('\n'),
+        sources: overdueTasks.slice(0, 8)
+      };
+    }
+
+    return {
+      answer: 'I could not find any overdue tasks with a saved date.',
+      sources: []
+    };
+  }
+
   return {
     isLoggedQuestion: isLoggedQuestion,
     isWhenQuestion: isWhenQuestion,
     isScheduledDateQuestion: isScheduledDateQuestion,
     isGeneralNextAppointmentQuestion: isGeneralNextAppointmentQuestion,
-    isOverdueTaskQuestion: isOverdueTaskQuestion
+    isOverdueTaskQuestion: isOverdueTaskQuestion,
+    answerOverdueTasks: answerOverdueTasks
   };
 })();

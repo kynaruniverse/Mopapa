@@ -720,32 +720,13 @@ Mopapa.ask = (function () {
       };
     }
 
-    if (isOverdueTaskQuestion(q)) {
-      var overdueTasks = all.filter(function (e) {
-        return e.room === 'todo' &&
-          !e.done &&
-          e.when &&
-          Mopapa.rules.isPast(e.when, e.hasTime);
-      }).sort(sortByWhen);
+    var overdueAnswer = Mopapa.askParts.dateIntent.answerOverdueTasks(
+      q,
+      all,
+      sortByWhen
+    );
 
-      if (overdueTasks.length) {
-        return {
-          answer: 'You have ' + overdueTasks.length +
-            ' overdue ' +
-            (overdueTasks.length === 1 ? 'task' : 'tasks') +
-            ':\n' +
-            overdueTasks.map(function (e) {
-              return '• ' + e.text;
-            }).join('\n'),
-          sources: overdueTasks.slice(0, 8)
-        };
-      }
-
-      return {
-        answer: 'I could not find any overdue tasks with a saved date.',
-        sources: []
-      };
-    }
+    if (overdueAnswer) return overdueAnswer;
 
 
     var whoForAnswer = Mopapa.askParts.people.answerWhoSomethingIsFor(
