@@ -7,7 +7,7 @@ Mopapa is a local-first web app prototype for saving entries in rooms, asking qu
 
 Open `index.html` in a modern browser or use SPCK's preview. Data is stored in that browser's local storage.
 
-Use **Back up data** regularly and before changing devices or making major edits. Use **Restore backup** to load a previously exported JSON backup. Restoring replaces the data currently saved in that browser and requires confirmation. Backup files larger than 5 MB, malformed backups, entries with missing or invalid fields, and duplicate entry IDs are rejected without replacing the existing saved data. A valid backup with zero entries is allowed. Keep exported files somewhere safe because backups may contain personal information.
+Use **Back up data** regularly and before changing devices or making major edits. Use **Restore backup** to load a previously exported JSON backup. Restoring replaces the data currently saved in that browser and requires confirmation. Backup files larger than 5 MB, malformed backups, entries with missing or invalid fields, IDs with surrounding whitespace, and duplicate entry IDs are rejected without replacing the existing saved data. A valid backup with zero entries is allowed. Keep exported files somewhere safe because backups may contain personal information.
 
 ## Asking questions
 

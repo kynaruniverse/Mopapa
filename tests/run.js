@@ -1054,8 +1054,14 @@ test('restore rejects malformed JSON without changing existing data', function (
 test('restore rejects malformed entry records without changing existing data', function () {
   const invalidEntries = [
     [{ text: 'Missing ID', room: 'notes' }],
+    [{ id: '', text: 'Missing ID', room: 'notes' }],
     [{ id: 'blank', text: '   ', room: 'notes' }],
+    [{ id: ' padded ', text: 'Padded ID', room: 'notes' }],
     [{ id: 'missing-room', text: 'Entry without a room' }],
+    [{ id: 'blank-room', text: 'Blank room', room: '   ' }],
+    [{ id: 'padded-room', text: 'Padded room', room: ' notes ' }],
+    [{ id: 'long-id-' + 'x'.repeat(100), text: 'Long ID', room: 'notes' }],
+    [{ id: 'long-room', text: 'Long room', room: 'r'.repeat(51) }],
     [null],
     [['not-an-entry']]
   ];
@@ -1123,6 +1129,37 @@ test('restore rejects duplicate entry IDs without changing existing data', funct
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
+test('restore handles prototype-like entry IDs safely', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: '__proto__', text: 'First entry', room: 'notes' },
+          { id: 'constructor', text: 'Second entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 2);
+});
+
 test('restore rejects entries exceeding the 1000-character text limit', function () {
   const w = boot(stored([
     { id: 'keep', text: 'Keep this entry', room: 'notes' }
@@ -1157,6 +1194,37 @@ test('restore rejects entries exceeding the 1000-character text limit', function
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
+test('restore accepts an entry containing exactly 1000 characters', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  const text = 'x'.repeat(1000);
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 1200,
+      content: JSON.stringify({
+        entries: [
+          { id: 'boundary', text: text, room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].text.length, 1000);
+});
+
 test('restore handles file-reading errors without changing existing data', function () {
   const w = boot(stored([
     { id: 'keep', text: 'Keep this entry', room: 'notes' }
@@ -1168,6 +1236,56 @@ test('restore handles file-reading errors without changing existing data', funct
   w.FileReader = function () {
     this.readAsText = function () {
       this.onerror();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 50 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore handles FileReader construction failures', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    throw new Error('simulated FileReader construction failure');
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 50 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore handles synchronous readAsText failures', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      throw new Error('simulated read failure');
     };
   };
 

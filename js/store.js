@@ -67,12 +67,14 @@ function validImportedEntries(list) {
       Array.isArray(entry) ||
       typeof entry.id !== 'string' ||
       !entry.id.trim() ||
+      entry.id !== entry.id.trim() ||
       entry.id.length > 100 ||
       typeof entry.text !== 'string' ||
       !entry.text.trim() ||
       entry.text.length > 1000 ||
       typeof entry.room !== 'string' ||
       !entry.room.trim() ||
+      entry.room !== entry.room.trim() ||
       entry.room.length > 50
     ) {
       return false;
@@ -138,7 +140,14 @@ function load() {
       return;
     }
 
-    var r = new FileReader();
+    var r;
+
+    try {
+      r = new FileReader();
+    } catch (e) {
+      cb(false);
+      return;
+    }
     r.onload = function () {
       try {
         var p = JSON.parse(r.result);
@@ -161,7 +170,12 @@ function load() {
       } catch (e) { cb(false); }
     };
     r.onerror = function () { cb(false); };
-    r.readAsText(file);
+
+    try {
+      r.readAsText(file);
+    } catch (e) {
+      cb(false);
+    }
   }
 
   return {
