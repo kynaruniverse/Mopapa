@@ -113,12 +113,15 @@ Mopapa.askParts.dateIntent = (function () {
   function answerOverdueTasks(q, all, sortByWhen) {
     if (!isOverdueTaskQuestion(q)) return null;
 
+
     var overdueTasks = all.filter(function (e) {
       return e.room === 'todo' &&
         !e.done &&
         e.when &&
+        !isNaN(new Date(e.when).getTime()) &&
         Mopapa.rules.isPast(e.when, e.hasTime);
     }).sort(sortByWhen);
+
 
     if (overdueTasks.length) {
       return {

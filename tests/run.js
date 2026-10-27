@@ -214,6 +214,7 @@ test('date-intent overdue handler excludes completed and non-task entries', func
       hasTime: false,
       done: true
     },
+
     {
       id: 'appointment',
       text: 'Old dentist appointment',
@@ -221,7 +222,16 @@ test('date-intent overdue handler excludes completed and non-task entries', func
       when: past,
       hasTime: false,
       done: false
+    },
+    {
+      id: 'invalid',
+      text: 'Task with invalid date',
+      room: 'todo',
+      when: 'not-a-valid-date',
+      hasTime: false,
+      done: false
     }
+
   ];
 
   const result = intent.answerOverdueTasks(
