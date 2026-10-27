@@ -207,16 +207,39 @@ Mopapa.entries = (function () {
         return a.created < b.created ? 1 : (a.created > b.created ? -1 : 0);
       });
   }
-  
+
   function move(id, room) {
     var e = find(id);
     if (!e) return false;
-    var previous = e.room, wasDone = e.done;
+
+    var targetRoom = Mopapa.rooms.filter(function (item) {
+      return item.id === room;
+    })[0];
+
+    if (!targetRoom) return false;
+
+    var previous = {
+      room: e.room,
+      done: e.done,
+      when: e.when,
+      hasTime: e.hasTime
+    };
+
     e.room = room;
-    if (!Mopapa.roomById(room).dated) e.done = false;
+
+    if (!targetRoom.dated) {
+      e.done = false;
+      e.when = null;
+      e.hasTime = false;
+    }
+
     if (Mopapa.store.save()) return true;
-    e.room = previous;
-    e.done = wasDone;
+
+    e.room = previous.room;
+    e.done = previous.done;
+    e.when = previous.when;
+    e.hasTime = previous.hasTime;
+
     return false;
   }
 

@@ -654,6 +654,91 @@ test('failed delete restores the original source choices', function () {
 });
 
 
+test('moving a dated entry to a non-dated room removes it from the agenda', function () {
+  const future = new Date(Date.now() + 2 * 86400000).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'a',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: future,
+      hasTime: true,
+      done: false,
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.agenda.getItems().length, 1);
+  assert.strictEqual(w.Mopapa.entries.move('a', 'notes'), true);
+
+  const entry = w.Mopapa.entries.byRoom('notes')[0];
+
+  assert.strictEqual(entry.room, 'notes');
+  assert.strictEqual(entry.when, null);
+  assert.strictEqual(entry.hasTime, false);
+  assert.strictEqual(w.Mopapa.agenda.getItems().length, 0);
+});
+
+
+test('moving an entry to an unknown room is rejected without changing it', function () {
+  const w = boot(stored([
+    {
+      id: 'a',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: new Date(Date.now() + 2 * 86400000).toISOString(),
+      hasTime: true,
+      done: false,
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = Object.assign({}, w.Mopapa.entries.byRoom('appointments')[0]);
+
+  assert.strictEqual(w.Mopapa.entries.move('a', 'missing-room'), false);
+
+  const after = w.Mopapa.entries.byRoom('appointments')[0];
+
+  assert.strictEqual(after.room, before.room);
+  assert.strictEqual(after.when, before.when);
+  assert.strictEqual(after.hasTime, before.hasTime);
+});
+
+
+test('failed move restores the original date and time settings', function () {
+  const future = new Date(Date.now() + 2 * 86400000).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'a',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: future,
+      hasTime: true,
+      done: false,
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.entries.move('a', 'notes'), false);
+
+  const entry = w.Mopapa.entries.byRoom('appointments')[0];
+
+  assert.strictEqual(entry.room, 'appointments');
+  assert.strictEqual(entry.when, future);
+  assert.strictEqual(entry.hasTime, true);
+  assert.strictEqual(w.Mopapa.agenda.getItems().length, 1);
+});
+
+
 test('failed edits, tags, done, pin and move all revert in memory', function () {
   const w = boot(stored([{ id: 'a', text: 'Original', room: 'notes', tags: ['old'], done: false, pinned: false, created: new Date().toISOString() }]));
   w.Mopapa.store.load();
