@@ -2,7 +2,12 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var data = { entries: [], learned: {}, customRooms: [], ask: { aliases: [], boosts: {}, unanswered: [] } };
+  var data = {
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
+  };
 
   // What Ask has learned from the person. Kept apart from "learned",
   // which belongs to the room sorter and stays untouched.

@@ -287,7 +287,7 @@ Mopapa.ask = (function () {
     var d = Mopapa.store && Mopapa.store.data ? Mopapa.store.data() : null;
 
     if (d && !d.ask) {
-      d.ask = { aliases: [], boosts: {}, unanswered: [] };
+      d.ask = { aliases: [], boosts: Object.create(null), unanswered: [] };
     }
 
     return d ? d.ask : null;
@@ -390,7 +390,7 @@ Mopapa.ask = (function () {
     if (keys.length > 200) delete s.boosts[keys[0]];
 
     if (!Mopapa.store.save()) {
-      s.boosts = JSON.parse(before);
+      s.boosts = Object.assign(Object.create(null), JSON.parse(before));
       return false;
     }
 
