@@ -107,6 +107,31 @@ function stored(entries, learned, ask) {
   };
 }
 
+
+test('loading malformed entries does not discard valid neighbours', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'first', text: 'First valid memory', room: 'notes' },
+        null,
+        [],
+        { id: 'second', text: 'Second valid memory', room: 'ideas' }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].id, 'first');
+  assert.strictEqual(entries[1].id, 'second');
+});
+
 test('search finds entries containing prototype-like words', function () {
   const w = boot(stored([
     {
@@ -136,10 +161,100 @@ test('search finds entries containing prototype-like words', function () {
   assert.strictEqual(toStringResult.results[0].entry.id, 'tostring-entry');
 });
 
-test('load drops null entries instead of crashing later', function () {
-  const w = boot({ 'mopapa.v1': JSON.stringify({ entries: [null, { id: 'a', text: 'x', room: 'todo' }] }) });
+
+test('load drops null and array entries instead of crashing later', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        null,
+        ['not', 'an', 'entry'],
+        { id: 'a', text: 'valid entry', room: 'todo' }
+      ]
+    })
+  });
+
   w.Mopapa.store.load();
-  assert.ok(w.Mopapa.store.data().entries.every(function (e) { return e && typeof e.text === 'string'; }));
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, 'a');
+  assert.strictEqual(entries[0].text, 'valid entry');
+});
+
+test('reloading storage preserves valid saved entries', function () {
+  const w = boot(stored([
+    {
+      id: 'keep-entry',
+      text: 'Keep this memory',
+      room: 'notes',
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.data().entries.push({
+    id: 'temporary-entry',
+    text: 'Not saved',
+    room: 'notes'
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, 'keep-entry');
+  assert.strictEqual(entries[0].text, 'Keep this memory');
+});
+
+test('loading after storage is cleared removes stale in-memory entries', function () {
+  const w = boot(stored([
+    {
+      id: 'old-entry',
+      text: 'Old memory',
+      room: 'notes',
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+
+  delete w.localStorage._['mopapa.v1'];
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.Mopapa.store.data().ask.aliases)),
+    []
+  );
+});
+
+test('corrupt storage does not preserve stale in-memory entries', function () {
+  const w = boot(stored([
+    {
+      id: 'old-entry',
+      text: 'Old memory',
+      room: 'notes',
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.localStorage._['mopapa.v1'] = '{invalid json';
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+
+  assert.ok(
+    Object.keys(w.localStorage._).some(function (key) {
+      return key.indexOf('mopapa.v1.corrupt.') === 0;
+    })
+  );
 });
 
 test('corrupt storage is backed up, not lost', function () {
@@ -3027,6 +3142,30 @@ test('learning: fractional source counts are discarded after flooring', function
     false
   );
   assert.strictEqual(boosts.test.valid, 2);
+});
+
+
+test('load rejects array-shaped learned data', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: ['invalid', 'array'],
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    Array.isArray(w.Mopapa.store.data().learned),
+    false
+  );
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.Mopapa.store.data().learned)),
+    {}
+  );
 });
 
 test('learning: invalid aliases are discarded during cleanup', function () {

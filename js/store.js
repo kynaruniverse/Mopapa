@@ -151,9 +151,13 @@ function cleanAsk(a) {
   return out;
 }
 
+
 function cleanEntries(list) {
   return list.filter(function (e) {
-    return e && typeof e === 'object' && typeof e.text === 'string';
+    return e &&
+      typeof e === 'object' &&
+      !Array.isArray(e) &&
+      typeof e.text === 'string';
   });
 }
 
@@ -188,7 +192,15 @@ function validImportedEntries(list) {
   });
 }
 
+
 function load() {
+  data = {
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
+  };
+
   var raw = null;
   try {
     raw = localStorage.getItem(KEY);
@@ -196,7 +208,7 @@ function load() {
       var p = JSON.parse(raw);
       if (p && Array.isArray(p.entries)) {
         data.entries = cleanEntries(p.entries);
-        data.learned = p.learned && typeof p.learned === 'object' ? p.learned : {};
+        data.learned = p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {};
         data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
         data.ask = cleanAsk(p.ask);
       } else {
@@ -273,7 +285,7 @@ function load() {
 
         data = {
           entries: cleanEntries(p.entries),
-          learned: p.learned && typeof p.learned === 'object' ? p.learned : {},
+          learned: p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {},
           customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
           ask: cleanAsk(p.ask)
         };
