@@ -19,12 +19,12 @@ Mopapa.rules = (function () {
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function build(d, mon, yr, today) {
-    var y = yr
-  ? (yr < 100 ? (yr < 50 ? 2000 + yr : 1900 + yr) : yr)
-  : today.getFullYear();
+    var y = yr !== null && yr !== undefined
+      ? (yr < 100 ? (yr < 50 ? 2000 + yr : 1900 + yr) : yr)
+      : today.getFullYear();
     var dt = new Date(y, mon, d);
     if (dt.getMonth() !== mon || dt.getDate() !== d) return null;
-    if (!yr && dt < today) {
+    if ((yr === null || yr === undefined) && dt < today) {
       dt = new Date(y + 1, mon, d);
       if (dt.getMonth() !== mon || dt.getDate() !== d) return null;
     }
@@ -63,15 +63,15 @@ Mopapa.rules = (function () {
 
     if (!date) {
       m = t.match(DM_RE);
-      if (m) { d1 = build(+m[1], monthIdx(m[2]), m[3] ? +m[3] : 0, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
+      if (m) { d1 = build(+m[1], monthIdx(m[2]), m[3] ? +m[3] : null, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
     }
     if (!date) {
       m = t.match(MD_RE);
-      if (m) { d1 = build(+m[2], monthIdx(m[1]), m[3] ? +m[3] : 0, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
+      if (m) { d1 = build(+m[2], monthIdx(m[1]), m[3] ? +m[3] : null, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
     }
     if (!date) {
       m = t.match(NUM_RE);
-      if (m) { d1 = build(+m[1], +m[2] - 1, m[3] ? +m[3] : 0, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
+      if (m) { d1 = build(+m[1], +m[2] - 1, m[3] ? +m[3] : null, today); if (d1) { date = d1; t = t.replace(m[0], ' '); } }
     }
     if (!date) { m = t.match(/\bday after tomorrow\b/); if (m) { date = addDays(today, 2); t = t.replace(m[0], ' '); } }
     if (!date) { m = t.match(/\btomorrow\b/); if (m) { date = addDays(today, 1); t = t.replace(m[0], ' '); } }

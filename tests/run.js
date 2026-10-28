@@ -158,6 +158,19 @@ test('date parser: tomorrow at 5pm', function () {
 });
 
 
+test('date parser interprets two-digit year 00 as 2000', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/00',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 2000);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
+});
+
 test('date parser interprets two-digit year 49 as 2049', function () {
   const w = boot({});
   const result = w.Mopapa.rules.parse(
@@ -431,6 +444,19 @@ test('ask date-filter module filters entries by logged and due dates', function 
   );
 });
 
+test('date parser accepts leap day in year 2000', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 29/2/00',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 2000);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 29);
+});
+
 test('date parser preserves four-digit years', function () {
   const w = boot({});
   const result = w.Mopapa.rules.parse(
@@ -690,6 +716,19 @@ test('ask date ranges: last month includes entries from that month only', functi
   assert.ok(!ids.includes('this-month'), result.answer);
 });
 
+test('date parser interprets two-digit year 01 as 2001', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/01',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 2001);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
+});
+
 test('date parser interprets two-digit year 50 as 1950', function () {
   const w = boot({});
   const result = w.Mopapa.rules.parse(
@@ -701,6 +740,16 @@ test('date parser interprets two-digit year 50 as 1950', function () {
   assert.strictEqual(result.date.getFullYear(), 1950);
   assert.strictEqual(result.date.getMonth(), 1);
   assert.strictEqual(result.date.getDate(), 1);
+});
+
+test('date parser rejects leap day in year 2001', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 29/2/01',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.strictEqual(result, null);
 });
 
 test('ask date-text module parses valid dates and rejects invalid dates', function () {
