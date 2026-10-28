@@ -24,10 +24,10 @@ Mopapa.askParts.text = (function () {
   }
 
   function stem(w) {
-    var irregular = {
+    var irregular = Object.assign(Object.create(null), {
       paid: 'pay', spent: 'spend', spending: 'spend',
       bought: 'buy', buying: 'buy', kept: 'keep', left: 'leave'
-    };
+    });
 
     if (irregular[w]) w = irregular[w];
 
