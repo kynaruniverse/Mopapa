@@ -2786,6 +2786,155 @@ test('agenda UI guards entries whose room is unavailable', function () {
   );
 });
 
+
+test('learning: fractional source counts are discarded after flooring', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: {
+        boosts: {
+          test: {
+            fraction: 0.5,
+            valid: 2.8
+          }
+        }
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(boosts.test, 'fraction'),
+    false
+  );
+  assert.strictEqual(boosts.test.valid, 2);
+});
+
+test('learning: invalid aliases are discarded during cleanup', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: {
+        aliases: [
+          ['', 'doctor'],
+          ['gp', ''],
+          ['two words', 'doctor'],
+          ['same', 'SAME'],
+          ['gp', 'doctor']
+        ]
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.Mopapa.store.data().ask.aliases)),
+    [['gp', 'doctor']]
+  );
+});
+
+test('learning: reversed duplicate aliases are stored only once', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: {
+        aliases: [
+          ['gp', 'doctor'],
+          ['doctor', 'gp']
+        ]
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().ask.aliases.length,
+    1
+  );
+});
+
+test('learning: empty and duplicate unanswered questions are discarded', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: {
+        unanswered: [
+          { q: '  ' },
+          { q: 'Where are my keys?' },
+          { q: ' where are my keys? ' },
+          { q: 'Where is my wallet?' }
+        ]
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const unanswered = w.Mopapa.store.data().ask.unanswered;
+
+  assert.strictEqual(unanswered.length, 2);
+  assert.strictEqual(unanswered[0].q, 'Where are my keys?');
+  assert.strictEqual(unanswered[1].q, 'Where is my wallet?');
+});
+
+test('learning: malformed boost buckets are discarded', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: {
+        boosts: {
+          broken: 5,
+          array: ['invalid'],
+          empty: {},
+          valid: { 'entry-1': 3 }
+        }
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts, 'broken'), false);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts, 'array'), false);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts, 'empty'), false);
+  assert.strictEqual(boosts.valid['entry-1'], 3);
+});
+
+test('learning: invalid unanswered records do not consume the record limit', function () {
+  const unanswered = [];
+
+  for (let i = 0; i < 35; i++) {
+    unanswered.push({ q: '' });
+  }
+
+  for (let i = 0; i < 35; i++) {
+    unanswered.push({ q: 'Question ' + i });
+  }
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      ask: { unanswered: unanswered }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const saved = w.Mopapa.store.data().ask.unanswered;
+
+  assert.strictEqual(saved.length, 30);
+  assert.strictEqual(saved[0].q, 'Question 0');
+  assert.strictEqual(saved[29].q, 'Question 29');
+});
+
+
 test('learning: imported source feedback rejects invalid counts', function () {
   const w = boot({ 'mopapa.v1': JSON.stringify({
     entries: [],

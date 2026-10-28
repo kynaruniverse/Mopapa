@@ -11,54 +11,145 @@ Mopapa.store = (function () {
 
   // What Ask has learned from the person. Kept apart from "learned",
   // which belongs to the room sorter and stays untouched.
-  function cleanAsk(a) {
-    var out = { aliases: [], boosts: Object.create(null), unanswered: [] };
-    if (!a || typeof a !== 'object') return out;
 
-    if (Array.isArray(a.aliases)) {
-      a.aliases.forEach(function (p) {
-        if (
-          Array.isArray(p) && p.length === 2 &&
-          typeof p[0] === 'string' && typeof p[1] === 'string' &&
-          out.aliases.length < 50
-        ) {
-          out.aliases.push([p[0].slice(0, 30), p[1].slice(0, 30)]);
-        }
-      });
-    }
+function cleanAsk(a) {
+  var out = {
+    aliases: [],
+    boosts: Object.create(null),
+    unanswered: []
+  };
 
-    if (a.boosts && typeof a.boosts === 'object') {
-      Object.keys(a.boosts).slice(0, 200).forEach(function (sig) {
-        var ids = a.boosts[sig];
-        if (!ids || typeof ids !== 'object') return;
-
-        var clean = Object.create(null);
-        Object.keys(ids).slice(0, 10).forEach(function (id) {
-          if (
-            typeof ids[id] === 'number' &&
-            isFinite(ids[id]) &&
-            ids[id] > 0
-          ) {
-            clean[id] = Math.min(Math.floor(ids[id]), 1000);
-          }
-        });
-        out.boosts[sig] = clean;
-      });
-    }
-
-    if (Array.isArray(a.unanswered)) {
-      a.unanswered.forEach(function (u) {
-        if (u && typeof u.q === 'string' && out.unanswered.length < 30) {
-          out.unanswered.push({
-            q: u.q.slice(0, 200),
-            at: typeof u.at === 'string' ? u.at : ''
-          });
-        }
-      });
-    }
-
+  if (!a || typeof a !== 'object' || Array.isArray(a)) {
     return out;
   }
+
+  if (Array.isArray(a.aliases)) {
+    var seenAliases = Object.create(null);
+
+    a.aliases.forEach(function (p) {
+      if (
+        !Array.isArray(p) ||
+        p.length !== 2 ||
+        typeof p[0] !== 'string' ||
+        typeof p[1] !== 'string'
+      ) {
+        return;
+      }
+
+      var first = p[0].trim();
+      var second = p[1].trim();
+
+      if (
+        !first ||
+        !second ||
+        first.length > 30 ||
+        second.length > 30 ||
+        /\s/.test(first) ||
+        /\s/.test(second) ||
+        first.toLowerCase() === second.toLowerCase()
+      ) {
+        return;
+      }
+
+      var pair = [
+        first.toLowerCase(),
+        second.toLowerCase()
+      ].sort();
+
+      var key = pair.join('\u0000');
+
+      if (seenAliases[key] || out.aliases.length >= 50) {
+        return;
+      }
+
+      seenAliases[key] = true;
+      out.aliases.push([first, second]);
+    });
+  }
+
+  if (a.boosts && typeof a.boosts === 'object' && !Array.isArray(a.boosts)) {
+    Object.keys(a.boosts).forEach(function (sig) {
+      if (
+        Object.keys(out.boosts).length >= 200 ||
+        !sig ||
+        sig.length > 500
+      ) {
+        return;
+      }
+
+      var ids = a.boosts[sig];
+
+      if (!ids || typeof ids !== 'object' || Array.isArray(ids)) {
+        return;
+      }
+
+      var clean = Object.create(null);
+
+      Object.keys(ids).forEach(function (id) {
+        if (
+          Object.keys(clean).length >= 10 ||
+          !id ||
+          id.length > 100
+        ) {
+          return;
+        }
+
+        var count = ids[id];
+
+        if (
+          typeof count !== 'number' ||
+          !isFinite(count) ||
+          count < 1
+        ) {
+          return;
+        }
+
+        count = Math.min(Math.floor(count), 1000);
+
+        if (count < 1) return;
+
+        clean[id] = count;
+      });
+
+      if (Object.keys(clean).length) {
+        out.boosts[sig] = clean;
+      }
+    });
+  }
+
+  if (Array.isArray(a.unanswered)) {
+    var seenQuestions = Object.create(null);
+
+    a.unanswered.forEach(function (u) {
+      if (
+        !u ||
+        typeof u.q !== 'string' ||
+        out.unanswered.length >= 30
+      ) {
+        return;
+      }
+
+      var question = u.q.trim();
+
+      if (!question) return;
+
+      question = question.slice(0, 200);
+
+      var key = question.toLowerCase();
+
+      if (seenQuestions[key]) return;
+
+      seenQuestions[key] = true;
+
+      out.unanswered.push({
+        q: question,
+        at: typeof u.at === 'string' ? u.at.slice(0, 40) : ''
+      });
+    });
+  }
+
+  return out;
+}
 
 function cleanEntries(list) {
   return list.filter(function (e) {
