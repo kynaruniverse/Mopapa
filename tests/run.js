@@ -21,6 +21,7 @@ function boot(storage) {
     'understand/custom-rooms',
     'understand/sorter',
     'memory/entries',
+    'memory/search',
     'ask/ask-text',
     'ask/ask-people',
     'ask/ask-match',
@@ -105,6 +106,35 @@ function stored(entries, learned, ask) {
     })
   };
 }
+
+test('search finds entries containing prototype-like words', function () {
+  const w = boot(stored([
+    {
+      id: 'constructor-entry',
+      text: 'constructor reference',
+      room: 'notes',
+      created: new Date().toISOString()
+    },
+    {
+      id: 'tostring-entry',
+      text: 'toString reference',
+      room: 'notes',
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.roomById = function () { return null; };
+
+  const constructorResult = w.Mopapa.search.find('constructor');
+  const toStringResult = w.Mopapa.search.find('toString');
+
+  assert.strictEqual(constructorResult.total, 1);
+  assert.strictEqual(constructorResult.results[0].entry.id, 'constructor-entry');
+
+  assert.strictEqual(toStringResult.total, 1);
+  assert.strictEqual(toStringResult.results[0].entry.id, 'tostring-entry');
+});
 
 test('load drops null entries instead of crashing later', function () {
   const w = boot({ 'mopapa.v1': JSON.stringify({ entries: [null, { id: 'a', text: 'x', room: 'todo' }] }) });

@@ -1,7 +1,7 @@
 var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.search = (function () {
-  var STOP = {
+  var STOP = Object.assign(Object.create(null), {
     a: 1, an: 1, the: 1, i: 1, me: 1, my: 1, mine: 1, we: 1, our: 1,
     you: 1, your: 1, is: 1, are: 1, was: 1, were: 1, am: 1, do: 1,
     does: 1, did: 1, have: 1, has: 1, had: 1, can: 1, could: 1,
@@ -9,7 +9,7 @@ Mopapa.search = (function () {
     why: 1, how: 1, find: 1, search: 1, show: 1, please: 1, in: 1,
     on: 1, at: 1, for: 1, of: 1, to: 1, from: 1, with: 1, and: 1,
     or: 1, but: 1, about: 1, room: 1, rooms: 1, my: 1
-  };
+  });
 
   function normalize(value) {
     return String(value || '').toLowerCase()
