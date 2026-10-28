@@ -57,6 +57,10 @@ Mopapa.customRooms = (function () {
   }
 
   function add(name, icon) {
+    if (typeof name !== 'string') {
+      return { ok: false, message: 'Use a room name between 2 and 20 characters.' };
+    }
+
     name = cleanName(name);
     var current = Mopapa.store.data().customRooms || [];
     if (name.length < 2 || name.length > 20) {

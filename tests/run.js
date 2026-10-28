@@ -1320,6 +1320,136 @@ test('failed edits, tags, done, pin and move all revert in memory', function () 
   assert.strictEqual(w.Mopapa.store.data().entries[0].room, 'notes');
 });
 
+test('custom room creation rejects non-string names', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  [null, 123, {}, ['Books']].forEach(function (name) {
+    const result = w.Mopapa.customRooms.add(name, 'book');
+    assert.strictEqual(result.ok, false);
+  });
+
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 0);
+});
+
+test('custom room creation enforces the minimum after whitespace cleaning', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(w.Mopapa.customRooms.add(' A ', 'book').ok, false);
+  assert.strictEqual(w.Mopapa.customRooms.add('   ', 'book').ok, false);
+
+  const valid = w.Mopapa.customRooms.add('AB', 'book');
+
+  assert.strictEqual(valid.ok, true);
+  assert.strictEqual(valid.room.name, 'AB');
+});
+
+test('custom room creation accepts 20 characters but rejects 21', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const valid = w.Mopapa.customRooms.add('A'.repeat(20), 'book');
+  const invalid = w.Mopapa.customRooms.add('B'.repeat(21), 'book');
+
+  assert.strictEqual(valid.ok, true);
+  assert.strictEqual(valid.room.name.length, 20);
+  assert.strictEqual(invalid.ok, false);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 1);
+});
+
+test('custom room creation rejects case-insensitive built-in room duplicates', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('  NOTES  ', 'book');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 0);
+});
+
+test('custom room creation rejects duplicate names after case and whitespace normalisation', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const first = w.Mopapa.customRooms.add('Reading List', 'book');
+  const second = w.Mopapa.customRooms.add('  reading   list  ', 'star');
+
+  assert.strictEqual(first.ok, true);
+  assert.strictEqual(second.ok, false);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().customRooms[0].name, 'Reading List');
+});
+
+test('custom room creation falls back to a supported icon', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Bookshelf', 'unknown-icon');
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.room.icon, 'book');
+  assert.strictEqual(w.Mopapa.store.data().customRooms[0].icon, 'book');
+});
+
+test('custom room creation persists the normalised name', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('  Reading   Room  ', 'book');
+  const saved = w.Mopapa.store.data().customRooms[0];
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.room.name, 'Reading Room');
+  assert.strictEqual(saved.name, 'Reading Room');
+});
+
+test('custom room reload is idempotent after successful creation', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Reading Room', 'book');
+
+  assert.strictEqual(result.ok, true);
+
+  w.Mopapa.customRooms.reload();
+  w.Mopapa.customRooms.reload();
+
+  const matches = w.Mopapa.rooms.filter(function (room) {
+    return room.id === result.room.id;
+  });
+
+  assert.strictEqual(matches.length, 1);
+});
+
+test('custom room creation survives a fresh storage load', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Travel Plans', 'plane');
+
+  assert.strictEqual(result.ok, true);
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const room = w.Mopapa.rooms.filter(function (item) {
+    return item.id === result.room.id;
+  })[0];
+
+  assert.ok(room);
+  assert.strictEqual(room.name, 'Travel Plans');
+  assert.strictEqual(room.icon, 'plane');
+});
 
 test('failed custom-room creation leaves no in-memory or stored room', function () {
   const w = boot(stored());
