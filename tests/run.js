@@ -2072,6 +2072,84 @@ test('custom-room limit still blocks an eleventh valid room', function () {
   );
 });
 
+test('custom room reload rejects names shorter than two characters after normalisation', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().customRooms = [
+    { id: 'custom_single', name: ' A ', icon: 'book' },
+    { id: 'custom_spaces', name: '   ', icon: 'book' },
+    { id: 'custom_valid', name: 'AB', icon: 'book' }
+  ];
+
+  w.Mopapa.customRooms.reload();
+
+  const customRooms = w.Mopapa.rooms.filter(function (room) {
+    return room.id.indexOf('custom_') === 0;
+  });
+
+  assert.strictEqual(customRooms.length, 1);
+  assert.strictEqual(customRooms[0].id, 'custom_valid');
+  assert.strictEqual(customRooms[0].name, 'AB');
+});
+
+test('custom room reload rejects names duplicated after whitespace normalisation', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().customRooms = [
+    { id: 'custom_first', name: 'Reading List', icon: 'book' },
+    { id: 'custom_second', name: '  Reading   List  ', icon: 'star' }
+  ];
+
+  w.Mopapa.customRooms.reload();
+
+  const customRooms = w.Mopapa.rooms.filter(function (room) {
+    return room.id.indexOf('custom_') === 0;
+  });
+
+  assert.strictEqual(customRooms.length, 1);
+  assert.strictEqual(customRooms[0].id, 'custom_first');
+});
+
+test('custom room reload accepts a normalised name of exactly 20 characters', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  const name = 'A'.repeat(20);
+
+  w.Mopapa.store.data().customRooms = [
+    { id: 'custom_boundary', name: name, icon: 'book' }
+  ];
+
+  w.Mopapa.customRooms.reload();
+
+  const room = w.Mopapa.rooms.filter(function (item) {
+    return item.id === 'custom_boundary';
+  })[0];
+
+  assert.ok(room);
+  assert.strictEqual(room.name, name);
+});
+
+test('custom room reload converts supported legacy emoji icons', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().customRooms = [
+    { id: 'custom_legacy', name: 'Reading', icon: '📚' }
+  ];
+
+  w.Mopapa.customRooms.reload();
+
+  const room = w.Mopapa.rooms.filter(function (item) {
+    return item.id === 'custom_legacy';
+  })[0];
+
+  assert.ok(room);
+  assert.strictEqual(room.icon, 'book');
+});
+
 test('custom room reload rejects names outside the permitted length', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({

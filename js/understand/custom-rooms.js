@@ -19,9 +19,19 @@ Mopapa.customRooms = (function () {
   }
 
   function validSavedRoom(room) {
-    return room &&
-      typeof room.id === 'string' && /^custom_[a-z0-9]+$/.test(room.id) &&
-      typeof room.name === 'string' && room.name.length >= 2 && room.name.length <= 20 &&
+    if (
+      !room ||
+      typeof room.id !== 'string' ||
+      !/^custom_[a-z0-9]+$/.test(room.id) ||
+      typeof room.name !== 'string'
+    ) {
+      return false;
+    }
+
+    var name = cleanName(room.name);
+
+    return name.length >= 2 &&
+      name.length <= 20 &&
       ICONS.indexOf(normIcon(room.icon)) !== -1;
   }
 
@@ -31,7 +41,7 @@ Mopapa.customRooms = (function () {
     });
 
     var saved = Mopapa.store.data().customRooms || [];
-    var ids = {};
+    var ids = Object.create(null);
     saved.forEach(function (room) {
       var name = cleanName(room && room.name);
       if (!validSavedRoom(room) || !name || ids[room.id] || findDuplicate(name)) return;

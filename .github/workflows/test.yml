@@ -9,6 +9,9 @@ jobs:
         with:
           node-version: 20
       - name: Syntax check
-        run: for f in $(find js -name '*.js'); do node --check "$f"; done
+        run: |
+          for f in $(find js tests -name '*.js'); do
+            node --check "$f"
+          done
       - name: Tests
         run: node tests/run.js
