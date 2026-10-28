@@ -158,6 +158,8 @@ function load() {
     }
 
     r.onload = function () {
+      if (completed) return;
+
       try {
         var p = JSON.parse(r.result);
 
