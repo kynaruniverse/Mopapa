@@ -134,29 +134,6 @@ test('loading malformed entries does not discard valid neighbours', function () 
   assert.strictEqual(entries[1].id, 'second');
 });
 
-  const w = boot({
-    'mopapa.v1': JSON.stringify({
-      entries: [
-        { id: 'first', text: 'First valid memory', room: 'notes' },
-        null,
-        [],
-        { id: 'second', text: 'Second valid memory', room: 'ideas' }
-      ],
-      learned: {},
-      customRooms: [],
-      ask: { aliases: [], boosts: {}, unanswered: [] }
-    })
-  });
-
-  w.Mopapa.store.load();
-
-  const entries = w.Mopapa.store.data().entries;
-
-  assert.strictEqual(entries.length, 2);
-  assert.strictEqual(entries[0].id, 'first');
-  assert.strictEqual(entries[1].id, 'second');
-});
-
 test('search finds entries containing prototype-like words', function () {
   const w = boot(stored([
     {
