@@ -383,7 +383,7 @@ Mopapa.ask = (function () {
 
     var before = JSON.stringify(s.boosts);
 
-    if (!s.boosts[sig]) s.boosts[sig] = {};
+    if (!s.boosts[sig]) s.boosts[sig] = Object.create(null);
     s.boosts[sig][entryId] = (s.boosts[sig][entryId] || 0) + 1;
 
     var keys = Object.keys(s.boosts);
@@ -402,7 +402,7 @@ Mopapa.ask = (function () {
     if (!s) return false;
 
     var before = s.boosts;
-    s.boosts = {};
+    s.boosts = Object.create(null);
 
     if (!Mopapa.store.save()) {
       s.boosts = before;
