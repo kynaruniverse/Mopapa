@@ -55,7 +55,11 @@ Mopapa.customRooms = (function () {
     if (findDuplicate(name)) {
       return { ok: false, message: 'A room with that name already exists.' };
     }
-    if (current.length >= MAX_CUSTOM_ROOMS) {
+    var activeCustomRoomCount = Mopapa.rooms.filter(function (room) {
+      return room.id.indexOf('custom_') === 0;
+    }).length;
+
+    if (activeCustomRoomCount >= MAX_CUSTOM_ROOMS) {
       return { ok: false, message: 'You have reached the limit of 10 custom rooms for now.' };
     }
     if (ICONS.indexOf(icon) === -1) icon = ICONS[0];

@@ -158,6 +158,19 @@ test('date parser: tomorrow at 5pm', function () {
 });
 
 
+test('date parser interprets two-digit year 49 as 2049', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/49',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 2049);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
+});
+
 test('ask date-intent module distinguishes logged questions from scheduled questions', function () {
   const w = boot({});
   const intent = w.Mopapa.askParts.dateIntent;
@@ -418,6 +431,19 @@ test('ask date-filter module filters entries by logged and due dates', function 
   );
 });
 
+test('date parser preserves four-digit years', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/2049',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 2049);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
+});
+
 test('ask date-filter module handles explicit dates', function () {
   const w = boot({});
   const dateParts = w.Mopapa.askParts.dateFilter;
@@ -664,6 +690,19 @@ test('ask date ranges: last month includes entries from that month only', functi
   assert.ok(!ids.includes('this-month'), result.answer);
 });
 
+test('date parser interprets two-digit year 50 as 1950', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/50',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 1950);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
+});
+
 test('ask date-text module parses valid dates and rejects invalid dates', function () {
   const w = boot({});
   const dates = w.Mopapa.askParts.dateText;
@@ -703,6 +742,19 @@ test('ask date-text module parses valid dates and rejects invalid dates', functi
     dates.textDateMatchesFilter({ text: 'Dentist on 5 May' }, filter),
     false
   );
+});
+
+test('date parser interprets two-digit year 99 as 1999', function () {
+  const w = boot({});
+  const result = w.Mopapa.rules.parse(
+    'task on 1/2/99',
+    new Date(2026, 9, 21, 10, 0)
+  );
+
+  assert.ok(result);
+  assert.strictEqual(result.date.getFullYear(), 1999);
+  assert.strictEqual(result.date.getMonth(), 1);
+  assert.strictEqual(result.date.getDate(), 1);
 });
 
 test('ask recognises abbreviated, month-first and numeric dates in saved text', function () {
@@ -1571,6 +1623,27 @@ test('custom room reload ignores malformed saved room records', function () {
   );
 });
 
+test('malformed saved rooms do not consume the custom-room limit', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: Array(10).fill(null),
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Bookshelf', 'book');
+
+  assert.strictEqual(result.ok, true);
+  assert.ok(w.Mopapa.rooms.some(function (room) {
+    return room.name === 'Bookshelf';
+  }));
+});
+
 test('custom room reload rejects duplicate saved room IDs', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
@@ -1593,6 +1666,30 @@ test('custom room reload rejects duplicate saved room IDs', function () {
 
   assert.strictEqual(matches.length, 1);
   assert.strictEqual(matches[0].name, 'Books');
+});
+
+test('duplicate saved room records do not consume the custom-room limit', function () {
+  const duplicate = {
+    id: 'custom_books',
+    name: 'Books',
+    icon: 'book'
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: Array(10).fill(duplicate),
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Another room', 'music');
+
+  assert.strictEqual(result.ok, true);
 });
 
 test('custom room reload rejects duplicate names without regard to case', function () {
@@ -1619,6 +1716,42 @@ test('custom room reload rejects duplicate names without regard to case', functi
   assert.strictEqual(matches[0].id, 'custom_books');
 });
 
+test('nine valid rooms plus an invalid record still allow one more room', function () {
+  const rooms = [];
+
+  for (let i = 1; i <= 9; i++) {
+    rooms.push({
+      id: 'custom_room' + i,
+      name: 'Room ' + i,
+      icon: 'book'
+    });
+  }
+
+  rooms.push(null);
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: rooms,
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Room 10', 'music');
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(
+    w.Mopapa.rooms.filter(function (room) {
+      return room.id.indexOf('custom_') === 0;
+    }).length,
+    10
+  );
+});
+
 test('custom room reload normalises surrounding and repeated name whitespace', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
@@ -1640,6 +1773,40 @@ test('custom room reload normalises surrounding and repeated name whitespace', f
 
   assert.ok(room);
   assert.strictEqual(room.name, 'Reading Room');
+});
+
+test('custom-room limit still blocks an eleventh valid room', function () {
+  const rooms = [];
+
+  for (let i = 1; i <= 10; i++) {
+    rooms.push({
+      id: 'custom_room' + i,
+      name: 'Room ' + i,
+      icon: 'book'
+    });
+  }
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: rooms,
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.add('Room 11', 'music');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(
+    w.Mopapa.rooms.filter(function (room) {
+      return room.id.indexOf('custom_') === 0;
+    }).length,
+    10
+  );
 });
 
 test('custom room reload rejects names outside the permitted length', function () {

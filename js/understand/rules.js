@@ -19,7 +19,9 @@ Mopapa.rules = (function () {
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function build(d, mon, yr, today) {
-    var y = yr ? (yr < 100 ? 2000 + yr : yr) : today.getFullYear();
+    var y = yr
+  ? (yr < 100 ? (yr < 50 ? 2000 + yr : 1900 + yr) : yr)
+  : today.getFullYear();
     var dt = new Date(y, mon, d);
     if (dt.getMonth() !== mon || dt.getDate() !== d) return null;
     if (!yr && dt < today) {
