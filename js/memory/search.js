@@ -20,7 +20,7 @@ Mopapa.search = (function () {
   }
 
   function queryWords(query) {
-    var seen = {};
+    var seen = Object.create(null);
     return normalize(query).split(' ').filter(function (word) {
       if (word.length < 2 || STOP[word] || seen[word]) return false;
       seen[word] = true;

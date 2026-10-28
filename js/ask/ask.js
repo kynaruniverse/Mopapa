@@ -36,7 +36,7 @@ Mopapa.ask = (function () {
   ).split(' ').reduce(function (o, w) {
     o[w] = true;
     return o;
-  }, {});
+  }, Object.create(null));
 
   var ROOM_WORDS = [
     'todo', 'todos', 'task', 'tasks', 'reminder', 'reminders', 'appointment',
@@ -57,7 +57,7 @@ Mopapa.ask = (function () {
     ['tv', 'television']
   ];
 
-  var ALIAS_MAP = {};
+  var ALIAS_MAP = Object.create(null);
 
   function linkAlias(from, to) {
     if (!ALIAS_MAP[from]) ALIAS_MAP[from] = [];
@@ -154,7 +154,7 @@ Mopapa.ask = (function () {
     var dateHit = extractTextDate(q);
     var all = words(dateHit ? String(q).replace(dateHit.text, ' ') : q);
     var out = [];
-    var seen = {};
+    var seen = Object.create(null);
     var selectedRoom = roomId ? Mopapa.roomById(roomId) : null;
     var customNameWords = (
       selectedRoom && selectedRoom.id.indexOf('custom_') === 0
