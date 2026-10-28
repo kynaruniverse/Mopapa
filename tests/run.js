@@ -928,6 +928,36 @@ test('failed move restores the original date and time settings', function () {
   assert.strictEqual(w.Mopapa.agenda.getItems().length, 1);
 });
 
+test('tag cleaning handles prototype-like names and case-insensitive duplicates', function () {
+  const w = boot(stored([
+    {
+      id: 'a',
+      text: 'Tag test',
+      room: 'notes',
+      tags: [],
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.entries.setTags('a', [
+      'constructor',
+      'toString',
+      '__proto__',
+      'CONSTRUCTOR',
+      'TOSTRING',
+      '__PROTO__'
+    ]),
+    true
+  );
+
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().entries[0].tags),
+    JSON.stringify(['constructor', 'toString', '__proto__'])
+  );
+});
 
 test('failed edits, tags, done, pin and move all revert in memory', function () {
   const w = boot(stored([{ id: 'a', text: 'Original', room: 'notes', tags: ['old'], done: false, pinned: false, created: new Date().toISOString() }]));

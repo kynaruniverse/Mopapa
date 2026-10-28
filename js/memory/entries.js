@@ -11,7 +11,7 @@ Mopapa.entries = (function () {
   
   function cleanTags(value) {
     var input = Array.isArray(value) ? value : String(value || '').split(',');
-    var tags = [], seen = {};
+    var tags = [], seen = Object.create(null);
     input.forEach(function (raw) {
       var tag = String(raw || '').replace(/\s+/g, ' ').trim();
       if (!tag) return;
