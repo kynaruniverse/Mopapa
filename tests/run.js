@@ -107,8 +107,33 @@ function stored(entries, learned, ask) {
   };
 }
 
-
 test('loading malformed entries does not discard valid neighbours', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'first', text: 'First valid memory', room: 'notes' },
+        null,
+        [],
+        { text: 'Missing ID', room: 'notes' },
+        { id: 'blank-text', text: '   ', room: 'notes' },
+        { id: 'missing-room', text: 'Missing room' },
+        { id: 'second', text: 'Second valid memory', room: 'ideas' }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].id, 'first');
+  assert.strictEqual(entries[1].id, 'second');
+});
+
   const w = boot({
     'mopapa.v1': JSON.stringify({
       entries: [
@@ -255,6 +280,103 @@ test('corrupt storage does not preserve stale in-memory entries', function () {
       return key.indexOf('mopapa.v1.corrupt.') === 0;
     })
   );
+});
+
+test('loading duplicate saved IDs keeps only the first valid record', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'duplicate', text: 'Original memory', room: 'notes' },
+        { id: 'duplicate', text: 'Conflicting memory', room: 'ideas' },
+        { id: 'unique', text: 'Another memory', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].text, 'Original memory');
+  assert.strictEqual(entries[1].id, 'unique');
+});
+
+test('loading saved entries rejects text exceeding the 1000-character limit', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'too-long', text: 'x'.repeat(1001), room: 'notes' },
+        { id: 'valid', text: 'Valid memory', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, 'valid');
+});
+
+test('loading saved entries rejects padded IDs and room names', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: ' padded ', text: 'Padded ID', room: 'notes' },
+        { id: 'padded-room', text: 'Padded room', room: ' notes ' },
+        { id: 'valid', text: 'Valid memory', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, 'valid');
+});
+
+test('loading saved entries handles prototype-like IDs safely', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: '__proto__', text: 'Prototype memory', room: 'notes' },
+        { id: 'constructor', text: 'Constructor memory', room: 'notes' },
+        { id: 'toString', text: 'String memory', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 3);
+  assert.strictEqual(entries[0].id, '__proto__');
+  assert.strictEqual(entries[1].id, 'constructor');
+  assert.strictEqual(entries[2].id, 'toString');
+});
+
+test('loading saved entries rejects IDs and room names over their limits', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'i'.repeat(101), text: 'Long ID', room: 'notes' },
+        { id: 'long-room', text: 'Long room', room: 'r'.repeat(51) },
+        { id: 'valid', text: 'Valid memory', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 1);
+  assert.strictEqual(entries[0].id, 'valid');
 });
 
 test('corrupt storage is backed up, not lost', function () {

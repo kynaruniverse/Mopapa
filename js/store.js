@@ -153,11 +153,31 @@ function cleanAsk(a) {
 
 
 function cleanEntries(list) {
+  var seenIds = Object.create(null);
+
   return list.filter(function (e) {
-    return e &&
-      typeof e === 'object' &&
-      !Array.isArray(e) &&
-      typeof e.text === 'string';
+    if (
+      !e ||
+      typeof e !== 'object' ||
+      Array.isArray(e) ||
+      typeof e.id !== 'string' ||
+      !e.id.trim() ||
+      e.id !== e.id.trim() ||
+      e.id.length > 100 ||
+      typeof e.text !== 'string' ||
+      !e.text.trim() ||
+      e.text.length > 1000 ||
+      typeof e.room !== 'string' ||
+      !e.room.trim() ||
+      e.room !== e.room.trim() ||
+      e.room.length > 50 ||
+      seenIds[e.id]
+    ) {
+      return false;
+    }
+
+    seenIds[e.id] = true;
+    return true;
   });
 }
 
