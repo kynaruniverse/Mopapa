@@ -4,7 +4,7 @@ Mopapa.customRooms = (function () {
   var MAX_CUSTOM_ROOMS = 10;
   var ICONS = ['book', 'sprout', 'palette', 'paw', 'music', 'plane', 'home', 'briefcase', 'telescope', 'star'];
   // Rooms saved by earlier versions stored an emoji; map them to the new icon keys.
-  var LEGACY = { '\ud83d\udcda': 'book', '\ud83c\udf31': 'sprout', '\ud83c\udfa8': 'palette', '\ud83d\udc3e': 'paw', '\ud83c\udfb5': 'music', '\u2708\ufe0f': 'plane', '\ud83c\udfe0': 'home', '\ud83d\udcbc': 'briefcase', '\ud83d\udd2d': 'telescope', '\u2b50': 'star' };
+  var LEGACY = Object.assign(Object.create(null), { '\ud83d\udcda': 'book', '\ud83c\udf31': 'sprout', '\ud83c\udfa8': 'palette', '\ud83d\udc3e': 'paw', '\ud83c\udfb5': 'music', '\u2708\ufe0f': 'plane', '\ud83c\udfe0': 'home', '\ud83d\udcbc': 'briefcase', '\ud83d\udd2d': 'telescope', '\u2b50': 'star' });
   function normIcon(icon) { return LEGACY[icon] || icon; }
 
   function cleanName(value) {
