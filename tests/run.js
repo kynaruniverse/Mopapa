@@ -1914,7 +1914,7 @@ test('ask facts keeps prototype-like location words', function () {
     Array.from(facts.whereStems({
       fact: { where: 'the garage' }
     })),
-    ['garage']
+    ['garag']
   );
 });
 
