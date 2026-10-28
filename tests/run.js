@@ -2842,6 +2842,139 @@ test('learning: source feedback uses safe dictionaries for prototype-like IDs', 
   assert.strictEqual(ask.boosts.test.toString, 3);
 });
 
+test('learning: confirming a source records feedback', function () {
+  const w = boot(stored([
+    {
+      id: 'garage-entry',
+      text: 'Spare keys in the garage',
+      room: 'notes',
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.ask.confirmSource('Where are the spare keys?', 'garage-entry'),
+    true
+  );
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+  const signatures = Object.keys(boosts);
+
+  assert.strictEqual(signatures.length, 1);
+  assert.strictEqual(boosts[signatures[0]]['garage-entry'], 1);
+});
+
+test('learning: confirming the same source increments its count', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), true);
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), true);
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+  const sig = Object.keys(boosts)[0];
+
+  assert.strictEqual(boosts[sig]['key-entry'], 2);
+});
+
+test('learning: invalid source confirmation is rejected', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', ''), false);
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', null), false);
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 123), false);
+
+  assert.strictEqual(
+    Object.keys(w.Mopapa.store.data().ask.boosts).length,
+    0
+  );
+});
+
+test('learning: failed source confirmation rolls back feedback', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), true);
+
+  const before = JSON.stringify(w.Mopapa.store.data().ask.boosts);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), false);
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().ask.boosts),
+    before
+  );
+
+  assert.strictEqual(
+    Object.getPrototypeOf(w.Mopapa.store.data().ask.boosts),
+    null
+  );
+});
+
+test('learning: clearing source feedback removes all boosts', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), true);
+  assert.strictEqual(w.Mopapa.ask.clearConfirmed(), true);
+
+  assert.strictEqual(
+    Object.keys(w.Mopapa.store.data().ask.boosts).length,
+    0
+  );
+});
+
+test('learning: failed clearing restores source feedback', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.confirmSource('Where are my keys?', 'key-entry'), true);
+
+  const before = JSON.stringify(w.Mopapa.store.data().ask.boosts);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.ask.clearConfirmed(), false);
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().ask.boosts),
+    before
+  );
+});
+
+test('learning: logging an unanswered question keeps it', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.ask.logUnanswered('Where did I put my spare keys?'),
+    true
+  );
+
+  const unanswered = w.Mopapa.store.data().ask.unanswered;
+
+  assert.strictEqual(unanswered.length, 1);
+  assert.strictEqual(unanswered[0].q, 'Where did I put my spare keys?');
+  assert.ok(unanswered[0].at);
+});
+
+test('learning: failed unanswered-question logging rolls back', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.ask.logUnanswered('Where are my keys?'), true);
+
+  const before = JSON.stringify(w.Mopapa.store.data().ask.unanswered);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.ask.logUnanswered('Where is my wallet?'), false);
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().ask.unanswered),
+    before
+  );
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }
