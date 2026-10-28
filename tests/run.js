@@ -1301,6 +1301,104 @@ test('restore handles synchronous readAsText failures', function () {
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
+test('restore calls its callback only once when reading fails then succeeds', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.onerror();
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  const results = [];
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'after-error', text: 'Entry after error', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { results.push(ok); }
+  );
+
+  assert.deepStrictEqual(results, [false]);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+});
+
+test('restore calls its callback only once when reading succeeds then throws', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+      throw new Error('simulated error after load');
+    };
+  };
+
+  const results = [];
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'loaded', text: 'Loaded entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { results.push(ok); }
+  );
+
+  assert.deepStrictEqual(results, [true]);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'loaded');
+});
+
+test('restore ignores repeated load events after the first successful import', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+      this.result = JSON.stringify({
+        entries: [
+          { id: 'second', text: 'Second entry', room: 'notes' }
+        ]
+      });
+      this.onload();
+    };
+  };
+
+  const results = [];
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'first', text: 'First entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { results.push(ok); }
+  );
+
+  assert.deepStrictEqual(results, [true]);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'first');
+});
+
 test('restore accepts a valid empty backup', function () {
   const w = boot(stored([
     { id: 'old', text: 'Old entry', room: 'notes' }
@@ -1377,6 +1475,135 @@ test('restore reloads valid custom rooms into the active room list', function ()
   assert.ok(room);
   assert.strictEqual(room.name, 'Books');
   assert.strictEqual(room.icon, 'book');
+});
+
+test('custom room reload ignores malformed saved room records', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [
+        null,
+        'not-a-room',
+        { id: 'wrong-prefix', name: 'Invalid', icon: 'book' },
+        { id: 'custom_badicon', name: 'Bad Icon', icon: 'unknown' },
+        { id: 'custom_valid', name: 'Valid Room', icon: 'book' }
+      ],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.reload();
+
+  assert.strictEqual(
+    w.Mopapa.rooms.some(function (room) {
+      return room.id === 'custom_valid';
+    }),
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.rooms.some(function (room) {
+      return room.id === 'custom_badicon' || room.id === 'wrong-prefix';
+    }),
+    false
+  );
+});
+
+test('custom room reload rejects duplicate saved room IDs', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [
+        { id: 'custom_same', name: 'Books', icon: 'book' },
+        { id: 'custom_same', name: 'Music', icon: 'music' }
+      ],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.reload();
+
+  const matches = w.Mopapa.rooms.filter(function (room) {
+    return room.id === 'custom_same';
+  });
+
+  assert.strictEqual(matches.length, 1);
+  assert.strictEqual(matches[0].name, 'Books');
+});
+
+test('custom room reload rejects duplicate names without regard to case', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' },
+        { id: 'custom_books2', name: 'BOOKS', icon: 'music' }
+      ],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.reload();
+
+  const matches = w.Mopapa.rooms.filter(function (room) {
+    return room.id.indexOf('custom_') === 0;
+  });
+
+  assert.strictEqual(matches.length, 1);
+  assert.strictEqual(matches[0].id, 'custom_books');
+});
+
+test('custom room reload normalises surrounding and repeated name whitespace', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [
+        { id: 'custom_reading', name: '  Reading   Room  ', icon: 'book' }
+      ],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.reload();
+
+  const room = w.Mopapa.rooms.find(function (item) {
+    return item.id === 'custom_reading';
+  });
+
+  assert.ok(room);
+  assert.strictEqual(room.name, 'Reading Room');
+});
+
+test('custom room reload rejects names outside the permitted length', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [
+        { id: 'custom_short', name: 'A', icon: 'book' },
+        { id: 'custom_long', name: 'R'.repeat(21), icon: 'music' }
+      ],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.reload();
+
+  assert.strictEqual(
+    w.Mopapa.rooms.some(function (room) {
+      return room.id === 'custom_short' || room.id === 'custom_long';
+    }),
+    false
+  );
 });
 
 test('restore rejects JSON without an entries array', function () {

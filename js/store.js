@@ -132,11 +132,19 @@ function load() {
   }
 
   function importJSON(file, cb) {
+    var completed = false;
+
+    function finish(ok) {
+      if (completed) return;
+      completed = true;
+      if (typeof cb === 'function') cb(ok);
+    }
+
     if (
       !file ||
       (typeof file.size === 'number' && file.size > 5 * 1024 * 1024)
     ) {
-      cb(false);
+      finish(false);
       return;
     }
 
@@ -145,36 +153,47 @@ function load() {
     try {
       r = new FileReader();
     } catch (e) {
-      cb(false);
+      finish(false);
       return;
     }
+
     r.onload = function () {
       try {
         var p = JSON.parse(r.result);
+
         if (!p || !validImportedEntries(p.entries)) {
           throw new Error('bad file');
         }
+
         var previous = data;
+
         data = {
           entries: cleanEntries(p.entries),
           learned: p.learned && typeof p.learned === 'object' ? p.learned : {},
           customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
           ask: cleanAsk(p.ask)
         };
+
         if (!save()) {
           data = previous;
-          cb(false);
+          finish(false);
           return;
         }
-        cb(true);
-      } catch (e) { cb(false); }
+
+        finish(true);
+      } catch (e) {
+        finish(false);
+      }
     };
-    r.onerror = function () { cb(false); };
+
+    r.onerror = function () {
+      finish(false);
+    };
 
     try {
       r.readAsText(file);
     } catch (e) {
-      cb(false);
+      finish(false);
     }
   }
 
