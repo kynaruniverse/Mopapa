@@ -9,7 +9,9 @@ Mopapa.askParts.facts = (function () {
   var words = Mopapa.askParts.text.words;
   var stem = Mopapa.askParts.text.stem;
 
-  var DETS = { the: 1, my: 1, our: 1, a: 1, an: 1 };
+  var DETS = Object.assign(Object.create(null), {
+    the: 1, my: 1, our: 1, a: 1, an: 1
+  });
 
   function factOf(e) {
     if (e && e.fact && e.fact.attr === 'location' && Array.isArray(e.fact.items)) {
@@ -38,7 +40,7 @@ Mopapa.askParts.facts = (function () {
   }
 
   function currentLocations(all) {
-    var map = {};
+    var map = Object.create(null);
 
     entryOrder(all).forEach(function (e) {
       var f = e && factOf(e);

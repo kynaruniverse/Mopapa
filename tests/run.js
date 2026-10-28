@@ -1899,6 +1899,25 @@ test('ask ranking module exposes its matching functions', function () {
   assert.strictEqual(typeof ranking.rankedMatches, 'function');
 });
 
+test('ask facts keeps prototype-like location words', function () {
+  const w = boot({});
+  const facts = w.Mopapa.askParts.facts;
+
+  assert.deepStrictEqual(
+    Array.from(facts.whereStems({
+      fact: { where: 'constructor' }
+    })),
+    ['constructor']
+  );
+
+  assert.deepStrictEqual(
+    Array.from(facts.whereStems({
+      fact: { where: 'the garage' }
+    })),
+    ['garage']
+  );
+});
+
 test('ask facts module exposes structured answer functions', function () {
   const w = boot({});
   const facts = w.Mopapa.askParts.facts;

@@ -2,7 +2,7 @@
 var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.sorter = (function () {
-  var STOP = {};
+  var STOP = Object.create(null);
   ('the and for with that this have has was are you not but its from they them get got can will ' +
    'just about been into out our your also some any all too very really then there when what ' +
    'where who how now').split(' ').forEach(function (w) { STOP[w] = 1; });
@@ -19,7 +19,7 @@ Mopapa.sorter = (function () {
   }
 
   function tokens(t) {
-    var out = [], seen = {};
+    var out = [], seen = Object.create(null);
     norm(t).trim().split(' ').forEach(function (w) {
       if (w.length > 2 && !STOP[w] && !/\d/.test(w) && !seen[w]) {
         seen[w] = 1;
