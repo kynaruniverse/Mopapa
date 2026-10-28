@@ -2786,6 +2786,62 @@ test('agenda UI guards entries whose room is unavailable', function () {
   );
 });
 
+test('learning: imported source feedback rejects invalid counts', function () {
+  const w = boot({ 'mopapa.v1': JSON.stringify({
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {
+        valid: {
+          positive: 4,
+          zero: 0,
+          negative: -2,
+          text: 'invalid',
+          excessive: 5000000
+        },
+        broken: 5
+      },
+      unanswered: []
+    }
+  }) });
+
+  w.Mopapa.store.load();
+
+  const boosts = w.Mopapa.store.data().ask.boosts;
+
+  assert.strictEqual(boosts.valid.positive, 4);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts.valid, 'zero'), false);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts.valid, 'negative'), false);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts.valid, 'text'), false);
+  assert.strictEqual(boosts.valid.excessive, 1000);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(boosts, 'broken'), false);
+});
+
+test('learning: source feedback uses safe dictionaries for prototype-like IDs', function () {
+  const w = boot();
+
+  const ask = w.Mopapa.store.data().ask;
+  ask.boosts = Object.create(null);
+  ask.boosts.test = Object.create(null);
+  ask.boosts.test.constructor = 2;
+  ask.boosts.test.toString = 3;
+
+  assert.strictEqual(
+    Object.getPrototypeOf(ask.boosts),
+    null
+  );
+
+  assert.strictEqual(
+    Object.getPrototypeOf(ask.boosts.test),
+    null
+  );
+
+  assert.strictEqual(ask.boosts.test.constructor, 2);
+  assert.strictEqual(ask.boosts.test.toString, 3);
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }

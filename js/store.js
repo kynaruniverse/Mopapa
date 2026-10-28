@@ -34,7 +34,13 @@ Mopapa.store = (function () {
 
         var clean = Object.create(null);
         Object.keys(ids).slice(0, 10).forEach(function (id) {
-          if (typeof ids[id] === 'number') clean[id] = ids[id];
+          if (
+            typeof ids[id] === 'number' &&
+            isFinite(ids[id]) &&
+            ids[id] > 0
+          ) {
+            clean[id] = Math.min(Math.floor(ids[id]), 1000);
+          }
         });
         out.boosts[sig] = clean;
       });

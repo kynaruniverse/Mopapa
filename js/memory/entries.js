@@ -125,7 +125,31 @@ Mopapa.entries = (function () {
 
     var data = Mopapa.store.data();
     if (data && data.ask) {
-      data.ask.boosts = JSON.parse(snapshot);
+      var restored = JSON.parse(snapshot);
+      var boosts = Object.create(null);
+
+      Object.keys(restored).forEach(function (sig) {
+        var bucket = restored[sig];
+        if (!bucket || typeof bucket !== 'object') return;
+
+        var clean = Object.create(null);
+
+        Object.keys(bucket).forEach(function (id) {
+          var count = bucket[id];
+
+          if (
+            typeof count === 'number' &&
+            isFinite(count) &&
+            count > 0
+          ) {
+            clean[id] = Math.min(Math.floor(count), 1000);
+          }
+        });
+
+        boosts[sig] = clean;
+      });
+
+      data.ask.boosts = boosts;
     }
   }
 

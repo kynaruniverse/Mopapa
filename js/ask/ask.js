@@ -379,12 +379,29 @@ Mopapa.ask = (function () {
     var s = learnedData();
     var sig = signatureOf(question);
 
-    if (!s || !sig || !entryId) return false;
+    if (
+      !s ||
+      !sig ||
+      typeof entryId !== 'string' ||
+      !entryId
+    ) {
+      return false;
+    }
 
     var before = JSON.stringify(s.boosts);
 
     if (!s.boosts[sig]) s.boosts[sig] = Object.create(null);
-    s.boosts[sig][entryId] = (s.boosts[sig][entryId] || 0) + 1;
+
+    var previousCount = s.boosts[sig][entryId];
+    if (
+      typeof previousCount !== 'number' ||
+      !isFinite(previousCount) ||
+      previousCount < 0
+    ) {
+      previousCount = 0;
+    }
+
+    s.boosts[sig][entryId] = Math.min(previousCount + 1, 1000);
 
     var keys = Object.keys(s.boosts);
     if (keys.length > 200) delete s.boosts[keys[0]];

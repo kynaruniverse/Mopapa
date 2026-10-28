@@ -24,7 +24,9 @@ Mopapa.askParts.ranking = (function () {
     if (!terms.length || !entries.length) return [];
 
     var s = helpers.learnedData();
-    var tapped = s && sig && s.boosts[sig] ? s.boosts[sig] : {};
+    var tapped = s && sig && s.boosts[sig]
+      ? s.boosts[sig]
+      : Object.create(null);
 
     var stemmed = entries.map(helpers.entryStems);
 
