@@ -400,7 +400,13 @@ function load() {
     }
   } catch (e) {
     if (raw) {
-      try { localStorage.setItem(KEY + '.corrupt.' + Date.now(), raw); } catch (e2) {}
+      try {
+        localStorage.setItem(KEY + '.corrupt.' + Date.now(), raw);
+        data.corruptCopySaved = true;
+      } catch (e2) {
+        data.corruptCopySaved = false;
+      }
+
       data.corrupt = true;
     }
   }
@@ -428,6 +434,95 @@ function load() {
     setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
   }
 
+  function recoveryCopies() {
+    var copies = [];
+    var recoveryPrefix = KEY + '.recovery.';
+    var corruptPrefix = KEY + '.corrupt.';
+
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (!key) continue;
+
+        if (key.indexOf(recoveryPrefix) === 0) {
+          copies.push({ key: key, kind: 'recovery' });
+        } else if (key.indexOf(corruptPrefix) === 0) {
+          copies.push({ key: key, kind: 'corrupt' });
+        }
+      }
+    } catch (e) {
+      return [];
+    }
+
+    copies.sort(function (a, b) {
+      return a.key < b.key ? 1 : a.key > b.key ? -1 : 0;
+    });
+
+    return copies;
+  }
+
+  function exportRecoveryCopy(key) {
+    var copies = recoveryCopies();
+
+    if (!key) {
+      if (!copies.length) return false;
+      key = copies[0].key;
+    }
+
+    var recoveryPrefix = KEY + '.recovery.';
+    var corruptPrefix = KEY + '.corrupt.';
+    var isRecovery = key.indexOf(recoveryPrefix) === 0;
+    var isCorrupt = key.indexOf(corruptPrefix) === 0;
+
+    if (!isRecovery && !isCorrupt) return false;
+
+    var exists = copies.some(function (copy) {
+      return copy.key === key;
+    });
+
+    if (!exists) return false;
+
+    var raw;
+
+    try {
+      raw = localStorage.getItem(key);
+    } catch (e) {
+      return false;
+    }
+
+    if (raw === null) return false;
+
+    var blob;
+    var url;
+    var a;
+
+    try {
+      blob = new Blob([raw], { type: 'application/json' });
+      url = URL.createObjectURL(blob);
+      a = document.createElement('a');
+      a.href = url;
+      a.download = 'mopapa-' +
+        (isCorrupt ? 'corrupt' : 'recovery') +
+        '-copy-' + new Date().toISOString().slice(0, 10) + '.json';
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+      }, 2000);
+
+      return true;
+    } catch (e) {
+      if (url) {
+        try { URL.revokeObjectURL(url); } catch (e2) {}
+      }
+
+      return false;
+    }
+  }
+  
   function importJSON(file, cb) {
     var completed = false;
 
@@ -518,6 +613,11 @@ function load() {
 
   return {
     data: function () { return data; },
-    load: load, save: save, exportJSON: exportJSON, importJSON: importJSON
+    load: load,
+    save: save,
+    exportJSON: exportJSON,
+    recoveryCopies: recoveryCopies,
+    exportRecoveryCopy: exportRecoveryCopy,
+    importJSON: importJSON
   };
 })();

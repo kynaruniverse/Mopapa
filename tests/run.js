@@ -4,6 +4,8 @@ function boot(storage) {
   const ls = {
     _: Object.assign({}, storage),
     failWrites: false,
+    get length() { return Object.keys(this._).length; },
+    key(i) { return Object.keys(this._)[i] || null; },
     getItem(k) { return k in this._ ? this._[k] : null; },
     setItem(k, v) {
       if (this.failWrites) throw new Error('simulated storage failure');
@@ -215,6 +217,47 @@ test('loading malformed entries does not discard valid neighbours', function () 
   assert.strictEqual(
     w.localStorage._[recoveryKeys[0]],
     w.localStorage._['mopapa.v1']
+  );
+});
+
+test('recovery copies can be discovered after reloading storage', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'valid', text: 'Keep this memory', room: 'notes' },
+        null
+      ]
+    }),
+    'mopapa.v1.recovery.100': '{"entries":[null]}',
+    'mopapa.v1.corrupt.200': '{broken json'
+  });
+
+  w.Mopapa.store.load();
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 2);
+  assert.strictEqual(copies[0].key, 'mopapa.v1.corrupt.200');
+  assert.strictEqual(copies[0].kind, 'corrupt');
+  assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.100');
+  assert.strictEqual(copies[1].kind, 'recovery');
+
+  assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1'), false);
+  assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1.recovery.missing'), false);
+});
+
+test('recovery discovery returns an empty list when storage enumeration fails', function () {
+  const w = boot({});
+
+  Object.defineProperty(w.localStorage, 'length', {
+    get: function () {
+      throw new Error('simulated storage enumeration failure');
+    }
+  });
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.Mopapa.store.recoveryCopies())),
+    []
   );
 });
 
@@ -513,10 +556,31 @@ test('loading saved entries rejects IDs and room names over their limits', funct
 
 test('corrupt storage is backed up, not lost', function () {
   const w = boot({ 'mopapa.v1': '{"entries":[{"id":"a","text":"keep me"' });
+
   w.Mopapa.store.load();
-  assert.ok(Object.keys(w.localStorage._).some(function (k) { return k.indexOf('mopapa.v1.corrupt.') === 0; }));
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+
+  assert.ok(Object.keys(w.localStorage._).some(function (k) {
+    return k.indexOf('mopapa.v1.corrupt.') === 0;
+  }));
 });
 
+test('corrupt storage reports when its recovery copy cannot be saved', function () {
+  const w = boot({ 'mopapa.v1': '{broken json' });
+
+  w.localStorage.failWrites = true;
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, false);
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    0
+  );
+});
 
 test('date parser: tomorrow at 5pm', function () {
   const w = boot({});
