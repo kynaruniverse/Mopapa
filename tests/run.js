@@ -1754,6 +1754,58 @@ test('restore accepts valid structured money and location facts', function () {
   assert.strictEqual(entry.fact.value, 'in the kitchen drawer');
 });
 
+test('restore rejects malformed top-level data without changing existing data', function () {
+  const invalidBackups = [
+    { entries: [], learned: [] },
+    { entries: [], learned: null },
+    { entries: [], customRooms: 'not-an-array' },
+    []
+  ];
+
+  invalidBackups.forEach(function (backup) {
+    const initial = stored([
+      {
+        id: 'keep-me',
+        text: 'Existing entry',
+        room: 'notes'
+      }
+    ]);
+
+    const w = boot(initial);
+    w.Mopapa.store.load();
+
+    w.FileReader = function () {
+      this.readAsText = function (file) {
+        this.result = file.content;
+        this.onload();
+      };
+    };
+
+    const before = w.localStorage.getItem('mopapa.v1');
+    let result = null;
+
+    w.Mopapa.store.importJSON(
+      {
+        size: 300,
+        content: JSON.stringify(backup)
+      },
+      function (ok) {
+        result = ok;
+      }
+    );
+
+    assert.strictEqual(result, false);
+    assert.strictEqual(
+      w.localStorage.getItem('mopapa.v1'),
+      before
+    );
+    assert.strictEqual(
+      w.Mopapa.store.data().entries[0].id,
+      'keep-me'
+    );
+  });
+});
+
 test('restore rejects malformed entry records without changing existing data', function () {
   const invalidEntries = [
     [{ text: 'Missing ID', room: 'notes' }],

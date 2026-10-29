@@ -405,7 +405,24 @@ function load() {
       try {
         var p = JSON.parse(r.result);
 
-        if (!p || !validImportedEntries(p.entries)) {
+        if (
+          !p ||
+          typeof p !== 'object' ||
+          Array.isArray(p) ||
+          !validImportedEntries(p.entries) ||
+          (
+            Object.prototype.hasOwnProperty.call(p, 'learned') &&
+            (
+              !p.learned ||
+              typeof p.learned !== 'object' ||
+              Array.isArray(p.learned)
+            )
+          ) ||
+          (
+            Object.prototype.hasOwnProperty.call(p, 'customRooms') &&
+            !Array.isArray(p.customRooms)
+          )
+        ) {
           throw new Error('bad file');
         }
 
