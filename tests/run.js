@@ -184,6 +184,44 @@ test('load drops null and array entries instead of crashing later', function () 
   assert.strictEqual(entries[0].text, 'valid entry');
 });
 
+test('loading saved entries rejects malformed optional fields but keeps valid neighbours', function () {
+  const malformedEntries = [
+    { id: 'bad-when', text: 'Bad date', room: 'notes', when: 'not-a-date' },
+    { id: 'bad-has-time', text: 'Bad time flag', room: 'notes', hasTime: 'yes' },
+    { id: 'bad-done', text: 'Bad completion flag', room: 'notes', done: 1 },
+    { id: 'bad-pinned', text: 'Bad pin flag', room: 'notes', pinned: 'true' },
+    { id: 'bad-created', text: 'Bad creation date', room: 'notes', created: 'yesterday-ish' },
+    { id: 'bad-tags', text: 'Bad tags', room: 'notes', tags: ['valid', 42] },
+    { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-a-number'] },
+    { id: 'bad-amount', text: 'Bad amount', room: 'notes', amount: '12.50' },
+    {
+      id: 'bad-fact',
+      text: 'Bad location fact',
+      room: 'notes',
+      fact: { attr: 'location', items: [], prep: 'in', where: 'kitchen', value: 'kitchen', plural: false }
+    }
+  ];
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'valid-before', text: 'Valid memory before', room: 'notes' },
+        ...malformedEntries,
+        { id: 'valid-after', text: 'Valid memory after', room: 'notes' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.deepStrictEqual(
+    entries.map(function (entry) { return entry.id; }),
+    ['valid-before', 'valid-after']
+  );
+});
+
 test('reloading storage preserves valid saved entries', function () {
   const w = boot(stored([
     {

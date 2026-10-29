@@ -176,6 +176,8 @@ function cleanEntries(list) {
       return false;
     }
 
+    if (!validImportedEntries([e])) return false;
+
     seenIds[e.id] = true;
     return true;
   });
