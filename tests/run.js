@@ -236,10 +236,11 @@ test('recovery copies can be discovered after reloading storage', function () {
   const copies = w.Mopapa.store.recoveryCopies();
 
   assert.strictEqual(copies.length, 2);
-  assert.strictEqual(copies[0].key, 'mopapa.v1.corrupt.200');
-  assert.strictEqual(copies[0].kind, 'corrupt');
-  assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.100');
-  assert.strictEqual(copies[1].kind, 'recovery');
+
+  assert.strictEqual(copies[0].key, 'mopapa.v1.recovery.100');
+  assert.strictEqual(copies[0].kind, 'recovery');
+  assert.strictEqual(copies[1].key, 'mopapa.v1.corrupt.200');
+  assert.strictEqual(copies[1].kind, 'corrupt');
 
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1'), false);
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1.recovery.missing'), false);
