@@ -3304,7 +3304,7 @@ test('editing an entry recalculates its displayed amount and rolls back on save 
       id: 'amount-edit',
       text: 'Car repair £50',
       room: 'notes',
-      amount: '£50',
+      amount: 50,
       amounts: [50],
       created: ago(1)
     }
@@ -3317,7 +3317,7 @@ test('editing an entry recalculates its displayed amount and rolls back on save 
     w.Mopapa.entries.updateText('amount-edit', 'Car repair £70'),
     false
   );
-  assert.strictEqual(w.Mopapa.store.data().entries[0].amount, '£50');
+  assert.strictEqual(w.Mopapa.store.data().entries[0].amount, 50);
   assert.strictEqual(w.Mopapa.store.data().entries[0].text, 'Car repair £50');
 
   w.localStorage.failWrites = false;
@@ -3327,7 +3327,7 @@ test('editing an entry recalculates its displayed amount and rolls back on save 
   );
 
   const entry = w.Mopapa.store.data().entries[0];
-  assert.strictEqual(entry.amount, '£70');
+  assert.strictEqual(entry.amount, 70);
   assert.deepStrictEqual(Array.from(entry.amounts), [70]);
 });
 

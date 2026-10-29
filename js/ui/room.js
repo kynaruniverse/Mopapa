@@ -164,7 +164,13 @@ Mopapa.room = (function () {
       }
       if (e.amount) {
         if (meta.childNodes.length) meta.appendChild(document.createTextNode(', '));
-        meta.appendChild(el('span', '', e.amount));
+        meta.appendChild(el(
+          'span',
+          '',
+          typeof e.amount === 'number'
+            ? Mopapa.askParts.moneyFormat.formatMoney(e.amount)
+            : e.amount
+        ));
       }
       if (meta.childNodes.length) li.appendChild(meta);
 

@@ -80,7 +80,7 @@ Mopapa.entries = (function () {
       room: o.room,
       when: o.when || null,
       hasTime: !!o.hasTime,
-      amount: o.amount || null,
+      amount: info.amounts.length ? info.amounts[0] : null,
       fact: info.fact,
       amounts: info.amounts.length ? info.amounts : null,
       created: new Date().toISOString(),
@@ -170,7 +170,7 @@ Mopapa.entries = (function () {
     e.text = nextText;
     e.fact = info.fact;
     e.amounts = info.amounts.length ? info.amounts : null;
-    e.amount = Mopapa.rules.money(nextText);
+    e.amount = info.amounts.length ? info.amounts[0] : null;
     removeSourceChoices(id);
 
     if (Mopapa.store.save()) return true;
