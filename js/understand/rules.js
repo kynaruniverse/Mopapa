@@ -113,9 +113,6 @@ Mopapa.rules = (function () {
       h = +m[1]; mi = +m[2];
     } else if (/\b(noon|midday)\b/.test(t)) {
       h = 12; mi = 0;
-    } else if ((m = t.match(/\bat\s+(\d{1,2})\b(?!\s*(?:st|nd|rd|th|\/|:))/))) {
-      var x = +m[1];
-      if (x >= 1 && x <= 12) { h = (x === 12) ? 12 : (x <= 7 ? x + 12 : x); mi = 0; }
     }
 
     var hasTime = false;

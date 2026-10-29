@@ -14,8 +14,24 @@ Mopapa.askParts.facts = (function () {
   });
 
   function factOf(e) {
-    if (e && e.fact && e.fact.attr === 'location' && Array.isArray(e.fact.items)) {
-      return e.fact;
+    var fact = e && e.fact;
+
+    if (
+      fact &&
+      fact.attr === 'location' &&
+      Array.isArray(fact.items) &&
+      fact.items.length > 0 &&
+      fact.items.every(function (item) {
+        return typeof item === 'string' && !!item.trim();
+      }) &&
+      typeof fact.value === 'string' &&
+      !!fact.value.trim() &&
+      typeof fact.where === 'string' &&
+      !!fact.where.trim() &&
+      typeof fact.prep === 'string' &&
+      typeof fact.plural === 'boolean'
+    ) {
+      return fact;
     }
 
     var info = Mopapa.rules && Mopapa.rules.extract

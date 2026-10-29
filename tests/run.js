@@ -371,6 +371,27 @@ test('date parser: tomorrow at 5pm', function () {
   assert.strictEqual(r.date.getHours(), 17);
 });
 
+test('date parser does not guess AM or PM for a bare hour', function () {
+  const w = boot({});
+  const now = new Date(2026, 9, 21, 10, 0);
+
+  const r = w.Mopapa.rules.parse('call mum tomorrow at 5', now);
+
+  assert.ok(r);
+  assert.strictEqual(r.hasTime, false);
+  assert.strictEqual(r.date.getDate(), 22);
+  assert.strictEqual(r.date.getHours(), 0);
+});
+
+test('date parser accepts an explicit 24-hour time', function () {
+  const w = boot({});
+  const r = w.Mopapa.rules.parse('call mum tomorrow at 17:00', new Date(2026, 9, 21, 10, 0));
+
+  assert.ok(r && r.hasTime);
+  assert.strictEqual(r.date.getDate(), 22);
+  assert.strictEqual(r.date.getHours(), 17);
+});
+
 
 test('date parser interprets two-digit year 00 as 2000', function () {
   const w = boot({});
@@ -2645,6 +2666,50 @@ test('ask text module normalises text and matches words consistently', function 
   assert.strictEqual(text.stem('spending'), 'spend');
   assert.strictEqual(text.stem('bought'), 'buy');
   assert.strictEqual(text.stem('string'), 'string');
+});
+
+test('Ask rebuilds a malformed saved location fact from its entry text', function () {
+  const w = boot({});
+  w.Mopapa.store.load();
+
+  const facts = w.Mopapa.askParts.facts;
+  const locations = facts.currentLocations([
+    {
+      id: 'damaged-fact',
+      text: 'Keys are in the kitchen drawer',
+      room: 'notes',
+      created: new Date().toISOString(),
+      fact: {
+        attr: 'location',
+        items: ['keys']
+      }
+    }
+  ]);
+
+  assert.strictEqual(locations.key.fact.value, 'in the kitchen drawer');
+  assert.strictEqual(locations.key.fact.where, 'the kitchen drawer');
+});
+
+test('Ask ignores a malformed location fact when its text cannot recover it', function () {
+  const w = boot({});
+  w.Mopapa.store.load();
+
+  const facts = w.Mopapa.askParts.facts;
+  const locations = facts.currentLocations([
+    {
+      id: 'unrecoverable-fact',
+      text: 'An ordinary note with no location',
+      room: 'notes',
+      created: new Date().toISOString(),
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        plural: false
+      }
+    }
+  ]);
+
+  assert.strictEqual(Object.keys(locations).length, 0);
 });
 
 test('ask people module handles names and question types directly', function () {
