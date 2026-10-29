@@ -13,7 +13,20 @@
   M.customRoomsUI.init();
   M.askLearningUI.init();
 
-  if (M.store.data().corrupt) M.dialog.notice('Your saved data could not be read. A copy was kept in this browser.');
+  if (M.store.data().corrupt) {
+    M.dialog.notice('Your saved data could not be read. A copy was kept in this browser.');
+  } else if (M.store.data().rejectedEntries) {
+    var rejectedCount = M.store.data().rejectedEntries;
+    var recoverySaved = M.store.data().recoveryCopySaved;
+
+    M.dialog.notice(
+      rejectedCount + ' saved entr' + (rejectedCount === 1 ? 'y was' : 'ies were') +
+      ' rejected because the data was invalid. ' +
+      (recoverySaved
+        ? 'A copy of the original saved data was kept in this browser under a recovery key. Back up your data before making further changes.'
+        : 'Mopapa could not create a recovery copy, so back up any entries that remain before making further changes.')
+    );
+  }
 
   var n = M.store.data().entries.length;
   M.pet.say(n

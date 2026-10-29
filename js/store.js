@@ -358,13 +358,39 @@ function load() {
     ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
   };
 
+  function preserveRecoveryCopy(rawData) {
+    var base = KEY + '.recovery.' + Date.now();
+    var recoveryKey = base;
+    var suffix = 1;
+
+    try {
+      while (localStorage.getItem(recoveryKey) !== null) {
+        recoveryKey = base + '.' + suffix;
+        suffix++;
+      }
+
+      localStorage.setItem(recoveryKey, rawData);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   var raw = null;
+  
   try {
     raw = localStorage.getItem(KEY);
     if (raw) {
       var p = JSON.parse(raw);
       if (p && Array.isArray(p.entries)) {
-        data.entries = cleanEntries(normaliseLegacyAmounts(p.entries));
+        var cleanedEntries = cleanEntries(normaliseLegacyAmounts(p.entries));
+
+        if (cleanedEntries.length < p.entries.length) {
+          data.rejectedEntries = p.entries.length - cleanedEntries.length;
+          data.recoveryCopySaved = preserveRecoveryCopy(raw);
+        }
+
+        data.entries = cleanedEntries;
         data.learned = p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {};
         data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
         data.ask = cleanAsk(p.ask);

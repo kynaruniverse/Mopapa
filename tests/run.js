@@ -203,6 +203,44 @@ test('loading malformed entries does not discard valid neighbours', function () 
   assert.strictEqual(entries.length, 2);
   assert.strictEqual(entries[0].id, 'first');
   assert.strictEqual(entries[1].id, 'second');
+
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 5);
+  assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
+
+  const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
+    return key.indexOf('mopapa.v1.recovery.') === 0;
+  });
+
+  assert.strictEqual(recoveryKeys.length, 1);
+  assert.strictEqual(
+    w.localStorage._[recoveryKeys[0]],
+    w.localStorage._['mopapa.v1']
+  );
+});
+
+test('loading rejected entries reports when recovery backup fails', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'valid', text: 'Keep this memory', room: 'notes' },
+        null
+      ]
+    })
+  });
+
+  w.localStorage.failWrites = true;
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'valid');
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 1);
+  assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, false);
+
+  const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
+    return key.indexOf('mopapa.v1.recovery.') === 0;
+  });
+
+  assert.strictEqual(recoveryKeys.length, 0);
 });
 
 test('search finds entries containing prototype-like words', function () {
@@ -290,6 +328,15 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries.length, 2);
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
+
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 9);
+  assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
+
+  const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
+    return key.indexOf('mopapa.v1.recovery.') === 0;
+  });
+
+  assert.strictEqual(recoveryKeys.length, 1);
 });
 
 test('reloading storage preserves valid saved entries', function () {
