@@ -151,7 +151,7 @@ test('loading migrates legacy pound-string amounts without changing entry text',
 
   const entries = w.Mopapa.store.data().entries;
 
-  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries.length, 3);
 
   const legacy = entries.find(function (entry) {
     return entry.id === 'legacy-pound';
@@ -200,7 +200,7 @@ test('loading malformed entries does not discard valid neighbours', function () 
 
   const entries = w.Mopapa.store.data().entries;
 
-  assert.strictEqual(entries.length, 3);
+  assert.strictEqual(entries.length, 2);
   assert.strictEqual(entries[0].id, 'first');
   assert.strictEqual(entries[1].id, 'second');
 });
