@@ -224,8 +224,7 @@ test('recovery copies can be discovered after reloading storage', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
       entries: [
-        { id: 'valid', text: 'Keep this memory', room: 'notes' },
-        null
+        { id: 'valid', text: 'Keep this memory', room: 'notes' }
       ]
     }),
     'mopapa.v1.recovery.100': '{"entries":[null]}',
