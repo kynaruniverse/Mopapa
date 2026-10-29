@@ -42,11 +42,23 @@ Mopapa.customRooms = (function () {
 
     var saved = Mopapa.store.data().customRooms || [];
     var ids = Object.create(null);
+    var accepted = 0;
 
     saved.forEach(function (room) {
       var name = cleanName(room && room.name);
-      if (!validSavedRoom(room) || !name || ids[room.id] || findDuplicate(name)) return;
+
+      if (
+        accepted >= MAX_CUSTOM_ROOMS ||
+        !validSavedRoom(room) ||
+        !name ||
+        ids[room.id] ||
+        findDuplicate(name)
+      ) {
+        return;
+      }
+
       ids[room.id] = true;
+
       Mopapa.rooms.push({
         id: room.id,
         name: name,
@@ -54,6 +66,8 @@ Mopapa.customRooms = (function () {
         dated: false,
         words: [name]
       });
+
+      accepted++;
     });
 
     var repaired = false;

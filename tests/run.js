@@ -2353,6 +2353,58 @@ test('duplicate saved room records do not consume the custom-room limit', functi
   assert.strictEqual(result.ok, true);
 });
 
+test('custom room reload enforces the maximum of ten valid rooms', function () {
+  const rooms = [];
+
+  for (let i = 1; i <= 11; i++) {
+    rooms.push({
+      id: 'custom_room' + i,
+      name: 'Room ' + i,
+      icon: 'book'
+    });
+  }
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        {
+          id: 'eleventh-room-entry',
+          text: 'Memory in room eleven',
+          room: 'custom_room11'
+        }
+      ],
+      learned: {},
+      customRooms: rooms,
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const customRooms = w.Mopapa.rooms.filter(function (room) {
+    return room.id.indexOf('custom_') === 0;
+  });
+
+  assert.strictEqual(customRooms.length, 10);
+
+  assert.strictEqual(
+    customRooms.some(function (room) {
+      return room.id === 'custom_room11';
+    }),
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'notes'
+  );
+
+  const result = w.Mopapa.customRooms.add('Another room', 'music');
+
+  assert.strictEqual(result.ok, false);
+});
+
 test('custom room reload rejects duplicate names without regard to case', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
