@@ -107,6 +107,62 @@ function stored(entries, learned, ask) {
   };
 }
 
+test('loading migrates legacy pound-string amounts without changing entry text', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        {
+          id: 'legacy-pound',
+          text: 'Car repair £2,500.50',
+          room: 'notes',
+          amount: '£2,500.50',
+          amounts: [2500.5],
+          created: ago(1)
+        },
+        {
+          id: 'invalid-amount',
+          text: 'Malformed amount entry',
+          room: 'notes',
+          amount: '12.50',
+          created: ago(2)
+        },
+        {
+          id: 'legacy-without-price',
+          text: 'Old entry without a price',
+          room: 'notes',
+          amount: '£99',
+          created: ago(3)
+        }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const entries = w.Mopapa.store.data().entries;
+
+  assert.strictEqual(entries.length, 2);
+
+  const legacy = entries.find(function (entry) {
+    return entry.id === 'legacy-pound';
+  });
+
+  assert.ok(legacy);
+  assert.strictEqual(legacy.amount, 2500.5);
+  assert.strictEqual(legacy.text, 'Car repair £2,500.50');
+
+  const withoutPrice = entries.find(function (entry) {
+    return entry.id === 'legacy-without-price';
+  });
+
+  assert.ok(withoutPrice);
+  assert.strictEqual(withoutPrice.amount, null);
+  assert.strictEqual(withoutPrice.text, 'Old entry without a price');
+});
+
 test('loading malformed entries does not discard valid neighbours', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
@@ -1737,6 +1793,57 @@ test('restore continues to accept older entries without optional fields', functi
   );
 });
 
+test('restore migrates legacy pound-string amounts before validation', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [
+          {
+            id: 'legacy-import',
+            text: 'Boiler repair £1,200.50',
+            room: 'notes',
+            amount: '£1,200.50',
+            amounts: [1200.5],
+            created: ago(1)
+          }
+        ],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+
+  const entry = w.Mopapa.store.data().entries[0];
+
+  assert.strictEqual(entry.id, 'legacy-import');
+  assert.strictEqual(entry.amount, 1200.5);
+  assert.strictEqual(entry.text, 'Boiler repair £1,200.50');
+
+  const saved = JSON.parse(w.localStorage._['mopapa.v1']);
+
+  assert.strictEqual(saved.entries[0].amount, 1200.5);
+});
+
 test('restore accepts valid structured money and location facts', function () {
   const w = boot(stored());
 
@@ -3327,7 +3434,7 @@ test('editing an entry recalculates its displayed amount and rolls back on save 
   );
 
   const entry = w.Mopapa.store.data().entries[0];
-  assert.strictEqual(entry.amount, 70);
+  assert.strictEqual(entry.amount, '£70');
   assert.deepStrictEqual(Array.from(entry.amounts), [70]);
 });
 

@@ -152,6 +152,33 @@ function cleanAsk(a) {
 }
 
 
+function normaliseLegacyAmounts(list) {
+  if (!Array.isArray(list)) return list;
+
+  return list.map(function (entry) {
+    if (
+      !entry ||
+      typeof entry !== 'object' ||
+      Array.isArray(entry) ||
+      typeof entry.amount !== 'string' ||
+      !/^\s*£/.test(entry.amount)
+    ) {
+      return entry;
+    }
+
+    var copy = Object.assign({}, entry);
+    var match = String(entry.text || '').match(
+      /£\s?((?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d{1,2})?)(?![\d,])/
+    );
+
+    copy.amount = match
+      ? parseFloat(match[1].replace(/,/g, ''))
+      : null;
+
+    return copy;
+  });
+}
+
 function cleanEntries(list) {
   var seenIds = Object.create(null);
 
@@ -337,7 +364,7 @@ function load() {
     if (raw) {
       var p = JSON.parse(raw);
       if (p && Array.isArray(p.entries)) {
-        data.entries = cleanEntries(p.entries);
+        data.entries = cleanEntries(normaliseLegacyAmounts(p.entries));
         data.learned = p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {};
         data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
         data.ask = cleanAsk(p.ask);
@@ -406,6 +433,9 @@ function load() {
 
       try {
         var p = JSON.parse(r.result);
+        if (p && Array.isArray(p.entries)) {
+          p.entries = normaliseLegacyAmounts(p.entries);
+        }
 
         if (
           !p ||
@@ -431,7 +461,7 @@ function load() {
         var previous = data;
 
         data = {
-          entries: cleanEntries(p.entries),
+          entries: cleanEntries(normaliseLegacyAmounts(p.entries)),
           learned: p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {},
           customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
           ask: cleanAsk(p.ask)
