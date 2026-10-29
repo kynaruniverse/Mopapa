@@ -55,7 +55,7 @@ Mopapa.askParts.people = (function () {
 
       var remainder = source.slice(pattern.lastIndex);
 
-      if (/^\s+(?:and|or)\s+[a-z]/i.test(remainder)) {
+      if (/^\s+(?:and|or)\s+(?!(?:the|a|an|my|your|our|their|his|her|this|that|these|those)\b)[a-z]/i.test(remainder)) {
         return null;
       }
 

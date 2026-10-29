@@ -3128,9 +3128,11 @@ test('ask remains cautious when several entries identify different recipients', 
   ], 'Who is the parcel for?');
 
   assert.ok(
-    /could not find who that is for/i.test(r.answer),
+    /more than one possible recipient/i.test(r.answer),
     r.answer
   );
+
+  assert.ok(r.sources.length >= 1);
 });
 
 test('recipient extraction handles punctuation, conjunctions and boundaries', function () {
