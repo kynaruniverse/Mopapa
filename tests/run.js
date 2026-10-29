@@ -216,10 +216,9 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
 
   const entries = w.Mopapa.store.data().entries;
 
-  assert.deepStrictEqual(
-    entries.map(function (entry) { return entry.id; }),
-    ['valid-before', 'valid-after']
-  );
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].id, 'valid-before');
+  assert.strictEqual(entries[1].id, 'valid-after');
 });
 
 test('reloading storage preserves valid saved entries', function () {
