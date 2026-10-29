@@ -1606,6 +1606,98 @@ test('restore rejects malformed JSON without changing existing data', function (
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
+test('restore rejects malformed optional entry fields without changing existing data', function () {
+  const invalidEntries = [
+    { id: 'bad-date', text: 'Bad date', room: 'notes', when: 'not-a-date' },
+    { id: 'bad-time-flag', text: 'Bad time flag', room: 'notes', hasTime: 'yes' },
+    { id: 'bad-done-flag', text: 'Bad done flag', room: 'notes', done: 1 },
+    { id: 'bad-pinned-flag', text: 'Bad pinned flag', room: 'notes', pinned: 'true' },
+    { id: 'bad-created', text: 'Bad created date', room: 'notes', created: 'not-a-date' },
+    { id: 'bad-tags', text: 'Bad tags', room: 'notes', tags: 'home, work' },
+    { id: 'too-many-tags', text: 'Too many tags', room: 'notes', tags: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] },
+    { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-money'] }
+  ];
+
+  invalidEntries.forEach(function (entry) {
+    const w = boot(stored([
+      { id: 'keep', text: 'Keep this entry', room: 'notes' }
+    ]));
+
+    w.Mopapa.store.load();
+    const before = w.localStorage._['mopapa.v1'];
+
+    w.FileReader = function () {
+      this.readAsText = function (file) {
+        this.result = file.content;
+        this.onload();
+      };
+    };
+
+    let result = null;
+
+    w.Mopapa.store.importJSON(
+      {
+        size: 100,
+        content: JSON.stringify({ entries: [entry] })
+      },
+      function (ok) {
+        result = ok;
+      }
+    );
+
+    assert.strictEqual(result, false, entry.id);
+    assert.strictEqual(
+      w.Mopapa.store.data().entries[0].id,
+      'keep',
+      entry.id
+    );
+    assert.strictEqual(
+      w.localStorage._['mopapa.v1'],
+      before,
+      entry.id
+    );
+  });
+});
+
+test('restore continues to accept older entries without optional fields', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          {
+            id: 'legacy-entry',
+            text: 'A note from an older backup',
+            room: 'notes'
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'legacy-entry'
+  );
+});
+
 test('restore rejects malformed entry records without changing existing data', function () {
   const invalidEntries = [
     [{ text: 'Missing ID', room: 'notes' }],

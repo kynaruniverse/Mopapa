@@ -208,10 +208,79 @@ function validImportedEntries(list) {
 
     if (ids[entry.id]) return false;
     ids[entry.id] = true;
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'when') &&
+      entry.when !== null &&
+      entry.when !== '' &&
+      (
+        typeof entry.when !== 'string' ||
+        !Number.isFinite(Date.parse(entry.when))
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'hasTime') &&
+      typeof entry.hasTime !== 'boolean'
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'done') &&
+      typeof entry.done !== 'boolean'
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'pinned') &&
+      typeof entry.pinned !== 'boolean'
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'created') &&
+      (
+        typeof entry.created !== 'string' ||
+        !Number.isFinite(Date.parse(entry.created))
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'tags') &&
+      (
+        !Array.isArray(entry.tags) ||
+        entry.tags.length > 8 ||
+        !entry.tags.every(function (tag) {
+          return typeof tag === 'string' && tag.trim().length > 0;
+        })
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'amounts') &&
+      entry.amounts !== null &&
+      (
+        !Array.isArray(entry.amounts) ||
+        !entry.amounts.every(function (amount) {
+          return typeof amount === 'number' && Number.isFinite(amount);
+        })
+      )
+    ) {
+      return false;
+    }
+
     return true;
   });
 }
-
 
 function load() {
   data = {
