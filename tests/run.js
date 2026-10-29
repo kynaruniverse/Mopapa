@@ -3434,7 +3434,7 @@ test('editing an entry recalculates its displayed amount and rolls back on save 
   );
 
   const entry = w.Mopapa.store.data().entries[0];
-  assert.strictEqual(entry.amount, '£70');
+  assert.strictEqual(entry.amount, 70);
   assert.deepStrictEqual(Array.from(entry.amounts), [70]);
 });
 
