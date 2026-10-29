@@ -132,6 +132,13 @@ test('loading migrates legacy pound-string amounts without changing entry text',
           room: 'notes',
           amount: '£99',
           created: ago(3)
+        },
+        {
+          id: 'malformed-decimal',
+          text: 'Malformed price £12.345',
+          room: 'notes',
+          amount: '£12.345',
+          created: ago(4)
         }
       ],
       learned: {},
@@ -161,6 +168,14 @@ test('loading migrates legacy pound-string amounts without changing entry text',
   assert.ok(withoutPrice);
   assert.strictEqual(withoutPrice.amount, null);
   assert.strictEqual(withoutPrice.text, 'Old entry without a price');
+
+  const malformed = entries.find(function (entry) {
+    return entry.id === 'malformed-decimal';
+  });
+
+  assert.ok(malformed);
+  assert.strictEqual(malformed.amount, null);
+  assert.strictEqual(malformed.text, 'Malformed price £12.345');
 });
 
 test('loading malformed entries does not discard valid neighbours', function () {
