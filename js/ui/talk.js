@@ -207,7 +207,17 @@ Mopapa.talk = (function () {
 
     if (!r.saved) {
       input.value = ctx.text;
-      Mopapa.pet.say("I couldn't save this on your device. Your text is still in the box. Copy it or try again.");
+
+      if (Mopapa.store.saveError() === 'conflict') {
+        Mopapa.pet.say(
+          'Another tab changed your saved data. I kept your text in the box, and I did not overwrite the newer data. Copy your text, reload Mopapa, then add it again.'
+        );
+      } else {
+        Mopapa.pet.say(
+          "I couldn't save this on your device. Your text is still in the box. Copy it or try again."
+        );
+      }
+
       Mopapa.room.renderRooms();
       Mopapa.refreshPanels();
       return;

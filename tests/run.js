@@ -2554,6 +2554,99 @@ test('entries referencing missing custom rooms are recovered into notes', functi
   assert.strictEqual(w.Mopapa.store.save(), true);
 });
 
+test('store saves successfully when storage has not changed', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().entries[0].text = 'Updated memory';
+
+  assert.strictEqual(w.Mopapa.store.save(), true);
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+
+  const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
+
+  assert.strictEqual(saved.entries[0].text, 'Updated memory');
+});
+
+test('store refuses to overwrite data changed by another tab', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const newerData = JSON.stringify({
+    entries: [{
+      id: 'newer',
+      text: 'Saved by another tab',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerData);
+
+  w.Mopapa.store.data().entries[0].text = 'Stale tab edit';
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerData
+  );
+
+  const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
+
+  assert.strictEqual(saved.entries[0].id, 'newer');
+  assert.strictEqual(saved.entries[0].text, 'Saved by another tab');
+});
+
+test('store refuses to save when the original storage key disappears', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.removeItem = function (key) {
+    delete this._[key];
+  };
+
+  w.localStorage.removeItem('mopapa.v1');
+
+  w.Mopapa.store.data().entries[0].text = 'Local edit';
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+  assert.strictEqual(w.localStorage.getItem('mopapa.v1'), null);
+});
+
+test('store distinguishes storage failures from save conflicts', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+});
+
 test('malformed saved rooms do not consume the custom-room limit', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({

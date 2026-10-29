@@ -2,6 +2,8 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
+  var lastKnownRaw = null;
+  var saveError = null;
   var data = {
     entries: [],
     learned: {},
@@ -351,6 +353,9 @@ function validImportedEntries(list) {
 }
 
 function load() {
+  lastKnownRaw = null;
+  saveError = null;
+
   data = {
     entries: [],
     learned: {},
@@ -380,6 +385,8 @@ function load() {
   
   try {
     raw = localStorage.getItem(KEY);
+    lastKnownRaw = raw;
+
     if (raw) {
       var p = JSON.parse(raw);
       if (p && Array.isArray(p.entries)) {
@@ -414,10 +421,30 @@ function load() {
 }
 
   function save() {
+    var currentRaw;
+    var nextRaw;
+
+    saveError = null;
+
     try {
-      localStorage.setItem(KEY, JSON.stringify(data));
+      currentRaw = localStorage.getItem(KEY);
+    } catch (e) {
+      saveError = 'storage';
+      return false;
+    }
+
+    if (currentRaw !== lastKnownRaw) {
+      saveError = 'conflict';
+      return false;
+    }
+
+    try {
+      nextRaw = JSON.stringify(data);
+      localStorage.setItem(KEY, nextRaw);
+      lastKnownRaw = nextRaw;
       return true;
     } catch (e) {
+      saveError = 'storage';
       return false;
     }
   }
@@ -615,6 +642,7 @@ function load() {
     data: function () { return data; },
     load: load,
     save: save,
+    saveError: function () { return saveError; },
     exportJSON: exportJSON,
     recoveryCopies: recoveryCopies,
     exportRecoveryCopy: exportRecoveryCopy,
