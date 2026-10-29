@@ -3045,10 +3045,14 @@ test('ask does not include following time or date words in a person name', funct
 });
 
 
+
 test('ask does not mistake ordinary for-phrases for people', function () {
   [
     'The parcel is for the appointment',
-    'The parcel is for a delivery'
+    'The parcel is for a delivery',
+    'The parcel is for the dentist',
+    'The parcel is for work',
+    'The parcel is for tomorrow'
   ].forEach(function (entry) {
     const r = askWith([
       { id: 'a', text: entry, room: 'notes', created: ago(1) }
@@ -3058,6 +3062,77 @@ test('ask does not mistake ordinary for-phrases for people', function () {
     assert.strictEqual(r.sources.length, 0);
   });
 });
+
+test('ask continues past a non-person for-phrase to find a recipient', function () {
+  const cases = [
+    {
+      text: 'The parcel is for the appointment, but the gift is for Jasmine Smith',
+      expected: 'Jasmine Smith'
+    },
+    {
+      text: 'The parcel is for a delivery and the card is for jasmine',
+      expected: 'jasmine'
+    },
+    {
+      text: 'The parcel is for work, the flowers are for Alex-Jones',
+      expected: 'Alex-Jones'
+    },
+    {
+      text: 'The parcel is for the dentist, then for John at 5pm',
+      expected: 'John'
+    },
+    {
+      text: 'The parcel is for the appointment, then for Jasmine tomorrow',
+      expected: 'Jasmine'
+    },
+    {
+      text: 'The parcel is for a delivery intended for Morgan Smith',
+      expected: 'Morgan Smith'
+    },
+    {
+      text: 'The parcel is for the office, then for O’Neil',
+      expected: 'O’Neil'
+    },
+    {
+      text: 'The parcel is for home, then for Sam Taylor next Monday',
+      expected: 'Sam Taylor'
+    }
+  ];
+
+  cases.forEach(function (item, index) {
+    const w = boot({});
+    const people = w.Mopapa.askParts.people;
+
+    assert.strictEqual(
+      people.extractForPerson(item.text),
+      item.expected,
+      item.text
+    );
+  });
+});
+
+test('ask remains cautious when several entries identify different recipients', function () {
+  const r = askWith([
+    {
+      id: 'recipient-one',
+      text: 'The parcel is for Jasmine',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'recipient-two',
+      text: 'The parcel is for Morgan',
+      room: 'notes',
+      created: ago(2)
+    }
+  ], 'Who is the parcel for?');
+
+  assert.ok(
+    /could not find who that is for/i.test(r.answer),
+    r.answer
+  );
+});
+
 
 test('extract: finds where things are and ignores dates and times', function () {
   const w = boot({});

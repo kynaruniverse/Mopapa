@@ -32,27 +32,30 @@ Mopapa.askParts.people = (function () {
     'november', 'december'
   ].join('|');
 
+
   function extractForPerson(text) {
     var pattern = new RegExp(
       "\\bfor\\s+([a-z][a-z'-]*(?:\\s+(?!(?:" +
       PERSON_STOP_WORDS +
       ")\\b)[a-z][a-z'-]*)?)",
-      'i'
+      'gi'
     );
 
-    var match = String(text || '')
-      .replace(/\s+/g, ' ')
-      .match(pattern);
+    var source = String(text || '').replace(/\s+/g, ' ');
+    var match;
 
-    if (!match) return null;
+    var nonNames = /^(a|an|the|my|your|our|their|his|her|this|that|these|those|someone|anyone|everyone|nobody|something|anything|everything|appointment|delivery|parcel|package|collection|pickup|dropoff|work|home|office|school|hospital|doctor|dentist|meeting|event|trip|holiday|tomorrow|today)$/i;
 
-    var name = match[1].trim();
-    var first = name.split(/\s+/)[0].toLowerCase();
-    var nonNames = /^(a|an|the|my|your|our|their|his|her|this|that|these|those|someone|anyone|everyone|nobody|something|anything|everything|appointment|delivery|parcel|package|collection|pickup|dropoff|work|home|office|school|hospital|doctor|dentist|meeting|event|trip|holiday|tomorrow|today)$/;
+    while ((match = pattern.exec(source)) !== null) {
+      var name = match[1].trim();
+      var first = name.split(/\s+/)[0];
 
-    if (nonNames.test(first)) return null;
+      if (nonNames.test(first)) continue;
 
-    return name;
+      return name;
+    }
+
+    return null;
   }
 
   function answerWhoSomethingIsFor(q, matches) {
