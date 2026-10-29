@@ -23,6 +23,7 @@ Mopapa.askParts.people = (function () {
 
   var PERSON_STOP_WORDS = [
     'at', 'on', 'in', 'by', 'from', 'until',
+    'and', 'or', 'but', 'then', 'intended', 'also',
     'tomorrow', 'today', 'tonight', 'yesterday',
     'next', 'this', 'last',
     'monday', 'tuesday', 'wednesday', 'thursday',
@@ -35,7 +36,7 @@ Mopapa.askParts.people = (function () {
 
   function extractForPerson(text) {
     var pattern = new RegExp(
-      "\\bfor\\s+([a-z][a-z'-]*(?:\\s+(?!(?:" +
+      "\\bfor\\s+([a-z][a-z'’-]*(?:\\s+(?!(?:" +
       PERSON_STOP_WORDS +
       ")\\b)[a-z][a-z'-]*)?)",
       'gi'
@@ -52,6 +53,12 @@ Mopapa.askParts.people = (function () {
 
       if (nonNames.test(first)) continue;
 
+      var remainder = source.slice(pattern.lastIndex);
+
+      if (/^\s+(?:and|or)\s+[a-z]/i.test(remainder)) {
+        return null;
+      }
+
       return name;
     }
 
@@ -61,22 +68,49 @@ Mopapa.askParts.people = (function () {
   function answerWhoSomethingIsFor(q, matches) {
     if (!asksWhoSomethingIsFor(q)) return null;
 
-    var forMatches = matches.filter(function (e) {
-      return extractForPerson(e.text) !== null;
+    var recipients = Object.create(null);
+    var distinctNames = [];
+
+    matches.forEach(function (entry) {
+      var name = extractForPerson(entry.text);
+
+      if (!name) return;
+
+      var key = name.toLowerCase();
+
+      if (!recipients[key]) {
+        recipients[key] = {
+          name: name,
+          entries: []
+        };
+
+        distinctNames.push(key);
+      }
+
+      recipients[key].entries.push(entry);
     });
 
-    if (forMatches.length === 1) {
-      var forName = extractForPerson(forMatches[0].text);
+    if (distinctNames.length === 1) {
+      var recipient = recipients[distinctNames[0]];
 
       return {
-        answer: 'It looks like it is for ' + forName + '.',
-        sources: [forMatches[0]]
+        answer: 'It looks like it is for ' + recipient.name + '.',
+        sources: recipient.entries.slice(0, 5)
+      };
+    }
+
+    if (distinctNames.length > 1) {
+      return {
+        answer: 'I found more than one possible recipient. Which parcel or item do you mean?',
+        sources: distinctNames.reduce(function (all, key) {
+          return all.concat(recipients[key].entries);
+        }, []).slice(0, 5)
       };
     }
 
     return {
       answer: 'I could not find who that is for. I will not guess.',
-      sources: forMatches.slice(0, 5)
+      sources: []
     };
   }
 
@@ -128,7 +162,7 @@ Mopapa.askParts.people = (function () {
     var source = String(text || '').replace(/\s+/g, ' ').trim();
 
     var match = source.match(
-      /\bthe\s+([a-z][a-z-]{0,20})\s+(?:is|was)\s+called\s+([a-z][a-z'-]*(?:\s+[a-z][a-z'-]*){0,2})(?=[.,!?;]|$)/i
+      /\bthe\s+([a-z][a-z-]{0,20})\s+(?:is|was)\s+called\s+([a-z][a-z'’-]*(?:\s+[a-z][a-z'’-]*){0,2})(?=[.,!?;]|$)/i
     );
 
     if (!match) return null;

@@ -3133,6 +3133,90 @@ test('ask remains cautious when several entries identify different recipients', 
   );
 });
 
+test('recipient extraction handles punctuation, conjunctions and boundaries', function () {
+  const w = boot({});
+  const people = w.Mopapa.askParts.people;
+
+  const cases = [
+    ['The parcel is for O’Neil', 'O’Neil'],
+    ['The parcel is for Alex-Jones', 'Alex-Jones'],
+    ['The parcel is for Jasmine on Monday', 'Jasmine'],
+    ['The parcel is for John at 5pm', 'John'],
+    ['The parcel is for Jasmine and the card is for Morgan', 'Jasmine'],
+    ['The parcel is for the appointment, then for Morgan Smith', 'Morgan Smith'],
+    ['The parcel is for a delivery intended for Sam Taylor', 'Sam Taylor'],
+    ['The parcel is for Jasmine and Morgan', null],
+    ['The parcel is for Jasmine or Morgan', null],
+    ['The parcel is for the dentist', null],
+    ['', null]
+  ];
+
+  cases.forEach(function (item) {
+    assert.strictEqual(
+      people.extractForPerson(item[0]),
+      item[1],
+      item[0]
+    );
+  });
+
+  assert.strictEqual(
+    people.extractCalledPerson('The dentist is called O’Neil').name,
+    'O’Neil'
+  );
+});
+
+test('ask recognises the same recipient across multiple entries', function () {
+  const r = askWith([
+    {
+      id: 'recipient-one',
+      text: 'The parcel is for Jasmine Smith',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'recipient-two',
+      text: 'The gift is for jasmine smith',
+      room: 'notes',
+      created: ago(2)
+    }
+  ], 'Who is the parcel for?');
+
+  assert.ok(/for Jasmine Smith\./i.test(r.answer), r.answer);
+  assert.ok(r.sources.length >= 1);
+});
+
+test('ask asks for clarification when recipients differ', function () {
+  const r = askWith([
+    {
+      id: 'recipient-one',
+      text: 'The parcel is for Jasmine',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'recipient-two',
+      text: 'The parcel is for Morgan',
+      room: 'notes',
+      created: ago(2)
+    }
+  ], 'Who is the parcel for?');
+
+  assert.ok(/more than one possible recipient/i.test(r.answer), r.answer);
+});
+
+test('ask does not invent a recipient for an ambiguous single entry', function () {
+  const r = askWith([
+    {
+      id: 'ambiguous-recipient',
+      text: 'The parcel is for Jasmine and Morgan',
+      room: 'notes',
+      created: ago(1)
+    }
+  ], 'Who is the parcel for?');
+
+  assert.ok(/could not find who that is for/i.test(r.answer), r.answer);
+  assert.strictEqual(r.sources.length, 0);
+});
 
 test('extract: finds where things are and ignores dates and times', function () {
   const w = boot({});
