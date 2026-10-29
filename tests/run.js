@@ -3298,6 +3298,39 @@ test('entries.add and updateText save and revert structured fields', function ()
   assert.strictEqual(w.Mopapa.store.data().entries[0].fact.value, 'in the car');
 });
 
+test('editing an entry recalculates its displayed amount and rolls back on save failure', function () {
+  const w = boot(stored([
+    {
+      id: 'amount-edit',
+      text: 'Car repair £50',
+      room: 'notes',
+      amount: '£50',
+      amounts: [50],
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+  assert.strictEqual(
+    w.Mopapa.entries.updateText('amount-edit', 'Car repair £70'),
+    false
+  );
+  assert.strictEqual(w.Mopapa.store.data().entries[0].amount, '£50');
+  assert.strictEqual(w.Mopapa.store.data().entries[0].text, 'Car repair £50');
+
+  w.localStorage.failWrites = false;
+  assert.strictEqual(
+    w.Mopapa.entries.updateText('amount-edit', 'Car repair £70'),
+    true
+  );
+
+  const entry = w.Mopapa.store.data().entries[0];
+  assert.strictEqual(entry.amount, '£70');
+  assert.deepStrictEqual(Array.from(entry.amounts), [70]);
+});
+
 test('ask: where uses the newest saved location, even for old entries without fields', function () {
   const r = askWith([
     { id: 'new', text: 'Keys are in the car', room: 'notes', created: ago(1) },
@@ -3374,6 +3407,23 @@ test('ask: total spending includes multiple amounts in one entry', function () {
   assert.ok(/£265/.test(r.answer), r.answer);
   assert.strictEqual(r.sources.length, 1);
   assert.strictEqual(r.sources[0].id, 'a');
+});
+
+test('ask: spending totals exclude sales, quotes and refunds', function () {
+  const r = askWith([
+    { id: 'spend', text: 'I spent £25 on car repairs', room: 'notes', created: ago(1) },
+    { id: 'sale', text: 'Sold old car for £2,400', room: 'notes', created: ago(2) },
+    { id: 'quote', text: 'Car repair quote £300', room: 'notes', created: ago(3) },
+    { id: 'refund', text: 'Received refund £50 for car repairs', room: 'notes', created: ago(4) }
+  ], 'How much did I spend on the car?');
+
+  assert.ok(/£25\b/.test(r.answer), r.answer);
+  assert.ok(!/£2,425\b/.test(r.answer), r.answer);
+  assert.ok(/excluded 3 matching entries/i.test(r.answer), r.answer);
+  assert.ok(r.sources.some(function (e) { return e.id === 'spend'; }));
+  assert.ok(r.sources.some(function (e) { return e.id === 'sale'; }));
+  assert.ok(r.sources.some(function (e) { return e.id === 'quote'; }));
+  assert.ok(r.sources.some(function (e) { return e.id === 'refund'; }));
 });
 
 test('ask: past date questions stay in the past', function () {

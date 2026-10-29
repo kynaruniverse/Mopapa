@@ -163,12 +163,14 @@ Mopapa.entries = (function () {
     var previousText = e.text;
     var previousFact = e.fact;
     var previousAmounts = e.amounts;
+    var previousAmount = e.amount;
     var previousChoices = sourceChoicesSnapshot();
     var info = analyse(nextText);
 
     e.text = nextText;
     e.fact = info.fact;
     e.amounts = info.amounts.length ? info.amounts : null;
+    e.amount = Mopapa.rules.money(nextText);
     removeSourceChoices(id);
 
     if (Mopapa.store.save()) return true;
@@ -177,6 +179,7 @@ Mopapa.entries = (function () {
     e.text = previousText;
     e.fact = previousFact;
     e.amounts = previousAmounts;
+    e.amount = previousAmount;
     restoreSourceChoices(previousChoices);
     return false;
   }

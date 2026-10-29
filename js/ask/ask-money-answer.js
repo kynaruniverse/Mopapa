@@ -4,9 +4,22 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.askParts = Mopapa.askParts || {};
 
 Mopapa.askParts.moneyAnswer = (function () {
+  function isExcludedFromSpending(text) {
+    return /\b(?:sold|selling|sale|sales|quote|quoted|quotation|estimate|estimated|refund|refunded|received|earned|income|salary|wishlist|budget)\b/i.test(String(text || ''));
+  }
+
+  function spendingExclusionNote(excluded) {
+    if (!excluded.length) return '';
+
+    return ' I excluded ' + excluded.length +
+      ' matching entr' + (excluded.length === 1 ? 'y' : 'ies') +
+      ' that may describe a sale, quote, estimate, refund or money received. Check the source entries before relying on this total.';
+  }
+
   function answerCost(q, all, room, date, helpers) {
     var n = helpers.norm(q);
     var wantsLatest = /\b(latest|newest|most recent)\b/.test(n);
+    var wantsSpendingTotal = /\b(total|altogether|spend|spent|spending)\b/.test(n);
 
     var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|yesterday|today|tomorrow)\b/g;
 
@@ -24,6 +37,8 @@ Mopapa.askParts.moneyAnswer = (function () {
         sources: []
       };
     }
+
+    var excluded = [];
 
     var candidates = all.filter(function (e) {
       if (room && e.room !== room) return false;
@@ -47,10 +62,24 @@ Mopapa.askParts.moneyAnswer = (function () {
 
     candidates.sort(helpers.sortNewest);
 
+    if (wantsSpendingTotal) {
+      candidates = candidates.filter(function (e) {
+        if (isExcludedFromSpending(e.text)) {
+          excluded.push(e);
+          return false;
+        }
+
+        return true;
+      });
+    }
+
     if (isGeneralSpendingTotal && !candidates.length) {
       return {
-        answer: 'I could not find any saved entries that explicitly record spending.',
-        sources: []
+        answer: excluded.length
+          ? 'I found matching entries, but none could safely be counted as spending.' +
+            spendingExclusionNote(excluded)
+          : 'I could not find any saved entries that explicitly record spending.',
+        sources: excluded.slice(0, 5)
       };
     }
 
@@ -61,8 +90,17 @@ Mopapa.askParts.moneyAnswer = (function () {
     if (!priced.length) {
       if (candidates.length) {
         return {
-          answer: 'I found matching saved entries, but none mentions a cost I can read. I will not guess an amount.',
-          sources: candidates.slice(0, 5)
+          answer: 'I found matching saved entries, but none mentions a cost I can read. I will not guess an amount.' +
+            spendingExclusionNote(excluded),
+          sources: candidates.concat(excluded).slice(0, 5)
+        };
+      }
+
+      if (excluded.length) {
+        return {
+          answer: 'I found matching entries, but excluded them because they may describe money received, a sale, a quote, an estimate or a refund.' +
+            spendingExclusionNote(excluded),
+          sources: excluded.slice(0, 5)
         };
       }
 
@@ -101,8 +139,10 @@ Mopapa.askParts.moneyAnswer = (function () {
       if (/\b(spend|spent|spending)\b/.test(n)) {
         return {
           answer: 'You spent ' + cost +
-            (subjectText ? ' on ' + subjectText : '') + '.',
-          sources: [priced[0]]
+            (subjectText ? ' on ' + subjectText : '.') +
+            (subjectText ? '.' : '') +
+            spendingExclusionNote(excluded),
+          sources: [priced[0]].concat(excluded).slice(0, 8)
         };
       }
 
@@ -137,8 +177,8 @@ Mopapa.askParts.moneyAnswer = (function () {
 
       return {
         answer: 'You spent ' + helpers.formatMoney(sum) + ' in total across ' +
-          counted.length + ' entries.',
-        sources: counted.slice(0, 8)
+          counted.length + ' entries.' + spendingExclusionNote(excluded),
+        sources: counted.concat(excluded).slice(0, 8)
       };
     }
 
