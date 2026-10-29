@@ -3741,17 +3741,23 @@ test('ask: next appointment ignores invalid saved dates', function () {
 });
 
 test('ask: invalid scheduled dates are not reported as past dates', function () {
-  const result = askWith([
+  const w = boot(stored([
     {
       id: 'invalid',
       text: 'Dentist check-up',
       room: 'appointments',
-      when: 'not-a-valid-date',
+      when: new Date(Date.now() + 86400000).toISOString(),
       hasTime: false,
       done: false,
       created: ago(2)
     }
-  ], 'When is the dentist?');
+  ]));
+
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().entries[0].when = 'not-a-valid-date';
+
+  const result = w.Mopapa.ask.answer('When is the dentist?');
 
   assert.ok(
     !/date has already passed/i.test(result.answer),
