@@ -278,6 +278,45 @@ function validImportedEntries(list) {
       return false;
     }
 
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'amount') &&
+      entry.amount !== null &&
+      (
+        typeof entry.amount !== 'number' ||
+        !Number.isFinite(entry.amount)
+      )
+    ) {
+      return false;
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(entry, 'fact') &&
+      entry.fact !== null
+    ) {
+      var fact = entry.fact;
+
+      if (
+        !fact ||
+        typeof fact !== 'object' ||
+        Array.isArray(fact) ||
+        fact.attr !== 'location' ||
+        !Array.isArray(fact.items) ||
+        fact.items.length === 0 ||
+        !fact.items.every(function (item) {
+          return typeof item === 'string' && !!item.trim();
+        }) ||
+        typeof fact.prep !== 'string' ||
+        !fact.prep.trim() ||
+        typeof fact.where !== 'string' ||
+        !fact.where.trim() ||
+        typeof fact.value !== 'string' ||
+        !fact.value.trim() ||
+        typeof fact.plural !== 'boolean'
+      ) {
+        return false;
+      }
+    }
+
     return true;
   });
 }

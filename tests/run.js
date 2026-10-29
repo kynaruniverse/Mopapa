@@ -1615,7 +1615,9 @@ test('restore rejects malformed optional entry fields without changing existing 
     { id: 'bad-created', text: 'Bad created date', room: 'notes', created: 'not-a-date' },
     { id: 'bad-tags', text: 'Bad tags', room: 'notes', tags: 'home, work' },
     { id: 'too-many-tags', text: 'Too many tags', room: 'notes', tags: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] },
-    { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-money'] }
+    { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-money'] },
+    { id: 'bad-amount', text: 'Bad amount', room: 'notes', amount: '12.50' },
+    { id: 'bad-fact', text: 'Bad fact', room: 'notes', fact: { attr: 'location', items: ['keys'] } }
   ];
 
   invalidEntries.forEach(function (entry) {
@@ -1696,6 +1698,60 @@ test('restore continues to accept older entries without optional fields', functi
     w.Mopapa.store.data().entries[0].id,
     'legacy-entry'
   );
+});
+
+test('restore accepts valid structured money and location facts', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [
+          {
+            id: 'structured-entry',
+            text: 'Keys are in the kitchen drawer and cost £12.50',
+            room: 'notes',
+            amount: 12.5,
+            amounts: [12.5],
+            fact: {
+              attr: 'location',
+              items: ['keys'],
+              prep: 'in',
+              where: 'the kitchen drawer',
+              value: 'in the kitchen drawer',
+              plural: false
+            }
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+
+  const entry = w.Mopapa.store.data().entries[0];
+
+  assert.strictEqual(entry.amount, 12.5);
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(entry.amounts)),
+    [12.5]
+  );
+  assert.strictEqual(entry.fact.value, 'in the kitchen drawer');
 });
 
 test('restore rejects malformed entry records without changing existing data', function () {
