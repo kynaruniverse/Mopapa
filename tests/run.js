@@ -1055,6 +1055,35 @@ test('question-shaped text is not a dead end', function () {
   assert.notStrictEqual(w.Mopapa.rules.questionLevel('What if I built a cat cafe?'), 'sure');
 });
 
+test('question detection does not misroute statements into Ask', function () {
+  const w = boot({});
+  const statements = [
+    'Do my taxes by Friday',
+    'Have my passport renewed by June',
+    'When I feel anxious I walk by the river',
+    'How to bleed a radiator',
+    'Where we stayed in Lisbon'
+  ];
+
+  statements.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Should not force Ask for: ' + text
+    );
+  });
+
+  assert.strictEqual(
+    w.Mopapa.rules.questionLevel('Is the boiler service due in March'),
+    'sure'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.rules.questionLevel('Where are my keys'),
+    'sure'
+  );
+});
+
 test('ask: paid matches pay', function () {
   const w = boot(stored([{ id: 'a', text: 'Paid electric bill £84', room: 'notes', created: new Date().toISOString() }]));
   w.Mopapa.store.load();
@@ -2014,6 +2043,24 @@ test('custom room reload ignores malformed saved room records', function () {
     }),
     false
   );
+});
+
+test('entries referencing missing custom rooms are recovered into notes', function () {
+  const w = boot(stored([{
+    id: 'orphaned-entry',
+    text: 'The spare key is in the kitchen drawer',
+    room: 'custom_missing',
+    created: new Date().toISOString()
+  }]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const entry = w.Mopapa.store.data().entries[0];
+
+  assert.strictEqual(entry.room, 'notes');
+  assert.strictEqual(w.Mopapa.entries.byRoom('notes').length, 1);
+  assert.strictEqual(w.Mopapa.store.save(), true);
 });
 
 test('malformed saved rooms do not consume the custom-room limit', function () {

@@ -1,4 +1,5 @@
 :root{
+  color-scheme:dark;
   --bg:#16131f;--surface:#1f1b2b;--raised:#2a2538;--line:rgba(236,230,216,.13);
   --text:#ece6d8;--dim:#a29db3;--accent:#e2b46a;--on-accent:#251f33;--bad:#ec968d;
   --serif:"Fraunces",Georgia,"Times New Roman",serif;
@@ -30,7 +31,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 #pet.is-thinking svg{animation:tilt .5s ease-in-out infinite alternate}
 #pet.is-helpful svg{animation:nod .55s ease-in-out 1}
 .den-speech{flex:1;min-width:0}
-#bubble{position:relative;background:var(--text);color:#2a2536;border-radius:var(--r);padding:10px 13px;min-height:44px}
+#bubble{white-space:pre-line;position:relative;background:var(--text);color:#2a2536;border-radius:var(--r);padding:10px 13px;min-height:44px}
 #bubble:before{content:"";position:absolute;left:-6px;top:18px;width:12px;height:12px;background:var(--text);transform:rotate(45deg);border-radius:2px}
 #answer-sources{margin-top:10px}
 .source-heading{color:var(--dim);font-size:.85rem;margin-bottom:6px}
@@ -147,3 +148,4 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .app-dialog-actions .app-dialog-ok{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
 .app-dialog-actions .app-dialog-ok.danger{background:var(--bad);border-color:var(--bad)}
 .done-toggle{display:flex;align-items:center;gap:8px;min-height:40px}
+.toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:528px;margin:0 auto;padding:12px 14px;background:var(--text);color:#2a2536;border-radius:var(--r);z-index:100}

@@ -62,6 +62,19 @@ Mopapa.pet = (function () {
   function say(text) {
     var bubble = document.getElementById('bubble');
     if (bubble) bubble.textContent = text;
+
+    var toast = document.getElementById('toast');
+    var home = document.getElementById('screen-home');
+
+    if (toast && home && home.hidden) {
+      toast.textContent = text;
+      toast.hidden = false;
+
+      window.clearTimeout(toast._t);
+      toast._t = window.setTimeout(function () {
+        toast.hidden = true;
+      }, 6000);
+    }
   }
 
   function react(state) {

@@ -42,6 +42,7 @@ Mopapa.customRooms = (function () {
 
     var saved = Mopapa.store.data().customRooms || [];
     var ids = Object.create(null);
+
     saved.forEach(function (room) {
       var name = cleanName(room && room.name);
       if (!validSavedRoom(room) || !name || ids[room.id] || findDuplicate(name)) return;
@@ -54,6 +55,21 @@ Mopapa.customRooms = (function () {
         words: [name]
       });
     });
+
+    var repaired = false;
+
+    Mopapa.store.data().entries.forEach(function (entry) {
+      var known = Mopapa.rooms.some(function (room) {
+        return room.id === entry.room;
+      });
+
+      if (!known) {
+        entry.room = 'notes';
+        repaired = true;
+      }
+    });
+
+    if (repaired) Mopapa.store.save();
   }
 
   function add(name, icon) {
