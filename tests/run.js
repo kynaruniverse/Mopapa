@@ -37,6 +37,7 @@ function boot(storage) {
     'ask/ask-money-format',
     'ask/ask-question-intent',
     'ask/ask-room-intent',
+    'ask/ask-query',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -64,7 +65,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-money-answer.js',
     'js/ask/ask-money-format.js',
     'js/ask/ask-question-intent.js',
-    'js/ask/ask-room-intent.js'  
+    'js/ask/ask-room-intent.js',
+    'js/ask/ask-query.js'  
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -5194,6 +5196,59 @@ test('room intent exposes a separate room vocabulary list', function () {
   assert.ok(intent.roomStems.includes('task'));
   assert.ok(intent.roomStems.includes('idea'));
   assert.ok(intent.roomStems.includes(w.Mopapa.askParts.text.stem('note')));
+});
+
+test('query terms remove ordinary stop words and room vocabulary', function () {
+  const w = boot();
+  const query = w.Mopapa.askParts.query;
+
+  assert.deepStrictEqual(
+    Array.from(query.queryTerms('Show me tasks about the garden tomorrow', 'todo')),
+    ['garden']
+  );
+});
+
+
+test('query terms preserve useful subject words', function () {
+  const w = boot();
+  const query = w.Mopapa.askParts.query;
+
+  assert.deepStrictEqual(
+    Array.from(query.queryTerms('Find my dentist appointment')),
+    ['dentist']
+  );
+});
+
+
+test('query terms preserve identifying numbers', function () {
+  const w = boot();
+  const query = w.Mopapa.askParts.query;
+
+  assert.deepStrictEqual(
+    Array.from(query.queryTerms('Where is flat 4?')),
+    ['flat', '4']
+  );
+
+  assert.deepStrictEqual(
+    Array.from(query.queryTerms('Bus 38')),
+    ['bus', '38']
+  );
+});
+
+
+test('query terms exclude custom room names from search terms', function () {
+  const w = boot();
+  const query = w.Mopapa.askParts.query;
+
+  w.Mopapa.rooms.push({
+    id: 'custom_garden',
+    name: 'Garden Projects'
+  });
+
+  assert.deepStrictEqual(
+    Array.from(query.queryTerms('Show me my garden projects', 'custom_garden')),
+    []
+  );
 });
 
 let failed = 0;
