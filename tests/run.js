@@ -4872,6 +4872,81 @@ test('search, agenda and pinned Open buttons target the selected entry', functio
   });
 });
 
+test('talk input protects Enter during IME composition', function () {
+  const source = fs.readFileSync(
+    __dirname + '/../js/ui/talk.js',
+    'utf8'
+  );
+
+  assert.ok(
+    source.includes("input.addEventListener('compositionstart'")
+  );
+
+  assert.ok(
+    source.includes("input.addEventListener('compositionend'")
+  );
+
+  assert.ok(
+    source.includes('!composing')
+  );
+
+  assert.ok(
+    source.includes('!e.isComposing')
+  );
+
+  assert.ok(
+    source.includes('e.keyCode !== 229')
+  );
+});
+
+
+test('dialog exposes its message as its accessible name', function () {
+  const source = fs.readFileSync(
+    __dirname + '/../js/ui/dialog.js',
+    'utf8'
+  );
+
+  assert.ok(
+    source.includes("text.id = 'app-dialog-text';")
+  );
+
+  assert.ok(
+    source.includes("dlg.setAttribute('aria-labelledby', 'app-dialog-text');")
+  );
+});
+
+
+test('dialog only dismisses from clicks outside its visible bounds', function () {
+  const source = fs.readFileSync(
+    __dirname + '/../js/ui/dialog.js',
+    'utf8'
+  );
+
+  assert.ok(
+    source.includes('var rect = dlg.getBoundingClientRect();')
+  );
+
+  assert.ok(
+    source.includes('e.clientX < rect.left')
+  );
+
+  assert.ok(
+    source.includes('e.clientX > rect.right')
+  );
+
+  assert.ok(
+    source.includes('e.clientY < rect.top')
+  );
+
+  assert.ok(
+    source.includes('e.clientY > rect.bottom')
+  );
+
+  assert.ok(
+    source.includes('if (outside)')
+  );
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }

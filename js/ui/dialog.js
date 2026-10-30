@@ -18,6 +18,9 @@ Mopapa.dialog = (function () {
       '</div></form>';
     document.body.appendChild(dlg);
     text = dlg.querySelector('.app-dialog-text');
+    text.id = 'app-dialog-text';
+    dlg.setAttribute('aria-labelledby', 'app-dialog-text');
+
     field = dlg.querySelector('.app-dialog-field');
     ok = dlg.querySelector('.app-dialog-ok');
     cancel = dlg.querySelector('.app-dialog-cancel');
@@ -30,7 +33,21 @@ Mopapa.dialog = (function () {
     });
     cancel.addEventListener('click', function () { done = null; dlg.close(); });
     dlg.addEventListener('cancel', function () { done = null; });
-    dlg.addEventListener('click', function (e) { if (e.target === dlg) { done = null; dlg.close(); } });
+    dlg.addEventListener('click', function (e) {
+      if (e.target !== dlg) return;
+
+      var rect = dlg.getBoundingClientRect();
+      var outside =
+        e.clientX < rect.left ||
+        e.clientX > rect.right ||
+        e.clientY < rect.top ||
+        e.clientY > rect.bottom;
+
+      if (outside) {
+        done = null;
+        dlg.close();
+      }
+    });
   }
 
   function open(o) {

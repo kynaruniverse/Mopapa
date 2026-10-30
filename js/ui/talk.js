@@ -1,15 +1,33 @@
 var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.talk = (function () {
-  var input, form, box, busy = false, lastQuestion = '';
+  var input, form, box, busy = false, composing = false, lastQuestion = '';
 
   function init() {
     input = document.getElementById('talk-input');
     form = document.getElementById('talk-form');
     box = document.getElementById('confirm');
     form.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+
+    input.addEventListener('compositionstart', function () {
+      composing = true;
+    });
+
+    input.addEventListener('compositionend', function () {
+      composing = false;
+    });
+
     input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+      if (
+        e.key === 'Enter' &&
+        !e.shiftKey &&
+        !composing &&
+        !e.isComposing &&
+        e.keyCode !== 229
+      ) {
+        e.preventDefault();
+        submit();
+      }
     });
   }
 
