@@ -35,6 +35,7 @@ function boot(storage) {
     'ask/ask-money-intent',
     'ask/ask-money-answer',
     'ask/ask-money-format',
+    'ask/ask-question-intent',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -60,7 +61,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-date-intent.js',
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
-    'js/ask/ask-money-format.js'
+    'js/ask/ask-money-format.js',
+    'js/ask/ask-question-intent.js'  
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -5109,6 +5111,39 @@ test('custom room rows expose separate rename and delete controls', function () 
   assert.ok(source.includes('Mopapa.customRooms.remove(r.id)'));
   assert.ok(source.includes("entry.room === r.id"));
   assert.ok(source.includes("entry.room = 'notes'") === false);
+});
+
+test('question intent identifies location questions', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.questionIntent;
+
+  assert.strictEqual(intent.isLocationQuestion('Where are my keys?'), true);
+  assert.strictEqual(intent.isLocationQuestion('Which room has my books?'), true);
+  assert.strictEqual(intent.isLocationQuestion('What did I save?'), false);
+  assert.strictEqual(intent.isLocationQuestion('When is the dentist?'), false);
+});
+
+
+test('question intent identifies direct memory questions', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.questionIntent;
+
+  assert.strictEqual(intent.isDirectQuestion('What did I save?'), true);
+  assert.strictEqual(intent.isDirectQuestion('What have I recorded?'), true);
+  assert.strictEqual(intent.isDirectQuestion('What do you remember about my car?'), true);
+  assert.strictEqual(intent.isDirectQuestion('Where are my keys?'), false);
+  assert.strictEqual(intent.isDirectQuestion('When is my appointment?'), false);
+});
+
+
+test('question intent identifies item-list questions', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.questionIntent;
+
+  assert.strictEqual(intent.isItemsQuestion('What items are in the garage?'), true);
+  assert.strictEqual(intent.isItemsQuestion('Which things are inside the cupboard?'), true);
+  assert.strictEqual(intent.isItemsQuestion('What did I save?'), false);
+  assert.strictEqual(intent.isItemsQuestion('Where are my keys?'), false);
 });
 
 let failed = 0;

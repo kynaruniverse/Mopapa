@@ -17,6 +17,7 @@ Mopapa.ask = (function () {
   var words = Mopapa.askParts.text.words;
   var hasPhrase = Mopapa.askParts.text.hasPhrase;
   var stem = Mopapa.askParts.text.stem;
+  var questionIntent = Mopapa.askParts.questionIntent;
 
   var STOP = (
     'a an the i me my mine we our you your he she it they them is are was were am ' +
@@ -646,9 +647,7 @@ Mopapa.ask = (function () {
     }
 
     // Prefer a saved entry whose subject directly matches the question.
-    var isLocationQuestion =
-      /\bwhere\b/.test(norm(q)) ||
-      /\bwhich\s+(?:folder|drawer|room|place)\b/.test(norm(q));
+    var isLocationQuestion = questionIntent.isLocationQuestion(q);
 
     if (isLocationQuestion && matches.length > 1) {
       var scoredMatches = matches.map(function (entry) {
@@ -726,11 +725,7 @@ Mopapa.ask = (function () {
 
     if (whoForAnswer) return whoForAnswer;
 
-    if (
-      (/\bwhere\b/.test(norm(q)) ||
-       /\bwhich\s+(?:folder|drawer|room|place)\b/.test(norm(q))) &&
-      matches.length
-    ) {
+    if (isLocationQuestion && matches.length) {
       var locationMatches = matches.filter(function (entry) {
         return /\b(in|inside|on|under|behind|beside|next to|within)\b/i
           .test(String(entry.text || ''));
@@ -982,32 +977,9 @@ Mopapa.ask = (function () {
 
     var n = norm(q);
 
-    var directQuestion =
-      /\bwhere did i leave\b/.test(n) ||
-      /\bwhat do you remember about\b/.test(n) ||
-      /\bwhat do i know\b/.test(n) ||
-      /\bwhat did i save\b/.test(n) ||
-      /\bwhat have i saved\b/.test(n) ||
-      /\bwhat did i record\b/.test(n) ||
-      /\bwhat have i recorded\b/.test(n) ||
-      /\bwhat did i log\b/.test(n) ||
-      /\bwhat have i logged\b/.test(n) ||
-      /\bwhat did i add\b/.test(n) ||
-      /\bwhat have i added\b/.test(n) ||
-      /\bwhat did i write\b/.test(n) ||
-      /\bwhat did i put\b/.test(n) ||
-      /\bwhat idea did i save\b/.test(n) ||
-      /\bwhat ideas did i save\b/.test(n) ||
-      /\bwhat is the idea i saved\b/.test(n) ||
-      /\bwhat are the ideas i saved\b/.test(n) ||
-      /\bwhat idea have i saved\b/.test(n) ||
-      /\bwhat ideas have i saved\b/.test(n) ||
-      /\bwhat gift ideas\b/.test(n);
+    var directQuestion = questionIntent.isDirectQuestion(n);
 
-    var isItemsQuestion =
-      /\b(what|which)\b/.test(n) &&
-      /\b(item|items|thing|things|object|objects)\b/.test(n) &&
-      /\b(in|inside|on|under|behind|beside|within)\b/.test(n);
+    var isItemsQuestion = questionIntent.isItemsQuestion(n);
       
     var shown = (directQuestion || isItemsQuestion)
       ? matches
