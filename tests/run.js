@@ -36,6 +36,7 @@ function boot(storage) {
     'ask/ask-money-answer',
     'ask/ask-money-format',
     'ask/ask-question-intent',
+    'ask/ask-room-intent',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -62,7 +63,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
     'js/ask/ask-money-format.js',
-    'js/ask/ask-question-intent.js'  
+    'js/ask/ask-question-intent.js',
+    'js/ask/ask-room-intent.js'  
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -5144,6 +5146,54 @@ test('question intent identifies item-list questions', function () {
   assert.strictEqual(intent.isItemsQuestion('Which things are inside the cupboard?'), true);
   assert.strictEqual(intent.isItemsQuestion('What did I save?'), false);
   assert.strictEqual(intent.isItemsQuestion('Where are my keys?'), false);
+});
+
+test('room intent identifies built-in room questions', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.roomIntent;
+
+  assert.strictEqual(intent.roomForQuestion('Show me my tasks'), 'todo');
+  assert.strictEqual(intent.roomForQuestion('When is my dentist appointment?'), 'appointments');
+  assert.strictEqual(intent.roomForQuestion('What is on my shopping list?'), 'wishlist');
+  assert.strictEqual(intent.roomForQuestion('How have I been feeling?'), 'feelings');
+  assert.strictEqual(intent.roomForQuestion('Show me my ideas'), 'ideas');
+  assert.strictEqual(intent.roomForQuestion('What notes did I save?'), 'notes');
+});
+
+
+test('room intent returns null when no room is identified', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.roomIntent;
+
+  assert.strictEqual(intent.roomForQuestion('What is my car worth?'), null);
+  assert.strictEqual(intent.roomForQuestion('Where are my keys?'), null);
+});
+
+
+test('room intent identifies custom rooms by their names', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.roomIntent;
+
+  w.Mopapa.rooms.push({
+    id: 'custom_garden',
+    name: 'Garden Projects'
+  });
+
+  assert.strictEqual(
+    intent.roomForQuestion('Show me my garden projects'),
+    'custom_garden'
+  );
+});
+
+
+test('room intent exposes a separate room vocabulary list', function () {
+  const w = boot();
+  const intent = w.Mopapa.askParts.roomIntent;
+
+  assert.ok(Array.isArray(intent.roomStems));
+  assert.ok(intent.roomStems.includes('task'));
+  assert.ok(intent.roomStems.includes('idea'));
+  assert.ok(intent.roomStems.includes('note'));
 });
 
 let failed = 0;
