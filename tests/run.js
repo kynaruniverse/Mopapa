@@ -5193,7 +5193,7 @@ test('room intent exposes a separate room vocabulary list', function () {
   assert.ok(Array.isArray(intent.roomStems));
   assert.ok(intent.roomStems.includes('task'));
   assert.ok(intent.roomStems.includes('idea'));
-  assert.ok(intent.roomStems.includes('note'));
+  assert.ok(intent.roomStems.includes(w.Mopapa.askParts.text.stem('note')));
 });
 
 let failed = 0;
