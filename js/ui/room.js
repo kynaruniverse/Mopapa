@@ -37,16 +37,34 @@ Mopapa.room = (function () {
     });
   }
 
-  function open(id) {
+  function open(id, entryId) {
     homeY = window.scrollY;
     current = id;
     try { history.pushState({ room: id }, ''); } catch (err) {}
     var r = Mopapa.roomById(id);
+
+    if (!r) {
+      current = null;
+      return;
+    }
+
     $('room-title').textContent = r.name;
     $('screen-home').hidden = true;
     $('screen-room').hidden = false;
     renderList();
     window.scrollTo(0, 0);
+
+    if (entryId) {
+      var target = $('mopapa-entry-' + entryId);
+
+      if (target) {
+        target.classList.add('entry-opened');
+        target.focus();
+        if (target.scrollIntoView) {
+          target.scrollIntoView({ block: 'center' });
+        }
+      }
+    }
   }
 
   function close() {
@@ -68,6 +86,8 @@ Mopapa.room = (function () {
 
     items.forEach(function (e) {
       var li = document.createElement('li');
+      li.id = 'mopapa-entry-' + e.id;
+      li.tabIndex = -1;
 
       if (editingId === e.id) {
         li.appendChild(el('p', 'edit-help', 'Edit the text only. Its room, date, amount and logged date will stay the same.'));

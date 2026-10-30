@@ -4820,6 +4820,58 @@ test('learning: failed unanswered-question logging rolls back', function () {
   );
 });
 
+test('opening a saved entry targets and focuses that exact entry', function () {
+  const roomUI = fs.readFileSync(
+    __dirname + '/../js/ui/room.js',
+    'utf8'
+  );
+
+  assert.ok(
+    roomUI.includes('function open(id, entryId)')
+  );
+
+  assert.ok(
+    roomUI.includes("li.id = 'mopapa-entry-' + e.id;")
+  );
+
+  assert.ok(
+    roomUI.includes("var target = $('mopapa-entry-' + entryId);")
+  );
+
+  assert.ok(
+    roomUI.includes("target.classList.add('entry-opened');")
+  );
+
+  assert.ok(
+    roomUI.includes('target.focus();')
+  );
+
+  assert.ok(
+    roomUI.includes('target.scrollIntoView({ block: \'center\' });')
+  );
+});
+
+
+test('search, agenda and pinned Open buttons target the selected entry', function () {
+  const files = [
+    '../js/ui/search.js',
+    '../js/ui/agenda.js',
+    '../js/ui/keepsakes.js'
+  ];
+
+  files.forEach(function (path) {
+    const source = fs.readFileSync(
+      __dirname + '/' + path,
+      'utf8'
+    );
+
+    assert.ok(
+      source.includes('Mopapa.room.open(entry.room, entry.id)'),
+      path + ' must open the selected entry, not just its room'
+    );
+  });
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }

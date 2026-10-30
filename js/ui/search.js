@@ -70,7 +70,9 @@ Mopapa.searchUI = (function () {
       openButton.className = 'memory-search-open';
       openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
-        if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
+        if (Mopapa.room && Mopapa.room.open) {
+          Mopapa.room.open(entry.room, entry.id);
+        }
       });
       item.appendChild(openButton);
       resultsList.appendChild(item);

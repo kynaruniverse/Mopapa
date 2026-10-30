@@ -56,7 +56,9 @@ Mopapa.keepsakesUI = (function () {
       openButton.className = 'keepsake-button';
       openButton.textContent = 'Open';
       openButton.addEventListener('click', function () {
-        if (Mopapa.room && Mopapa.room.open) Mopapa.room.open(entry.room);
+        if (Mopapa.room && Mopapa.room.open) {
+          Mopapa.room.open(entry.room, entry.id);
+        }
       });
       actions.appendChild(openButton);
 
