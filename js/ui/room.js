@@ -24,16 +24,99 @@ Mopapa.room = (function () {
   function renderRooms() {
     var grid = $('rooms');
     grid.innerHTML = '';
+
     Mopapa.rooms.forEach(function (r) {
+      var row = el('div', 'room-row');
       var b = el('button', 'room-card');
       b.type = 'button';
+
       var ic = el('span', 'room-icon');
       ic.innerHTML = Mopapa.icon(r.icon);
+
       b.appendChild(ic);
       b.appendChild(el('span', 'room-name', r.name));
       b.appendChild(el('span', 'room-count', String(Mopapa.entries.count(r.id))));
-      b.addEventListener('click', function () { open(r.id); });
-      grid.appendChild(b);
+      b.addEventListener('click', function () {
+        open(r.id);
+      });
+
+      row.appendChild(b);
+
+      if (r.id.indexOf('custom_') === 0) {
+        var actions = el('div', 'room-management');
+
+        var renameButton = el('button', 'link', 'Rename');
+        renameButton.type = 'button';
+        renameButton.setAttribute('aria-label', 'Rename ' + r.name);
+
+        renameButton.addEventListener('click', function () {
+          Mopapa.dialog.prompt(
+            'Choose a new name for ' + r.name + '.',
+            r.name,
+            'Save name',
+            function (name) {
+              var result = Mopapa.customRooms.rename(r.id, name);
+
+              if (!result.ok) {
+                Mopapa.dialog.notice(result.message);
+                return;
+              }
+
+              renderRooms();
+
+              if (current === r.id) {
+                $('room-title').textContent = result.room.name;
+              }
+
+              Mopapa.pet.say('Room renamed to ' + result.room.name + '.');
+            }
+          );
+        });
+
+        var deleteButton = el('button', 'link del', 'Delete');
+        deleteButton.type = 'button';
+        deleteButton.setAttribute('aria-label', 'Delete ' + r.name);
+
+        deleteButton.addEventListener('click', function () {
+          var count = Mopapa.store.data().entries.filter(function (entry) {
+            return entry.room === r.id;
+          }).length;
+
+          var message = count
+            ? 'Delete ' + r.name + '? ' + count +
+              ' saved ' + (count === 1 ? 'entry will' : 'entries will') +
+              ' be moved to Notes. No saved entries will be deleted.'
+            : 'Delete the empty room ' + r.name + '?';
+
+          Mopapa.dialog.confirm(message, 'Delete room', function () {
+            var result = Mopapa.customRooms.remove(r.id);
+
+            if (!result.ok) {
+              Mopapa.dialog.notice(result.message);
+              return;
+            }
+
+            if (current === r.id) {
+              close();
+            }
+
+            renderRooms();
+            Mopapa.refreshPanels();
+
+            Mopapa.pet.say(result.moved
+              ? 'Room deleted. ' + result.moved +
+                ' saved ' + (result.moved === 1 ? 'entry was' : 'entries were') +
+                ' moved to Notes.'
+              : 'Empty room deleted.');
+          }, true);
+        });
+
+        actions.appendChild(renameButton);
+        actions.appendChild(deleteButton);
+        row.appendChild(actions);
+      }
+
+      grid.appendChild(row);
     });
   }
 

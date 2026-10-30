@@ -4947,6 +4947,170 @@ test('dialog only dismisses from clicks outside its visible bounds', function ()
   );
 });
 
+test('custom room rename preserves its ID and saved entries', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'entry-1', text: 'My book list', room: 'custom_books' }
+      ],
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.rename('custom_books', 'Reading');
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.room.id, 'custom_books');
+  assert.strictEqual(result.room.name, 'Reading');
+  assert.strictEqual(w.Mopapa.store.data().entries[0].room, 'custom_books');
+  assert.strictEqual(w.Mopapa.roomById('custom_books').name, 'Reading');
+});
+
+
+test('custom room rename rejects duplicate and invalid names', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    w.Mopapa.customRooms.rename('custom_books', 'Notes').ok,
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.customRooms.rename('custom_books', 'X').ok,
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+});
+
+
+test('custom room rename rolls back when storage fails', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+  w.localStorage.failWrites = true;
+
+  const result = w.Mopapa.customRooms.rename('custom_books', 'Reading');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.data().customRooms[0].name, 'Books');
+  assert.strictEqual(w.Mopapa.roomById('custom_books').name, 'Books');
+});
+
+
+test('deleting a custom room moves its entries to Notes', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'entry-1', text: 'First saved item', room: 'custom_books' },
+        { id: 'entry-2', text: 'Second saved item', room: 'custom_books' },
+        { id: 'entry-3', text: 'Existing note', room: 'notes' }
+      ],
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.moved, 2);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 0);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].room, 'notes');
+  assert.strictEqual(w.Mopapa.store.data().entries[1].room, 'notes');
+  assert.strictEqual(w.Mopapa.store.data().entries[2].room, 'notes');
+  assert.strictEqual(w.Mopapa.roomById('custom_books').id, 'unsorted');
+});
+
+
+test('deleting a custom room rolls back when storage fails', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [
+        { id: 'entry-1', text: 'Saved book', room: 'custom_books' }
+      ],
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+  w.localStorage.failWrites = true;
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.data().customRooms.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].room, 'custom_books');
+  assert.strictEqual(w.Mopapa.roomById('custom_books').name, 'Books');
+});
+
+
+test('built-in rooms cannot be renamed or deleted', function () {
+  const w = boot();
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    w.Mopapa.customRooms.rename('notes', 'Archive').ok,
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.customRooms.remove('notes').ok,
+    false
+  );
+
+  assert.ok(w.Mopapa.roomById('notes'));
+});
+
+
+test('custom room rows expose separate rename and delete controls', function () {
+  const source = fs.readFileSync(
+    __dirname + '/../js/ui/room.js',
+    'utf8'
+  );
+
+  assert.ok(source.includes("el('button', 'link', 'Rename')"));
+  assert.ok(source.includes("el('button', 'link del', 'Delete')"));
+  assert.ok(source.includes('Mopapa.customRooms.rename(r.id, name)'));
+  assert.ok(source.includes('Mopapa.customRooms.remove(r.id)'));
+  assert.ok(source.includes("entry.room === r.id"));
+  assert.ok(source.includes("entry.room = 'notes'") === false);
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }

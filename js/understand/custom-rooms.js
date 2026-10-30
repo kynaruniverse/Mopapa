@@ -124,5 +124,119 @@ Mopapa.customRooms = (function () {
     return { ok: true, room: room };
   }
 
-  return { init: reload, reload: reload, add: add };
+  function findSavedRoom(id) {
+    var rooms = Mopapa.store.data().customRooms || [];
+
+    for (var i = 0; i < rooms.length; i++) {
+      if (rooms[i] && rooms[i].id === id) return rooms[i];
+    }
+
+    return null;
+  }
+
+  function rename(id, name) {
+    if (typeof id !== 'string' || typeof name !== 'string') {
+      return { ok: false, message: 'That room could not be found.' };
+    }
+
+    var room = findSavedRoom(id);
+
+    if (!room) {
+      return { ok: false, message: 'That custom room could not be found.' };
+    }
+
+    name = cleanName(name);
+
+    if (name.length < 2 || name.length > 20) {
+      return { ok: false, message: 'Use a room name between 2 and 20 characters.' };
+    }
+
+    var duplicate = Mopapa.rooms.some(function (item) {
+      return item.id !== id && item.name.toLowerCase() === name.toLowerCase();
+    });
+
+    if (duplicate) {
+      return { ok: false, message: 'A room with that name already exists.' };
+    }
+
+    var previous = room.name;
+    room.name = name;
+
+    if (!Mopapa.store.save()) {
+      room.name = previous;
+      return {
+        ok: false,
+        message: 'I could not save that name on this device. The original name is unchanged.'
+      };
+    }
+
+    var active = Mopapa.rooms.filter(function (item) {
+      return item.id === id;
+    })[0];
+
+    if (active) {
+      active.name = name;
+      active.words = [name];
+    }
+
+    return { ok: true, room: room };
+  }
+
+  function remove(id) {
+    if (typeof id !== 'string') {
+      return { ok: false, message: 'That room could not be found.' };
+    }
+
+    var room = findSavedRoom(id);
+
+    if (!room) {
+      return { ok: false, message: 'That custom room could not be found.' };
+    }
+
+    var data = Mopapa.store.data();
+    var previousEntries = data.entries.map(function (entry) {
+      return entry.room;
+    });
+    var previousRooms = data.customRooms.slice();
+
+    var moved = 0;
+
+    data.entries.forEach(function (entry) {
+      if (entry.room === id) {
+        entry.room = 'notes';
+        moved++;
+      }
+    });
+
+    data.customRooms = data.customRooms.filter(function (item) {
+      return !item || item.id !== id;
+    });
+
+    if (!Mopapa.store.save()) {
+      data.entries.forEach(function (entry, index) {
+        entry.room = previousEntries[index];
+      });
+
+      data.customRooms = previousRooms;
+
+      return {
+        ok: false,
+        message: 'I could not delete that room on this device. Nothing was changed.'
+      };
+    }
+
+    Mopapa.rooms = Mopapa.rooms.filter(function (item) {
+      return item.id !== id;
+    });
+
+    return { ok: true, moved: moved };
+  }
+
+  return {
+    init: reload,
+    reload: reload,
+    add: add,
+    rename: rename,
+    remove: remove
+  };
 })();
