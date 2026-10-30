@@ -81,7 +81,10 @@ Mopapa.talk = (function () {
       var room = Mopapa.roomById(entry.room);
       var parts = [room ? room.name : 'Saved entry'];
       if (entry.when) {
-        parts.push(Mopapa.rules.describe(new Date(entry.when), entry.hasTime));
+        parts.push(Mopapa.rules.describe(
+          Mopapa.rules.dateForEntry(entry.when, entry.hasTime),
+          entry.hasTime
+        ));
       }
       if (entry.created) {
         var created = new Date(entry.created);

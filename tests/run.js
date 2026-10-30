@@ -628,6 +628,50 @@ test('date-only agenda entries retain their intended calendar day', function () 
   assert.strictEqual(items[0].label, 'Tomorrow');
 });
 
+test('direct task instructions are classified as to-dos', function () {
+  const w = boot({});
+  const now = new Date(2026, 9, 21, 10, 0);
+  const text = 'Do my tax return by Friday';
+  const parsed = w.Mopapa.rules.parse(text, now);
+  const result = w.Mopapa.sorter.classify(text, parsed);
+
+  assert.ok(parsed);
+  assert.strictEqual(result.room, 'todo');
+  assert.strictEqual(result.confident, true);
+});
+
+test('ordinary questions are not classified as direct task instructions', function () {
+  const w = boot({});
+  const text = 'What do I need to do about my tax return?';
+  const result = w.Mopapa.sorter.classify(text, null);
+
+  assert.notStrictEqual(result.room, 'todo');
+});
+
+test('polite direct task instructions are classified as to-dos', function () {
+  const w = boot({});
+  const text = 'Please complete the application by Friday';
+  const parsed = w.Mopapa.rules.parse(
+    text,
+    new Date(2026, 9, 21, 10, 0)
+  );
+  const result = w.Mopapa.sorter.classify(text, parsed);
+
+  assert.ok(parsed);
+  assert.strictEqual(result.room, 'todo');
+  assert.strictEqual(result.confident, true);
+});
+
+test('date-only saved entries use the calendar-date parser in Ask', function () {
+  const w = boot({});
+  const date = w.Mopapa.rules.dateForEntry('2026-11-03', false);
+
+  assert.strictEqual(
+    w.Mopapa.rules.describe(date, false),
+    'Tuesday 3 November'
+  );
+});
+
 test('date parser: tomorrow at 5pm', function () {
   const w = boot({});
   const r = w.Mopapa.rules.parse('call mum tomorrow at 5pm', new Date(2026, 9, 21, 10, 0));

@@ -84,7 +84,7 @@ Mopapa.askParts.dateIntent = (function () {
       return e.room === 'appointments' &&
         !e.done &&
         e.when &&
-        !isNaN(new Date(e.when).getTime()) &&
+        !isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime()) &&
         !Mopapa.rules.isPast(e.when, e.hasTime);
     }).sort(sortByWhen);
 
@@ -122,7 +122,7 @@ Mopapa.askParts.dateIntent = (function () {
       return e.room === 'todo' &&
         !e.done &&
         e.when &&
-        !isNaN(new Date(e.when).getTime()) &&
+        !isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime()) &&
         Mopapa.rules.isPast(e.when, e.hasTime);
     }).sort(sortByWhen);
 

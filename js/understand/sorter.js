@@ -31,6 +31,16 @@ Mopapa.sorter = (function () {
 
   // Classification uses explicit rules only.
   function classify(text, parse) {
+    var command = String(text || '').trim();
+
+    if (/^(?:please\s+)?(?:do|complete|prepare|submit|file|sort|organise|organize|arrange|collect|pick\s+up|drop\s+off|follow\s+up|chase|finish)\b/i.test(command)) {
+      return {
+        room: 'todo',
+        confident: true,
+        ranked: ['todo', 'appointments', 'wishlist', 'feelings', 'ideas', 'notes']
+      };
+    }
+
     var n = norm(text);
     var scored = Mopapa.rooms.map(function (r, i) {
       var s = 0;
