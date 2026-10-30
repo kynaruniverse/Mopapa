@@ -197,10 +197,20 @@ Mopapa.talk = (function () {
   function save(ctx, withDate) {
     endChoices();
     var room = Mopapa.roomById(ctx.room);
+    var dateOnly = withDate && !ctx.parse.hasTime
+      ? ctx.parse.date.getFullYear() + '-' +
+        String(ctx.parse.date.getMonth() + 1).padStart(2, '0') + '-' +
+        String(ctx.parse.date.getDate()).padStart(2, '0')
+      : null;
+
     var r = Mopapa.entries.add({
       text: ctx.text,
       room: ctx.room,
-      when: withDate ? ctx.parse.date.toISOString() : null,
+      when: !withDate
+        ? null
+        : ctx.parse.hasTime
+          ? ctx.parse.date.toISOString()
+          : dateOnly,
       hasTime: withDate && ctx.parse.hasTime,
       amount: ctx.money
     });

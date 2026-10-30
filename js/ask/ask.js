@@ -522,10 +522,10 @@ Mopapa.ask = (function () {
   }
 
   function sortByWhen(a, b) {
-    return new Date(a.when) - new Date(b.when);
+    return Mopapa.rules.dateForEntry(a.when, a.hasTime) -
+      Mopapa.rules.dateForEntry(b.when, b.hasTime);
   }
-
-
+  
   function answerCost(q, all, room, date) {
     return Mopapa.askParts.moneyAnswer.answerCost(
       q,
@@ -795,7 +795,7 @@ Mopapa.ask = (function () {
         var distinctWhen = [];
 
         dated.forEach(function (entry) {
-          var key = new Date(entry.when).getTime();
+          var key = Mopapa.rules.dateForEntry(entry.when, entry.hasTime).getTime();
 
           if (distinctWhen.indexOf(key) === -1) {
             distinctWhen.push(key);
@@ -807,7 +807,9 @@ Mopapa.ask = (function () {
 
           if (tappedWhen) {
             dated = [tappedWhen];
-            distinctWhen = [new Date(tappedWhen.when).getTime()];
+            distinctWhen = [
+              Mopapa.rules.dateForEntry(tappedWhen.when, tappedWhen.hasTime).getTime()
+            ];
           }
         }
 
@@ -820,7 +822,7 @@ Mopapa.ask = (function () {
 
         var first = dated[0];
         var label = Mopapa.rules.describe(
-          new Date(first.when),
+          Mopapa.rules.dateForEntry(first.when, first.hasTime),
           first.hasTime
         );
 

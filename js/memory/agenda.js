@@ -15,7 +15,7 @@ Mopapa.agenda = (function () {
 
     entries.forEach(function (entry) {
       if (!entry || !entry.when || entry.done) return;
-      var date = new Date(entry.when);
+      var date = Mopapa.rules.dateForEntry(entry.when, entry.hasTime);
       if (isNaN(date.getTime())) return;
 
       var dayOffset = localDayNumber(date) - todayNumber;

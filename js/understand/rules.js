@@ -14,6 +14,30 @@ Mopapa.rules = (function () {
   var PAST_RE = /\b(yesterday|ago|last\s+(?:night|week|month|year|sunday|monday|tuesday|wednesday|thursday|friday|saturday))\b/;
 
   function startOfDay(d) { var x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+
+  function dateForEntry(value, hasTime) {
+    if (
+      !hasTime &&
+      typeof value === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
+      var parts = value.split('-').map(Number);
+      var date = new Date(parts[0], parts[1] - 1, parts[2]);
+
+      if (
+        date.getFullYear() === parts[0] &&
+        date.getMonth() === parts[1] - 1 &&
+        date.getDate() === parts[2]
+      ) {
+        return date;
+      }
+
+      return new Date(NaN);
+    }
+
+    return new Date(value);
+  }
+
   function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
   function monthIdx(s) { return SHORT.indexOf(s.slice(0, 3)); }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -139,7 +163,11 @@ Mopapa.rules = (function () {
   }
 
   function isPast(iso, hasTime) {
-    var d = new Date(iso), now = new Date();
+    var d = dateForEntry(iso, hasTime);
+    var now = new Date();
+
+    if (isNaN(d.getTime())) return false;
+
     return hasTime ? d < now : d < startOfDay(now);
   }
 
@@ -217,5 +245,5 @@ Mopapa.rules = (function () {
     return null;
   }
 
-  return { parse: parse, describe: describe, isPast: isPast, money: money, moneyAll: moneyAll, extract: extract, questionLevel: questionLevel, DAYS: DAYS, MONTHS: MONTHS };
+  return { parse: parse, describe: describe, isPast: isPast, dateForEntry: dateForEntry, money: money, moneyAll: moneyAll, extract: extract, questionLevel: questionLevel, DAYS: DAYS, MONTHS: MONTHS };
 })();

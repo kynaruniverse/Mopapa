@@ -60,7 +60,7 @@ Mopapa.searchUI = (function () {
       var parts = [result.room ? result.room.name : 'Saved entry'];
       var created = new Date(entry.created);
       if (!isNaN(created.getTime())) parts.push('saved ' + created.toLocaleDateString());
-      if (entry.when) parts.push('for ' + Mopapa.rules.describe(new Date(entry.when), entry.hasTime));
+      if (entry.when) parts.push('for ' + Mopapa.rules.describe(Mopapa.rules.dateForEntry(entry.when, entry.hasTime), entry.hasTime));
       meta.textContent = parts.join(', ');
       body.appendChild(meta);
       item.appendChild(body);

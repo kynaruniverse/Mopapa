@@ -159,7 +159,7 @@ Mopapa.room = (function () {
       var meta = el('div', 'entry-meta');
       if (e.when) {
         var w = el('span', Mopapa.rules.isPast(e.when, e.hasTime) && !e.done ? 'overdue' : '',
-          Mopapa.rules.describe(new Date(e.when), e.hasTime));
+          Mopapa.rules.describe(Mopapa.rules.dateForEntry(e.when, e.hasTime), e.hasTime));
         meta.appendChild(w);
       }
       if (e.amount) {

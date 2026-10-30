@@ -91,7 +91,7 @@ Mopapa.askParts.dateIntent = (function () {
     if (upcomingAppointments.length) {
       var nextAppointment = upcomingAppointments[0];
       var nextLabel = Mopapa.rules.describe(
-        new Date(nextAppointment.when),
+        Mopapa.rules.dateForEntry(nextAppointment.when, nextAppointment.hasTime),
         nextAppointment.hasTime
       );
 

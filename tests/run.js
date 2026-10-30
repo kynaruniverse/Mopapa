@@ -582,6 +582,52 @@ test('corrupt storage reports when its recovery copy cannot be saved', function 
   );
 });
 
+test('date-only entry strings are parsed as local calendar dates', function () {
+  const w = boot({});
+  const date = w.Mopapa.rules.dateForEntry('2026-11-03', false);
+
+  assert.strictEqual(date.getFullYear(), 2026);
+  assert.strictEqual(date.getMonth(), 10);
+  assert.strictEqual(date.getDate(), 3);
+  assert.strictEqual(date.getHours(), 0);
+});
+
+test('date-only entry parsing rejects impossible calendar dates', function () {
+  const w = boot({});
+  const date = w.Mopapa.rules.dateForEntry('2026-02-30', false);
+
+  assert.strictEqual(Number.isNaN(date.getTime()), true);
+});
+
+test('date-only agenda entries retain their intended calendar day', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 2, 12, 0, 0, 0);
+
+  w.localStorage.setItem('mopapa.v1', JSON.stringify({
+    entries: [{
+      id: 'calendar-day',
+      text: 'Task due tomorrow',
+      room: 'todo',
+      when: '2026-11-03',
+      hasTime: false,
+      done: false
+    }],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  }));
+
+  w.Mopapa.store.load();
+
+  const items = Array.from(w.Mopapa.agenda.getItems(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].date.getFullYear(), 2026);
+  assert.strictEqual(items[0].date.getMonth(), 10);
+  assert.strictEqual(items[0].date.getDate(), 3);
+  assert.strictEqual(items[0].label, 'Tomorrow');
+});
+
 test('date parser: tomorrow at 5pm', function () {
   const w = boot({});
   const r = w.Mopapa.rules.parse('call mum tomorrow at 5pm', new Date(2026, 9, 21, 10, 0));
