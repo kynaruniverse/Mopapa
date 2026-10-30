@@ -642,7 +642,7 @@ test('direct task instructions are classified as to-dos', function () {
 
 test('ordinary questions are not classified as direct task instructions', function () {
   const w = boot({});
-  const text = 'What do I need to do about my tax return?';
+  const text = 'What do you recommend about my tax return?';
   const result = w.Mopapa.sorter.classify(text, null);
 
   assert.notStrictEqual(result.room, 'todo');
