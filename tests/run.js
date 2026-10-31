@@ -6465,6 +6465,236 @@ test('answer-flow sorts matches before passing them to fallback', function () {
   );
 });
 
+
+test('answer-flow dispatches successfully through every ordered handler', function () {
+  const w = boot();
+
+  const order = [
+    'structured',
+    'nextAppointment',
+    'overdue',
+    'when',
+    'whoFor',
+    'location',
+    'calledName'
+  ];
+
+  order.forEach(function (name, index) {
+    const context = makeAnswerFlowContext();
+    const marker = { answer: name };
+
+    context.handlers[name] = function () {
+      context.calls.push(name);
+      return marker;
+    };
+
+    const result = w.Mopapa.askParts.answerFlow.resolve(
+      'test question',
+      [],
+      context
+    );
+
+    assert.strictEqual(result, marker);
+    assert.deepStrictEqual(
+      context.calls,
+      order.slice(0, index + 1)
+    );
+  });
+});
+
+
+test('answer-flow safely skips an unavailable optional handler', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  delete context.handlers.nextAppointment;
+
+  w.Mopapa.askParts.answerFlow.resolve(
+    'test question',
+    [],
+    context
+  );
+
+  assert.deepStrictEqual(context.calls, [
+    'structured',
+    'overdue',
+    'when',
+    'whoFor',
+    'location',
+    'calledName',
+    'fallback'
+  ]);
+});
+
+
+test('answer-flow continues when a handler returns undefined', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  context.handlers.structured = function () {
+    context.calls.push('structured');
+    return undefined;
+  };
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'test question',
+    [],
+    context
+  );
+
+  assert.strictEqual(result.answer, 'fallback');
+  assert.ok(context.calls.includes('nextAppointment'));
+});
+
+
+test('answer-flow continues when a handler returns false', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  context.handlers.structured = function () {
+    context.calls.push('structured');
+    return false;
+  };
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'test question',
+    [],
+    context
+  );
+
+  assert.strictEqual(result.answer, 'fallback');
+});
+
+
+test('answer-flow passes the original question and matches to handlers', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  const entries = [
+    { id: 'one', created: 1 }
+  ];
+
+  let receivedQuestion = null;
+  let receivedMatches = null;
+
+  context.handlers.structured = function (q, matches) {
+    receivedQuestion = q;
+    receivedMatches = matches;
+    return { answer: 'captured' };
+  };
+
+  w.Mopapa.askParts.answerFlow.resolve(
+    'Where did I put my keys?',
+    entries,
+    context
+  );
+
+  assert.strictEqual(
+    receivedQuestion,
+    'Where did I put my keys?'
+  );
+
+  assert.strictEqual(receivedMatches, entries);
+});
+
+
+test('answer-flow does not reorder matches after an early answer', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  const entries = [
+    { id: 'old', created: 1 },
+    { id: 'new', created: 3 },
+    { id: 'middle', created: 2 }
+  ];
+
+  context.handlers.structured = function () {
+    return { answer: 'found' };
+  };
+
+  w.Mopapa.askParts.answerFlow.resolve(
+    'test question',
+    entries,
+    context
+  );
+
+  assert.deepStrictEqual(
+    entries.map(function (entry) {
+      return entry.id;
+    }),
+    ['old', 'new', 'middle']
+  );
+});
+
+
+test('answer-flow passes sorted matches and question to cost handler', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  const entries = [
+    { id: 'old', created: 1 },
+    { id: 'new', created: 3 },
+    { id: 'middle', created: 2 }
+  ];
+
+  let receivedQuestion = null;
+  let receivedMatches = null;
+
+  context.isCostQuestion = function () {
+    return true;
+  };
+
+  context.handlers.cost = function (q, matches) {
+    receivedQuestion = q;
+    receivedMatches = matches;
+    return { answer: 'cost' };
+  };
+
+  w.Mopapa.askParts.answerFlow.resolve(
+    'How much did the dentist cost?',
+    entries,
+    context
+  );
+
+  assert.strictEqual(
+    receivedQuestion,
+    'How much did the dentist cost?'
+  );
+
+  assert.deepStrictEqual(
+    receivedMatches.map(function (entry) {
+      return entry.id;
+    }),
+    ['new', 'middle', 'old']
+  );
+});
+
+
+test('answer-flow passes the original question to general fallback', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  let receivedQuestion = null;
+
+  context.handlers.fallback = function (q, matches) {
+    receivedQuestion = q;
+    return { answer: 'fallback', matches: matches };
+  };
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'What did I save about the garden?',
+    [],
+    context
+  );
+
+  assert.strictEqual(
+    receivedQuestion,
+    'What did I save about the garden?'
+  );
+
+  assert.strictEqual(result.answer, 'fallback');
+});
+
 let failed = 0;
 tests.forEach(function (t) {
   try { t[1](); console.log('PASS', t[0]); }
