@@ -337,102 +337,16 @@ Mopapa.ask = (function () {
       return answerCost(q, all, room, date);
     }
 
-    // Hide entries that a newer entry has replaced (never hide everything).
-    var currentMap = currentLocations(all);
-    var beforeStale = matches.length;
-    var fresh = matches.filter(function (e) {
-      return !isStale(e, currentMap);
+    return Mopapa.askParts.results.answerMatches(q, matches, {
+      all: all,
+      date: date,
+      room: room,
+      roomName: roomName,
+      norm: norm,
+      questionIntent: questionIntent,
+      currentLocations: currentLocations,
+      isStale: isStale
     });
-
-    if (fresh.length) matches = fresh;
-
-    var hiddenStale = beforeStale - matches.length;
-
-    if (!matches.length) {
-      var scope = date ? ' for ' + date.label : '';
-
-      return {
-        answer: 'I could not find anything matching that' + scope +
-          '. Try different words, or check the rooms in Mopapa.',
-        sources: [],
-        missed: true
-      };
-    }
-
-    var n = norm(q);
-
-    var directQuestion = questionIntent.isDirectQuestion(n);
-
-    var isItemsQuestion = questionIntent.isItemsQuestion(n);
-      
-    var shown = (directQuestion || isItemsQuestion)
-      ? matches
-      : matches.slice(0, 5);
-    var roomText = room ? ' in ' + roomName(room) : '';
-    var dateText = date ? ' for ' + date.label : '';
-    var lead;
-
-    if (date) {
-      lead = 'Yes, I found ' + matches.length +
-        ' matching entr' + (matches.length === 1 ? 'y' : 'ies') +
-        roomText + dateText + '.';
-    } else if (room) {
-      lead = 'I found ' + matches.length +
-        ' saved entr' + (matches.length === 1 ? 'y' : 'ies') +
-        roomText + '.';
-    } else {
-      lead = 'I found ' + matches.length +
-        ' saved entr' + (matches.length === 1 ? 'y' : 'ies') +
-        ' matching those words.';
-    }
-
-    if (matches.length > shown.length) {
-      lead += ' Showing the newest ' + shown.length + '.';
-    }
-
-    var staleNote = hiddenStale
-      ? ' I hid ' + hiddenStale + ' older ' +
-        (hiddenStale === 1 ? 'entry' : 'entries') +
-        ' that a newer one replaced.'
-      : '';
-
-    lead += staleNote;
-    
-    if (isItemsQuestion) {
-      return {
-        answer: 'I found these items:\n' +
-          shown.map(function (entry) {
-            return '• ' + entry.text;
-          }).join('\n'),
-        sources: shown
-      };
-    }
-    
-    if (directQuestion && shown.length === 1) {
-      return {
-        answer: 'You saved this: ' + shown[0].text + staleNote,
-        sources: shown
-      };
-    }
-
-    if (
-      directQuestion &&
-      shown.length > 1
-    ) {
-      return {
-        answer: 'You saved ' + shown.length + ' items:\n' +
-          shown.map(function (entry) {
-            return '• ' + entry.text;
-          }).join('\n') + staleNote,
-        sources: shown
-      };
-    }
-
-    return {
-      answer: lead,
-      sources: shown
-    };
-  }
 
   return {
     answer: answer,

@@ -62,6 +62,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-text.js',
     'js/ask/ask-people.js',
     'js/ask/ask-person-answer.js',
+    'js/ask/ask-results.js',
     'js/ask/ask-match.js',
     'js/ask/ask-ranking.js',
     'js/ask/ask-facts.js',
@@ -5383,6 +5384,135 @@ test('learning module returns independent copies of saved summaries', function (
     second.unanswered[0].q,
     'Where are my keys?'
   );
+});
+
+
+test('results module exposes its answer handler', function () {
+  const w = boot();
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.results.answerMatches,
+    'function'
+  );
+});
+
+
+test('results module returns a clear empty-result response', function () {
+  const w = boot();
+  const results = w.Mopapa.askParts.results;
+
+  const result = results.answerMatches('garden', [], {
+    all: [],
+    date: null,
+    room: null,
+    roomName: function () { return 'Notes'; },
+    norm: function (q) { return q; },
+    questionIntent: {
+      isDirectQuestion: function () { return false; },
+      isItemsQuestion: function () { return false; }
+    },
+    currentLocations: function () { return {}; },
+    isStale: function () { return false; }
+  });
+
+  assert.strictEqual(result.missed, true);
+  assert.deepStrictEqual(Array.from(result.sources), []);
+  assert.ok(result.answer.includes('could not find anything'));
+});
+
+
+test('results module answers a direct question with one saved entry', function () {
+  const w = boot();
+  const entry = { id: 'direct-1', text: 'My passport is in the safe.' };
+
+  const result = w.Mopapa.askParts.results.answerMatches(
+    'What did I save?',
+    [entry],
+    {
+      all: [entry],
+      date: null,
+      room: null,
+      roomName: function () { return 'Notes'; },
+      norm: function (q) { return q; },
+      questionIntent: {
+        isDirectQuestion: function () { return true; },
+        isItemsQuestion: function () { return false; }
+      },
+      currentLocations: function () { return {}; },
+      isStale: function () { return false; }
+    }
+  );
+
+  assert.strictEqual(
+    result.answer,
+    'You saved this: My passport is in the safe.'
+  );
+  assert.strictEqual(result.sources[0].id, 'direct-1');
+});
+
+
+test('results module limits ordinary answers to five entries', function () {
+  const w = boot();
+  const entries = [];
+
+  for (let i = 1; i <= 7; i++) {
+    entries.push({
+      id: 'entry-' + i,
+      text: 'Saved item ' + i
+    });
+  }
+
+  const result = w.Mopapa.askParts.results.answerMatches(
+    'garden',
+    entries,
+    {
+      all: entries,
+      date: null,
+      room: null,
+      roomName: function () { return 'Notes'; },
+      norm: function (q) { return q; },
+      questionIntent: {
+        isDirectQuestion: function () { return false; },
+        isItemsQuestion: function () { return false; }
+      },
+      currentLocations: function () { return {}; },
+      isStale: function () { return false; }
+    }
+  );
+
+  assert.strictEqual(result.sources.length, 5);
+  assert.ok(result.answer.includes('Showing the newest 5.'));
+});
+
+
+test('results module hides stale entries when newer entries exist', function () {
+  const w = boot();
+  const oldEntry = { id: 'old', text: 'Old address' };
+  const newEntry = { id: 'new', text: 'New address' };
+
+  const result = w.Mopapa.askParts.results.answerMatches(
+    'address',
+    [newEntry, oldEntry],
+    {
+      all: [newEntry, oldEntry],
+      date: null,
+      room: null,
+      roomName: function () { return 'Notes'; },
+      norm: function (q) { return q; },
+      questionIntent: {
+        isDirectQuestion: function () { return false; },
+        isItemsQuestion: function () { return false; }
+      },
+      currentLocations: function () { return {}; },
+      isStale: function (entry) {
+        return entry.id === 'old';
+      }
+    }
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'new');
+  assert.ok(result.answer.includes('hid 1 older entry'));
 });
 
 test('date-overview module exposes both answer handlers', function () {
