@@ -57,8 +57,511 @@ function boot(storage) {
   return win;
 }
 
+function makeTalkElement() {
+  const listeners = {};
+
+  const element = {
+    children: [],
+    value: '',
+    textContent: '',
+    hidden: false,
+    disabled: false,
+    attributes: {},
+    className: '',
+    classList: {
+      values: [],
+      add: function (name) {
+        if (!this.values.includes(name)) this.values.push(name);
+      },
+      remove: function () {
+        const names = Array.from(arguments);
+        this.values = this.values.filter(function (name) {
+          return !names.includes(name);
+        });
+      },
+      contains: function (name) {
+        return this.values.includes(name);
+      }
+    },
+    addEventListener: function (name, fn) {
+      if (!listeners[name]) listeners[name] = [];
+      listeners[name].push(fn);
+    },
+    dispatch: function (name, event) {
+      (listeners[name] || []).forEach(function (fn) {
+        fn(event || {});
+      });
+    },
+    appendChild: function (child) {
+      this.children.push(child);
+      return child;
+    },
+    setAttribute: function (name, value) {
+      this.attributes[name] = value;
+    },
+    click: function () {
+      this.dispatch('click', {});
+    }
+  };
+
+  Object.defineProperty(element, 'innerHTML', {
+    get: function () {
+      return '';
+    },
+    set: function () {
+      element.children = [];
+    }
+  });
+
+  return element;
+}
+
+
+function bootTalk() {
+  const elements = {
+    'talk-input': makeTalkElement(),
+    'talk-form': makeTalkElement(),
+    'confirm': makeTalkElement(),
+    'answer-sources': makeTalkElement()
+  };
+
+  const calls = [];
+
+  const M = {
+    rules: {
+      questionLevel: function () {
+        return 'sure';
+      },
+      parse: function () {
+        return null;
+      },
+      money: function () {
+        return null;
+      },
+      dateForEntry: function (value) {
+        return new Date(value);
+      },
+      describe: function () {
+        return 'A saved date';
+      }
+    },
+
+    sorter: {
+      classify: function () {
+        return { confident: false };
+      }
+    },
+
+    pet: {
+      say: function (message) {
+        calls.push({ type: 'say', message: message });
+      },
+      react: function (state) {
+        calls.push({ type: 'react', state: state });
+      },
+      bounce: function () {
+        calls.push({ type: 'bounce' });
+      }
+    },
+
+    ask: {
+      answer: function (question) {
+        calls.push({ type: 'answer', question: question });
+        return app.answerResult;
+      },
+      logUnanswered: function (question) {
+        calls.push({ type: 'logUnanswered', question: question });
+        return true;
+      },
+      confirmSource: function (question, id) {
+        calls.push({
+          type: 'confirmSource',
+          question: question,
+          id: id
+        });
+        return app.confirmSourceResult;
+      }
+    },
+
+    askLearningUI: {
+      render: function () {
+        calls.push({ type: 'learningRender' });
+      }
+    },
+
+    roomById: function () {
+      return { name: 'Notes', dated: false };
+    },
+
+    entries: {
+      add: function (entry) {
+        calls.push({ type: 'save', entry: entry });
+        return { saved: app.saveResult };
+      }
+    },
+
+    store: {
+      saveError: function () {
+        return 'storage';
+      }
+    },
+
+    room: {
+      renderRooms: function () {
+        calls.push({ type: 'renderRooms' });
+      }
+    },
+
+    refreshPanels: function () {
+      calls.push({ type: 'refreshPanels' });
+    }
+  };
+
+  const document = {
+    getElementById: function (id) {
+      return elements[id] || null;
+    },
+    createElement: function () {
+      return makeTalkElement();
+    }
+  };
+
+  const win = {
+    document: document,
+    console: console,
+    Mopapa: M
+  };
+
+  win.window = win;
+  vm.createContext(win);
+
+  vm.runInContext(
+    fs.readFileSync(__dirname + '/../js/ui/talk.js', 'utf8'),
+    win,
+    { filename: 'ui/talk' }
+  );
+
+  M.talk.init();
+
+  const app = {
+    elements: elements,
+    calls: calls,
+    Mopapa: M,
+    answerResult: {
+      answer: 'I could not find anything.',
+      missed: true,
+      sources: []
+    },
+    saveResult: true,
+    confirmSourceResult: true
+  };
+
+  return app;
+}
+
 const tests = [];
 function test(name, fn) { tests.push([name, fn]); }
+
+test('talk interface loads and attaches its submit handler', function () {
+  const app = bootTalk();
+
+  assert.strictEqual(typeof app.Mopapa.talk.init, 'function');
+  assert.strictEqual(
+    typeof app.elements['talk-form'].dispatch,
+    'function'
+  );
+});
+
+
+test('missed questions show Keep this instead and Not now choices', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+  const confirm = app.elements.confirm;
+
+  input.value = 'Where did I put the spare key?';
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  assert.strictEqual(input.disabled, true);
+  assert.strictEqual(confirm.hidden, false);
+  assert.strictEqual(confirm.children.length, 2);
+  assert.strictEqual(confirm.children[0].textContent, 'Keep this instead');
+  assert.strictEqual(confirm.children[1].textContent, 'Not now');
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'logUnanswered';
+  }));
+});
+
+
+test('Keep this instead files the original missed question', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+  const confirm = app.elements.confirm;
+  const original = 'Where did I put the spare key?';
+
+  input.value = original;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  confirm.children[0].click();
+
+  const saved = app.calls.find(function (call) {
+    return call.type === 'save';
+  });
+
+  assert.ok(saved);
+  assert.strictEqual(saved.entry.text, original);
+  assert.strictEqual(saved.entry.room, 'notes');
+  assert.strictEqual(input.value, '');
+  assert.strictEqual(input.disabled, false);
+  assert.strictEqual(confirm.hidden, true);
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'renderRooms';
+  }));
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'refreshPanels';
+  }));
+});
+
+
+test('Not now cancels a missed question without saving it', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+  const confirm = app.elements.confirm;
+  const original = 'Where did I put the spare key?';
+
+  input.value = original;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  confirm.children[1].click();
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'save';
+    }),
+    false
+  );
+
+  assert.strictEqual(input.value, original);
+  assert.strictEqual(input.disabled, false);
+  assert.strictEqual(confirm.hidden, true);
+});
+
+
+test('Keep this instead preserves text when storage fails', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+  const original = 'Where did I put the spare key?';
+
+  app.saveResult = false;
+  input.value = original;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  app.elements.confirm.children[0].click();
+
+  assert.strictEqual(input.value, original);
+  assert.strictEqual(input.disabled, false);
+  assert.strictEqual(app.elements.confirm.hidden, true);
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'say' &&
+      call.message.indexOf("couldn't save") !== -1;
+  }));
+});
+
+
+test('answered questions without a miss do not show filing choices', function () {
+  const app = bootTalk();
+
+  app.answerResult = {
+    answer: 'Your spare key is in the kitchen drawer.',
+    missed: false,
+    sources: []
+  };
+
+  app.elements['talk-input'].value = 'Where is my spare key?';
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  assert.strictEqual(app.elements.confirm.hidden, true);
+  assert.strictEqual(app.elements.confirm.children.length, 0);
+  assert.strictEqual(app.elements['talk-input'].disabled, false);
+});
+
+
+test('source selection confirms the chosen saved entry', function () {
+  const app = bootTalk();
+  const question = 'Where is my spare key?';
+
+  app.answerResult = {
+    answer: 'I found a possible match.',
+    missed: false,
+    sources: [{
+      id: 'spare-key',
+      text: 'My spare key is in the kitchen drawer.',
+      room: 'notes',
+      created: '2026-10-01T10:00:00.000Z'
+    }]
+  };
+
+  app.elements['talk-input'].value = question;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  const source = app.elements['answer-sources'].children[1];
+
+  assert.ok(source);
+  source.dispatch('keydown', {
+    key: 'Enter',
+    preventDefault: function () {}
+  });
+
+  const confirmation = app.calls.find(function (call) {
+    return call.type === 'confirmSource';
+  });
+
+  assert.ok(confirmation);
+  assert.strictEqual(confirmation.question, question);
+  assert.strictEqual(confirmation.id, 'spare-key');
+  assert.strictEqual(source.classList.contains('chosen'), true);
+});
+
+
+test('source selection supports Space as a keyboard action', function () {
+  const app = bootTalk();
+
+  app.answerResult = {
+    answer: 'I found a possible match.',
+    missed: false,
+    sources: [{
+      id: 'passport',
+      text: 'My passport is in the safe.',
+      room: 'notes',
+      created: '2026-10-01T10:00:00.000Z'
+    }]
+  };
+
+  app.elements['talk-input'].value = 'Where is my passport?';
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  const source = app.elements['answer-sources'].children[1];
+
+  source.dispatch('keydown', {
+    key: ' ',
+    preventDefault: function () {}
+  });
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'confirmSource' &&
+      call.id === 'passport';
+  }));
+});
+
+
+test('Enter submits a question from the talk input', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+
+  input.value = 'Where is my passport?';
+
+  let prevented = false;
+
+  input.dispatch('keydown', {
+    key: 'Enter',
+    shiftKey: false,
+    isComposing: false,
+    keyCode: 13,
+    preventDefault: function () {
+      prevented = true;
+    }
+  });
+
+  assert.strictEqual(prevented, true);
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'answer' &&
+      call.question === 'Where is my passport?';
+  }));
+});
+
+
+test('Enter does not submit while text composition is active', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+
+  input.value = 'Where is my passport?';
+  input.dispatch('compositionstart');
+
+  let prevented = false;
+
+  input.dispatch('keydown', {
+    key: 'Enter',
+    shiftKey: false,
+    isComposing: true,
+    keyCode: 229,
+    preventDefault: function () {
+      prevented = true;
+    }
+  });
+
+  assert.strictEqual(prevented, false);
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'answer';
+    }),
+    false
+  );
+});
+
+
+test('Shift Enter keeps its normal multiline behaviour', function () {
+  const app = bootTalk();
+  const input = app.elements['talk-input'];
+
+  input.value = 'A note that continues';
+
+  let prevented = false;
+
+  input.dispatch('keydown', {
+    key: 'Enter',
+    shiftKey: true,
+    isComposing: false,
+    keyCode: 13,
+    preventDefault: function () {
+      prevented = true;
+    }
+  });
+
+  assert.strictEqual(prevented, false);
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'answer' || call.type === 'save';
+    }),
+    false
+  );
+});
 
 test('ask modules are loaded once and before ask.js', function () {
   const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
