@@ -38,6 +38,7 @@ function boot(storage) {
     'ask/ask-question-intent',
     'ask/ask-room-intent',
     'ask/ask-query',
+    'ask/ask-aliases',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -66,7 +67,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-money-format.js',
     'js/ask/ask-question-intent.js',
     'js/ask/ask-room-intent.js',
-    'js/ask/ask-query.js'  
+    'js/ask/ask-query.js',
+    'js/ask/ask-aliases.js'
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -5248,6 +5250,60 @@ test('query terms exclude custom room names from search terms', function () {
   assert.deepStrictEqual(
     Array.from(query.queryTerms('Show me my garden projects', 'custom_garden')),
     []
+  );
+});
+
+test('alias module exposes built-in aliases in both directions', function () {
+  const w = boot();
+  const aliases = w.Mopapa.askParts.aliases;
+  const stem = w.Mopapa.askParts.text.stem;
+
+  assert.ok(
+    aliases.map[stem('gp')].includes(stem('doctor'))
+  );
+
+  assert.ok(
+    aliases.map[stem('doctor')].includes(stem('gp'))
+  );
+
+  assert.ok(
+    aliases.map[stem('dentist')].includes(stem('dental'))
+  );
+});
+
+
+test('alias module normalises and adds custom aliases bidirectionally', function () {
+  const w = boot();
+  const aliases = w.Mopapa.askParts.aliases;
+  const stem = w.Mopapa.askParts.text.stem;
+
+  assert.strictEqual(aliases.addAlias('Couch', 'Sofa'), true);
+
+  assert.ok(
+    aliases.map[stem('couch')].includes(stem('sofa'))
+  );
+
+  assert.ok(
+    aliases.map[stem('sofa')].includes(stem('couch'))
+  );
+});
+
+
+test('resetting aliases restores built-ins and removes temporary aliases', function () {
+  const w = boot();
+  const aliases = w.Mopapa.askParts.aliases;
+  const stem = w.Mopapa.askParts.text.stem;
+
+  aliases.addAlias('couch', 'sofa');
+  aliases.resetBuiltIns();
+
+  assert.strictEqual(
+    (aliases.map[stem('couch')] || []).includes(stem('sofa')),
+    false
+  );
+
+  assert.ok(
+    aliases.map[stem('gp')].includes(stem('doctor'))
   );
 });
 

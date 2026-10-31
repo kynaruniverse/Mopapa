@@ -21,46 +21,8 @@ Mopapa.ask = (function () {
   var roomForQuestion = Mopapa.askParts.roomIntent.roomForQuestion;
   var queryTerms = Mopapa.askParts.query.queryTerms;
 
-  var ALIAS_GROUPS = [
-    ['gp', 'doctor', 'surgery'],
-    ['dentist', 'dental'],
-    ['boiler', 'heating'],
-    ['car', 'vehicle'],
-    ['holiday', 'vacation'],
-    ['phone', 'mobile'],
-    ['bin', 'rubbish', 'trash'],
-    ['tv', 'television']
-  ];
-
-  var ALIAS_MAP = Object.create(null);
-
-  function linkAlias(from, to) {
-    if (!ALIAS_MAP[from]) ALIAS_MAP[from] = [];
-
-    if (ALIAS_MAP[from].indexOf(to) === -1) {
-      ALIAS_MAP[from].push(to);
-    }
-  }
-
-  function addAlias(a, b) {
-    var x = stem(norm(a));
-    var y = stem(norm(b));
-
-    if (!x || !y || x === y) return false;
-
-    linkAlias(x, y);
-    linkAlias(y, x);
-
-    return true;
-  }
-
-  ALIAS_GROUPS.forEach(function (group) {
-    group.forEach(function (a) {
-      group.forEach(function (b) {
-        addAlias(a, b);
-      });
-    });
-  });
+  var aliasModule = Mopapa.askParts.aliases;
+  var ALIAS_MAP = aliasModule.map;
 
   function entryStems(e) {
     return Mopapa.askParts.match.entryStems(e, norm, stem);
@@ -71,9 +33,9 @@ Mopapa.ask = (function () {
       e,
       terms,
       entryStems,
-      ALIAS_MAP
+      aliasModule.map
     );
-  }  
+  }
   
   function rankedMatches(entries, terms, room, sig) {
     return Mopapa.askParts.ranking.rankedMatches(
@@ -82,7 +44,7 @@ Mopapa.ask = (function () {
       room,
       sig,
       {
-        aliases: ALIAS_MAP,
+        aliases: aliasModule.map,
         termsClose: termsClose,
         learnedData: learnedData,
         entryStems: entryStems,
@@ -104,7 +66,7 @@ Mopapa.ask = (function () {
       all,
       {
         currentLocations: currentLocations,
-        aliases: ALIAS_MAP,
+        aliases: aliasModule.map,
         confirmedBySig: confirmedBySig
       }
     );
@@ -145,23 +107,12 @@ Mopapa.ask = (function () {
     if (!s) return;
 
     s.aliases.forEach(function (p) {
-      addAlias(p[0], p[1]);
+      aliasModule.addAlias(p[0], p[1]);
     });
   }
 
   function rebuildAliases() {
-    Object.keys(ALIAS_MAP).forEach(function (k) {
-      delete ALIAS_MAP[k];
-    });
-
-    ALIAS_GROUPS.forEach(function (group) {
-      group.forEach(function (a) {
-        group.forEach(function (b) {
-          addAlias(a, b);
-        });
-      });
-    });
-
+    aliasModule.resetBuiltIns();
     applyLearned();
   }
 
@@ -191,7 +142,7 @@ Mopapa.ask = (function () {
       }
     }
 
-    addAlias(x, y);
+    aliasModule.addAlias(x, y);
     return true;
   }
 
