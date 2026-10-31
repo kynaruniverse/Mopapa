@@ -33,6 +33,7 @@ function boot(storage) {
     'ask/ask-date-filter',
     'ask/ask-date-intent',
     'ask/ask-money-intent',
+    'ask/ask-date-answer',
     'ask/ask-money-answer',
     'ask/ask-money-format',
     'ask/ask-question-intent',
@@ -63,6 +64,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-date-text.js',
     'js/ask/ask-date-filter.js',
     'js/ask/ask-date-intent.js',
+    'js/ask/ask-date-answer.js',
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
     'js/ask/ask-money-format.js',
@@ -5375,6 +5377,71 @@ test('learning module returns independent copies of saved summaries', function (
     second.unanswered[0].q,
     'Where are my keys?'
   );
+});
+
+test('date-answer module exposes its public function', function () {
+  const w = boot();
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.dateAnswer.answerWhen,
+    'function'
+  );
+});
+
+
+test('date-answer module ignores unrelated questions and empty matches', function () {
+  const w = boot();
+  const answerWhen = w.Mopapa.askParts.dateAnswer.answerWhen;
+
+  const helpers = {
+    isWhenQuestion: function () { return false; },
+    sortByWhen: function () { return 0; },
+    confirmedBySig: function () { return null; },
+    extractTextDate: function () { return null; }
+  };
+
+  assert.strictEqual(
+    answerWhen('What did I save?', [], 'test', helpers),
+    null
+  );
+
+  assert.strictEqual(
+    answerWhen('When is the dentist?', [], 'test', helpers),
+    null
+  );
+});
+
+
+test('date-answer module answers from a single readable text date', function () {
+  const w = boot();
+  const entry = {
+    id: 'date-answer-test',
+    text: 'Pay the council tax on Friday',
+    done: false,
+    when: null
+  };
+
+  const result = w.Mopapa.askParts.dateAnswer.answerWhen(
+    'When do I pay council tax?',
+    [entry],
+    'council tax',
+    {
+      isWhenQuestion: function () { return true; },
+      sortByWhen: function () { return 0; },
+      confirmedBySig: function () { return null; },
+      extractTextDate: function () {
+        return { label: 'Friday' };
+      }
+    }
+  );
+
+  assert.strictEqual(
+    result.answer,
+    'You need to pay the council tax on Friday.'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'date-answer-test');
 });
 
 let failed = 0;
