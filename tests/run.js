@@ -29,6 +29,7 @@ function boot(storage) {
     'ask/ask-person-answer',
     'ask/ask-results',
     'ask/ask-match',
+    'ask/ask-match-resolution',
     'ask/ask-ranking',
     'ask/ask-facts',
     'ask/ask-date-text',
@@ -65,6 +66,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-person-answer.js',
     'js/ask/ask-results.js',
     'js/ask/ask-match.js',
+    'js/ask/ask-match-resolution.js',
     'js/ask/ask-ranking.js',
     'js/ask/ask-facts.js',
     'js/ask/ask-date-text.js',
@@ -5387,6 +5389,244 @@ test('learning module returns independent copies of saved summaries', function (
   );
 });
 
+test('match-resolution module exposes its resolver', function () {
+  const w = boot();
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.matchResolution.resolveMatches,
+    'function'
+  );
+});
+
+
+test('match resolution finds exact matches in the requested room', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const wanted = { id: 'wanted', room: 'ideas', text: 'Garden project' };
+  const other = { id: 'other', room: 'notes', text: 'Garden tools' };
+
+  const result = resolve(
+    'garden',
+    [wanted, other],
+    ['garden'],
+    'ideas',
+    null,
+    'garden',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function (entry) {
+        return entry.text.indexOf('Garden') !== -1;
+      },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return []; },
+      questionIntent: { isLocationQuestion: function () { return false; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 0; }
+    }
+  );
+
+  assert.strictEqual(result.matches.length, 1);
+  assert.strictEqual(result.matches[0].id, 'wanted');
+  assert.strictEqual(result.response, null);
+});
+
+
+test('match resolution searches other rooms when the guessed room has no match', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const entry = { id: 'fallback', room: 'notes', text: 'Garden project' };
+
+  const result = resolve(
+    'garden',
+    [entry],
+    ['garden'],
+    'ideas',
+    null,
+    'garden',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return true; },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return []; },
+      questionIntent: { isLocationQuestion: function () { return false; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 0; }
+    }
+  );
+
+  assert.strictEqual(result.matches.length, 1);
+  assert.strictEqual(result.matches[0].id, 'fallback');
+});
+
+
+test('match resolution excludes completed tasks from due-date matches', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const open = { id: 'open', room: 'todo', text: 'Pay bill', done: false };
+  const done = { id: 'done', room: 'todo', text: 'Pay bill', done: true };
+
+  const result = resolve(
+    'Pay bill',
+    [open, done],
+    ['pay', 'bill'],
+    null,
+    { due: true },
+    'bill pay',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return true; },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return []; },
+      questionIntent: { isLocationQuestion: function () { return false; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 0; }
+    }
+  );
+
+  assert.strictEqual(result.matches.length, 1);
+  assert.strictEqual(result.matches[0].id, 'open');
+});
+
+
+test('match resolution returns close suggestions when exact matches are absent', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const close = { id: 'close', text: 'Dentist appointment' };
+
+  const result = resolve(
+    'dentist',
+    [close],
+    ['dentist'],
+    null,
+    null,
+    'dentist',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return false; },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return [close]; },
+      questionIntent: { isLocationQuestion: function () { return false; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 0; }
+    }
+  );
+
+  assert.ok(result.response);
+  assert.ok(result.response.answer.includes('closest saved entries'));
+  assert.strictEqual(result.response.sources[0].id, 'close');
+});
+
+
+test('match resolution does not use typo suggestions for cost questions', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+  let ranked = false;
+
+  const result = resolve(
+    'cost of dentist',
+    [{ id: 'one', text: 'Dentist' }],
+    ['dentist'],
+    null,
+    null,
+    'dentist',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return false; },
+      isCostQuestion: function () { return true; },
+      rankedMatches: function () {
+        ranked = true;
+        return [{ id: 'one', text: 'Dentist' }];
+      },
+      questionIntent: { isLocationQuestion: function () { return false; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 0; }
+    }
+  );
+
+  assert.strictEqual(ranked, false);
+  assert.strictEqual(result.response, null);
+  assert.strictEqual(result.matches.length, 0);
+});
+
+
+test('match resolution prefers the most specific location subject', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const spare = { id: 'spare', text: 'My spare key is in the kitchen' };
+  const wallet = { id: 'wallet', text: 'My wallet is in the kitchen' };
+
+  const result = resolve(
+    'Where is my key?',
+    [spare, wallet],
+    ['key'],
+    null,
+    null,
+    'key',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return true; },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return []; },
+      questionIntent: { isLocationQuestion: function () { return true; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function (entry) {
+        return entry.id === 'spare' ? 10 : 0;
+      }
+    }
+  );
+
+  assert.strictEqual(result.isLocationQuestion, true);
+  assert.strictEqual(result.matches.length, 1);
+  assert.strictEqual(result.matches[0].id, 'spare');
+});
+
+
+test('match resolution keeps equally scored location matches ambiguous', function () {
+  const w = boot();
+  const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
+
+  const first = { id: 'first', text: 'My key is in the kitchen' };
+  const second = { id: 'second', text: 'My key is in the hallway' };
+
+  const result = resolve(
+    'Where is my key?',
+    [first, second],
+    ['key'],
+    null,
+    null,
+    'key',
+    {
+      loggedOn: function () { return true; },
+      textDateMatchesFilter: function () { return false; },
+      includesAllTerms: function () { return true; },
+      isCostQuestion: function () { return false; },
+      rankedMatches: function () { return []; },
+      questionIntent: { isLocationQuestion: function () { return true; } },
+      norm: function (value) { return value.toLowerCase(); },
+      stem: function (value) { return value; },
+      locationMatchScore: function () { return 10; }
+    }
+  );
+
+  assert.strictEqual(result.matches.length, 2);
+});
 
 test('results module exposes its answer handler', function () {
   const w = boot();

@@ -2,7 +2,6 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.ask = (function () {
   var norm = Mopapa.askParts.text.norm;
-  var editDistance = Mopapa.askParts.match.editDistance;
   var termsClose = Mopapa.askParts.match.termsClose;
   var extractTextDate = Mopapa.askParts.dateText.extractTextDate;
   var textDateMatchesFilter = Mopapa.askParts.dateText.textDateMatchesFilter;
@@ -15,7 +14,6 @@ Mopapa.ask = (function () {
   var isCostQuestion = Mopapa.askParts.moneyIntent.isCostQuestion;
   var MONTH_NAMES = Mopapa.askParts.dateText.MONTH_NAMES;
   var words = Mopapa.askParts.text.words;
-  var hasPhrase = Mopapa.askParts.text.hasPhrase;
   var stem = Mopapa.askParts.text.stem;
   var questionIntent = Mopapa.askParts.questionIntent;
   var roomForQuestion = Mopapa.askParts.roomIntent.roomForQuestion;
@@ -171,101 +169,31 @@ Mopapa.ask = (function () {
       };
     }
 
-    function findMatches(roomFilter) {
-      return all.filter(function (e) {
-        if (roomFilter && e.room !== roomFilter) return false;
-
-        if (date && date.due && e.done) return false;
-
-        if (
-          date &&
-          !loggedOn(e, date) &&
-          !textDateMatchesFilter(e, date)
-        ) {
-          return false;
-        }
-
-        return includesAllTerms(e, terms);
-      });
-    }
-
-
-    var matches = findMatches(room);
-
-    // If a room guess produces no result, search all rooms.
-    // A guessed room must not hide a matching saved entry.
-    if (room && !matches.length) {
-      matches = findMatches(null);
-    }
-
-    // Nothing exact: look for close matches (typos, aliases, partial).
-    // The room guess only boosts the ranking here, it never hides entries.
-    if (!matches.length && terms.length && !isCostQuestion(q)) {
-      var closest = rankedMatches(
-        all.filter(function (e) {
-          if (date && date.due && e.done) return false;
-
-          return !date ||
-            loggedOn(e, date) ||
-            textDateMatchesFilter(e, date);
-        }),
-        terms,
-        room,
-        sig
-      );
-
-      if (closest.length) {
-        return {
-          answer: 'I could not find an exact match, but these are the closest saved entries:\n' +
-            closest.map(function (entry) {
-              return '• ' + entry.text;
-            }).join('\n'),
-          sources: closest
-        };
+    var resolution = Mopapa.askParts.matchResolution.resolveMatches(
+      q,
+      all,
+      terms,
+      room,
+      date,
+      sig,
+      {
+        loggedOn: loggedOn,
+        textDateMatchesFilter: textDateMatchesFilter,
+        includesAllTerms: includesAllTerms,
+        isCostQuestion: isCostQuestion,
+        rankedMatches: rankedMatches,
+        questionIntent: questionIntent,
+        norm: norm,
+        stem: stem,
+        locationMatchScore: Mopapa.askParts.facts.locationMatchScore
       }
-    }
+    );
 
-    // Prefer a saved entry whose subject directly matches the question.
-    var isLocationQuestion = questionIntent.isLocationQuestion(q);
+    if (resolution.response) return resolution.response;
 
-    if (isLocationQuestion && matches.length > 1) {
-      var scoredMatches = matches.map(function (entry) {
-        var text = norm(String(entry.text || ''));
-        var subject = text.split(/\b(?:is|are)\b/)[0].trim();
-        var score = Mopapa.askParts.facts.locationMatchScore(
-          entry,
-          terms,
-          norm,
-          stem
-        );
-
-        // Penalise extra subject words that the question did not ask for.
-        var subjectWords = subject.split(' ').filter(Boolean);
-        var extraWords = subjectWords.filter(function (word) {
-          return terms.indexOf(stem(word)) === -1 &&
-            ['my', 'the', 'a', 'an', 'spare'].indexOf(word) === -1;
-        });
-
-        score -= extraWords.length * 20;
-
-        return {
-          entry: entry,
-          score: score
-        };
-      });
-
-      scoredMatches.sort(function (a, b) {
-        return b.score - a.score;
-      });
-
-      if (
-        scoredMatches.length > 1 &&
-        scoredMatches[0].score > scoredMatches[1].score
-      ) {
-        matches = [scoredMatches[0].entry];
-      }
-    }
-
+    var matches = resolution.matches;
+    var isLocationQuestion = resolution.isLocationQuestion;
+    
     // Structured answers: newest saved location wins, and place lists
     // only show things whose newest location is that place.
     if (!date) {
