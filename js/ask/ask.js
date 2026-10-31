@@ -278,20 +278,6 @@ Mopapa.ask = (function () {
       }
     }
 
-    var whenAnswer = Mopapa.askParts.dateAnswer.answerWhen(
-      q,
-      matches,
-      sig,
-      {
-        isWhenQuestion: isWhenQuestion,
-        sortByWhen: sortByWhen,
-        confirmedBySig: learning.confirmedBySig,
-        extractTextDate: extractTextDate
-      }
-    );
-
-    if (whenAnswer) return whenAnswer;
-
     var nextAppointmentAnswer = Mopapa.askParts.dateIntent.answerNextAppointment(
       q,
       all,
@@ -308,6 +294,19 @@ Mopapa.ask = (function () {
 
     if (overdueAnswer) return overdueAnswer;
 
+    var whenAnswer = Mopapa.askParts.dateAnswer.answerWhen(
+      q,
+      matches,
+      sig,
+      {
+        isWhenQuestion: isWhenQuestion,
+        sortByWhen: sortByWhen,
+        confirmedBySig: learning.confirmedBySig,
+        extractTextDate: extractTextDate
+      }
+    );
+
+    if (whenAnswer) return whenAnswer;
 
     var whoForAnswer = Mopapa.askParts.people.answerWhoSomethingIsFor(
       q,
