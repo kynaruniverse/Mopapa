@@ -33,6 +33,7 @@ function boot(storage) {
     'ask/ask-date-text',
     'ask/ask-date-filter',
     'ask/ask-date-intent',
+    'ask/ask-date-overview',
     'ask/ask-money-intent',
     'ask/ask-date-answer',
     'ask/ask-location-answer',
@@ -67,7 +68,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-date-text.js',
     'js/ask/ask-date-filter.js',
     'js/ask/ask-date-intent.js',
-    'js/ask/ask-date-answer.js',
+    'js/ask/ask-date-overview.js',
+    'js/ask/ask-date-answer.js',,
     'js/ask/ask-location-answer.js',
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
@@ -5380,6 +5382,88 @@ test('learning module returns independent copies of saved summaries', function (
   assert.strictEqual(
     second.unanswered[0].q,
     'Where are my keys?'
+  );
+});
+
+test('date-overview module exposes both answer handlers', function () {
+  const w = boot();
+  const overview = w.Mopapa.askParts.dateOverview;
+
+  assert.strictEqual(typeof overview.answerNextAppointment, 'function');
+  assert.strictEqual(typeof overview.answerOverdueTasks, 'function');
+});
+
+
+test('date-overview identifies the next upcoming appointment', function () {
+  const w = boot();
+  const overview = w.Mopapa.askParts.dateOverview;
+
+  const entry = {
+    id: 'next-appointment-test',
+    text: 'Dentist appointment',
+    room: 'appointments',
+    done: false,
+    when: '2099-06-15',
+    hasTime: false
+  };
+
+  const result = overview.answerNextAppointment(
+    'What is my next appointment?',
+    [entry],
+    function (a, b) {
+      return new Date(a.when) - new Date(b.when);
+    }
+  );
+
+  assert.ok(result);
+  assert.ok(result.answer.includes('Dentist appointment'));
+  assert.strictEqual(result.sources[0].id, 'next-appointment-test');
+});
+
+
+test('date-overview identifies overdue unfinished tasks', function () {
+  const w = boot();
+  const overview = w.Mopapa.askParts.dateOverview;
+
+  const entry = {
+    id: 'overdue-task-test',
+    text: 'Renew car insurance',
+    room: 'todo',
+    done: false,
+    when: '2000-01-01',
+    hasTime: false
+  };
+
+  const result = overview.answerOverdueTasks(
+    'Show my overdue tasks',
+    [entry],
+    function (a, b) {
+      return new Date(a.when) - new Date(b.when);
+    }
+  );
+
+  assert.ok(result);
+  assert.ok(result.answer.includes('Renew car insurance'));
+  assert.strictEqual(result.sources[0].id, 'overdue-task-test');
+});
+
+
+test('date-overview ignores unrelated questions', function () {
+  const w = boot();
+  const overview = w.Mopapa.askParts.dateOverview;
+
+  assert.strictEqual(
+    overview.answerNextAppointment('What did I save?', [], function () {
+      return 0;
+    }),
+    null
+  );
+
+  assert.strictEqual(
+    overview.answerOverdueTasks('Where are my keys?', [], function () {
+      return 0;
+    }),
+    null
   );
 });
 

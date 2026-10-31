@@ -278,7 +278,7 @@ Mopapa.ask = (function () {
       }
     }
 
-    var nextAppointmentAnswer = Mopapa.askParts.dateIntent.answerNextAppointment(
+    var nextAppointmentAnswer = Mopapa.askParts.dateOverview.answerNextAppointment(
       q,
       all,
       sortByWhen
@@ -286,7 +286,7 @@ Mopapa.ask = (function () {
 
     if (nextAppointmentAnswer) return nextAppointmentAnswer;
 
-    var overdueAnswer = Mopapa.askParts.dateIntent.answerOverdueTasks(
+    var overdueAnswer = Mopapa.askParts.dateOverview.answerOverdueTasks(
       q,
       all,
       sortByWhen
