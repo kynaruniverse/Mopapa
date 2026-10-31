@@ -844,7 +844,7 @@ test('date-overview next appointment handler selects the earliest upcoming appoi
   assert.ok(/Dentist check-up/.test(result.answer), result.answer);
 
   assert.strictEqual(
-    intent.answerNextAppointment(
+    dateOverview.answerNextAppointment(
       'What is my next dentist appointment?',
       entries,
       function (a, b) {
@@ -910,7 +910,7 @@ test('date-overview overdue handler excludes completed and non-task entries', fu
   assert.ok(/1 overdue task/.test(result.answer), result.answer);
 
   assert.strictEqual(
-    intent.answerOverdueTasks(
+    dateOverview.answerOverdueTasks(
       'What are my tasks?',
       entries,
       function (a, b) {
