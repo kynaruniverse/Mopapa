@@ -34,6 +34,7 @@ function boot(storage) {
     'ask/ask-date-intent',
     'ask/ask-money-intent',
     'ask/ask-date-answer',
+    'ask/ask-location-answer',
     'ask/ask-money-answer',
     'ask/ask-money-format',
     'ask/ask-question-intent',
@@ -65,6 +66,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-date-filter.js',
     'js/ask/ask-date-intent.js',
     'js/ask/ask-date-answer.js',
+    'js/ask/ask-location-answer.js',
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
     'js/ask/ask-money-format.js',
@@ -5442,6 +5444,106 @@ test('date-answer module answers from a single readable text date', function () 
 
   assert.strictEqual(result.sources.length, 1);
   assert.strictEqual(result.sources[0].id, 'date-answer-test');
+});
+
+test('location-answer module exposes its public function', function () {
+  const w = boot();
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.locationAnswer.answerLocation,
+    'function'
+  );
+});
+
+
+test('location-answer module answers a singular location question', function () {
+  const w = boot();
+  const entry = {
+    id: 'keys-location',
+    text: 'My spare key is in the kitchen drawer.'
+  };
+
+  const result = w.Mopapa.askParts.locationAnswer.answerLocation(
+    'Where is my spare key?',
+    [entry],
+    true,
+    w.Mopapa.askParts.text.norm
+  );
+
+  assert.strictEqual(result.answer, 'It is in the kitchen drawer.');
+  assert.strictEqual(result.sources[0].id, 'keys-location');
+});
+
+
+test('location-answer module answers plural location questions', function () {
+  const w = boot();
+  const entry = {
+    id: 'keys-location',
+    text: 'My keys are in the kitchen drawer.'
+  };
+
+  const result = w.Mopapa.askParts.locationAnswer.answerLocation(
+    'Where are my keys?',
+    [entry],
+    true,
+    w.Mopapa.askParts.text.norm
+  );
+
+  assert.strictEqual(result.answer, 'They are in the kitchen drawer.');
+  assert.strictEqual(result.sources[0].id, 'keys-location');
+});
+
+
+test('location-answer module does not misrepresent a singular saved item as plural', function () {
+  const w = boot();
+  const entry = {
+    id: 'key-location',
+    text: 'My spare key is in the kitchen drawer.'
+  };
+
+  const result = w.Mopapa.askParts.locationAnswer.answerLocation(
+    'Where are my keys?',
+    [entry],
+    true,
+    w.Mopapa.askParts.text.norm
+  );
+
+  assert.strictEqual(
+    result.answer,
+    'I found this saved item: My spare key is in the kitchen drawer.'
+  );
+});
+
+
+test('location-answer module ignores unrelated questions and ambiguous matches', function () {
+  const w = boot();
+  const answerLocation = w.Mopapa.askParts.locationAnswer.answerLocation;
+  const norm = w.Mopapa.askParts.text.norm;
+
+  const first = {
+    id: 'one',
+    text: 'My keys are in the kitchen drawer.'
+  };
+
+  const second = {
+    id: 'two',
+    text: 'My wallet is in the bedroom.'
+  };
+
+  assert.strictEqual(
+    answerLocation('What did I save?', [first], false, norm),
+    null
+  );
+
+  assert.strictEqual(
+    answerLocation('Where are my keys?', [], true, norm),
+    null
+  );
+
+  assert.strictEqual(
+    answerLocation('Where are my things?', [first, second], true, norm),
+    null
+  );
 });
 
 let failed = 0;
