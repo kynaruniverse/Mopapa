@@ -50,39 +50,10 @@ Mopapa.ask = (function () {
     );
   }
 
-  // ---- Structured facts (where things are) ----
+  // ---- Structured facts ----
 
   var currentLocations = Mopapa.askParts.facts.currentLocations;
   var isStale = Mopapa.askParts.facts.isStale;
-  var whereStems = Mopapa.askParts.facts.whereStems;
-  var DETS = Mopapa.askParts.facts.dets;
-
-  function structuredWhere(terms, all) {
-    return Mopapa.askParts.facts.structuredWhere(
-      terms,
-      all,
-      {
-        currentLocations: currentLocations,
-        aliases: aliasModule.map,
-        confirmedBySig: learning.confirmedBySig
-      }
-    );
-  }
-
-  function structuredItems(q, all) {
-    return Mopapa.askParts.facts.structuredItems(
-      q,
-      all,
-      {
-        norm: norm,
-        words: words,
-        stem: stem,
-        dets: DETS,
-        currentLocations: currentLocations,
-        whereStems: whereStems
-      }
-    );
-  }
 
   function formatMoney(n) {
     return Mopapa.askParts.moneyFormat.formatMoney(n);
@@ -194,17 +165,23 @@ Mopapa.ask = (function () {
     var matches = resolution.matches;
     var isLocationQuestion = resolution.isLocationQuestion;
     
-    // Structured answers: newest saved location wins, and place lists
-    // only show things whose newest location is that place.
-    if (!date) {
-      var placeList = structuredItems(q, all);
-      if (placeList) return placeList;
-
-      if (isLocationQuestion) {
-        var placeAnswer = structuredWhere(terms, all);
-        if (placeAnswer) return placeAnswer;
+    // Structured answers: item lists take priority over location lookups.
+    var structuredAnswer = Mopapa.askParts.factAnswer.answerStructured(
+      q,
+      terms,
+      all,
+      date,
+      isLocationQuestion,
+      {
+        norm: norm,
+        words: words,
+        stem: stem,
+        aliases: aliasModule.map,
+        confirmedBySig: learning.confirmedBySig
       }
-    }
+    );
+
+    if (structuredAnswer) return structuredAnswer;
 
     var nextAppointmentAnswer = Mopapa.askParts.dateOverview.answerNextAppointment(
       q,

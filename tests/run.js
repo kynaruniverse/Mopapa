@@ -32,6 +32,7 @@ function boot(storage) {
     'ask/ask-match-resolution',
     'ask/ask-ranking',
     'ask/ask-facts',
+    'ask/ask-fact-answer',
     'ask/ask-date-text',
     'ask/ask-date-filter',
     'ask/ask-date-intent',
@@ -69,6 +70,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-match-resolution.js',
     'js/ask/ask-ranking.js',
     'js/ask/ask-facts.js',
+    'js/ask/ask-fact-answer.js',
     'js/ask/ask-date-text.js',
     'js/ask/ask-date-filter.js',
     'js/ask/ask-date-intent.js',
@@ -3357,6 +3359,138 @@ test('ask facts module exposes structured answer functions', function () {
 
   assert.strictEqual(typeof facts.structuredWhere, 'function');
   assert.strictEqual(typeof facts.structuredItems, 'function');
+});
+
+test('fact-answer module exposes its structured answer handler', function () {
+  const w = boot({});
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.factAnswer.answerStructured,
+    'function'
+  );
+});
+
+
+test('fact-answer skips structured lookups when a date filter is active', function () {
+  const w = boot({});
+  const facts = w.Mopapa.askParts.facts;
+  const originalItems = facts.structuredItems;
+  const originalWhere = facts.structuredWhere;
+  let called = false;
+
+  facts.structuredItems = function () {
+    called = true;
+    return null;
+  };
+
+  facts.structuredWhere = function () {
+    called = true;
+    return null;
+  };
+
+  const result = w.Mopapa.askParts.factAnswer.answerStructured(
+    'What is in the kitchen?',
+    ['kitchen'],
+    [],
+    { due: true },
+    true,
+    {
+      norm: function (value) { return value; },
+      words: function () { return []; },
+      stem: function (value) { return value; },
+      aliases: {},
+      confirmedBySig: function () { return null; }
+    }
+  );
+
+  facts.structuredItems = originalItems;
+  facts.structuredWhere = originalWhere;
+
+  assert.strictEqual(result, null);
+  assert.strictEqual(called, false);
+});
+
+
+test('fact-answer checks item lists before structured location answers', function () {
+  const w = boot({});
+  const facts = w.Mopapa.askParts.facts;
+  const originalItems = facts.structuredItems;
+  const originalWhere = facts.structuredWhere;
+  const order = [];
+  const expected = {
+    answer: 'Kitchen: keys.',
+    sources: []
+  };
+
+  facts.structuredItems = function () {
+    order.push('items');
+    return expected;
+  };
+
+  facts.structuredWhere = function () {
+    order.push('where');
+    return null;
+  };
+
+  const result = w.Mopapa.askParts.factAnswer.answerStructured(
+    'What is in the kitchen?',
+    ['kitchen'],
+    [],
+    null,
+    true,
+    {
+      norm: function (value) { return value; },
+      words: function () { return ['kitchen']; },
+      stem: function (value) { return value; },
+      aliases: {},
+      confirmedBySig: function () { return null; }
+    }
+  );
+
+  facts.structuredItems = originalItems;
+  facts.structuredWhere = originalWhere;
+
+  assert.strictEqual(result, expected);
+  assert.deepStrictEqual(order, ['items']);
+});
+
+
+test('fact-answer does not run location lookup for non-location questions', function () {
+  const w = boot({});
+  const facts = w.Mopapa.askParts.facts;
+  const originalItems = facts.structuredItems;
+  const originalWhere = facts.structuredWhere;
+  let whereCalled = false;
+
+  facts.structuredItems = function () {
+    return null;
+  };
+
+  facts.structuredWhere = function () {
+    whereCalled = true;
+    return null;
+  };
+
+  const result = w.Mopapa.askParts.factAnswer.answerStructured(
+    'Tell me about the kitchen',
+    ['kitchen'],
+    [],
+    null,
+    false,
+    {
+      norm: function (value) { return value; },
+      words: function () { return ['kitchen']; },
+      stem: function (value) { return value; },
+      aliases: {},
+      confirmedBySig: function () { return null; }
+    }
+  );
+
+  facts.structuredItems = originalItems;
+  facts.structuredWhere = originalWhere;
+
+  assert.strictEqual(result, null);
+  assert.strictEqual(whereCalled, false);
 });
 
 test('ask text module normalises text and matches words consistently', function () {
