@@ -22,7 +22,6 @@ Mopapa.ask = (function () {
   var queryTerms = Mopapa.askParts.query.queryTerms;
 
   var aliasModule = Mopapa.askParts.aliases;
-  var ALIAS_MAP = aliasModule.map;
 
   function entryStems(e) {
     return Mopapa.askParts.match.entryStems(e, norm, stem);
@@ -849,7 +848,7 @@ Mopapa.ask = (function () {
 
   return {
     answer: answer,
-    addAlias: addAlias,
+    addAlias: aliasModule.addAlias,
     teachAlias: teachAlias,
     forgetAlias: forgetAlias,
     confirmSource: confirmSource,
