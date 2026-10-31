@@ -31,6 +31,7 @@ function boot(storage) {
     'ask/ask-match',
     'ask/ask-match-resolution',
     'ask/ask-ranking',
+    'ask/ask-match-context',
     'ask/ask-facts',
     'ask/ask-fact-answer',
     'ask/ask-date-text',
@@ -69,6 +70,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-match.js',
     'js/ask/ask-match-resolution.js',
     'js/ask/ask-ranking.js',
+    'js/ask/ask-match-context.js',
     'js/ask/ask-facts.js',
     'js/ask/ask-fact-answer.js',
     'js/ask/ask-date-text.js',
@@ -3332,6 +3334,130 @@ test('ask ranking module exposes its matching functions', function () {
 
   assert.strictEqual(typeof ranking.termStrength, 'function');
   assert.strictEqual(typeof ranking.rankedMatches, 'function');
+});
+
+test('match-context module exposes its factory', function () {
+  const w = boot({});
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.matchContext.create,
+    'function'
+  );
+});
+
+
+test('match-context exposes all three matching operations', function () {
+  const w = boot({});
+  const context = w.Mopapa.askParts.matchContext.create({
+    norm: w.Mopapa.askParts.text.norm,
+    stem: w.Mopapa.askParts.text.stem,
+    aliases: {},
+    termsClose: w.Mopapa.askParts.match.termsClose,
+    learnedData: function () {
+      return { boosts: {} };
+    },
+    sortNewest: function () {
+      return 0;
+    }
+  });
+
+  assert.strictEqual(typeof context.entryStems, 'function');
+  assert.strictEqual(typeof context.includesAllTerms, 'function');
+  assert.strictEqual(typeof context.rankedMatches, 'function');
+});
+
+
+test('match-context matches saved words through the shared stemmer', function () {
+  const w = boot({});
+  const context = w.Mopapa.askParts.matchContext.create({
+    norm: w.Mopapa.askParts.text.norm,
+    stem: w.Mopapa.askParts.text.stem,
+    aliases: {},
+    termsClose: w.Mopapa.askParts.match.termsClose,
+    learnedData: function () {
+      return { boosts: {} };
+    },
+    sortNewest: function () {
+      return 0;
+    }
+  });
+
+  const entry = {
+    id: 'context-stem',
+    text: 'I bought some apples',
+    tags: []
+  };
+
+  assert.strictEqual(
+    context.includesAllTerms(entry, ['buy', 'appl']),
+    true
+  );
+
+  assert.strictEqual(
+    context.includesAllTerms(entry, ['computer']),
+    false
+  );
+});
+
+
+test('match-context passes alias matching into the shared matcher', function () {
+  const w = boot({});
+  const context = w.Mopapa.askParts.matchContext.create({
+    norm: w.Mopapa.askParts.text.norm,
+    stem: w.Mopapa.askParts.text.stem,
+    aliases: { gp: ['doctor'] },
+    termsClose: w.Mopapa.askParts.match.termsClose,
+    learnedData: function () {
+      return { boosts: {} };
+    },
+    sortNewest: function () {
+      return 0;
+    }
+  });
+
+  const entry = {
+    id: 'context-alias',
+    text: 'I saw the doctor',
+    tags: []
+  };
+
+  assert.strictEqual(
+    context.includesAllTerms(entry, ['gp']),
+    true
+  );
+});
+
+
+test('match-context ranking returns matching saved entries', function () {
+  const w = boot({});
+  const context = w.Mopapa.askParts.matchContext.create({
+    norm: w.Mopapa.askParts.text.norm,
+    stem: w.Mopapa.askParts.text.stem,
+    aliases: {},
+    termsClose: w.Mopapa.askParts.match.termsClose,
+    learnedData: function () {
+      return { boosts: {} };
+    },
+    sortNewest: function () {
+      return 0;
+    }
+  });
+
+  const entry = {
+    id: 'context-ranking',
+    text: 'Dentist appointment next week',
+    tags: []
+  };
+
+  const results = context.rankedMatches(
+    [entry],
+    ['dentist'],
+    null,
+    'dentist'
+  );
+
+  assert.strictEqual(results.length, 1);
+  assert.strictEqual(results[0].id, 'context-ranking');
 });
 
 test('ask facts keeps prototype-like location words', function () {

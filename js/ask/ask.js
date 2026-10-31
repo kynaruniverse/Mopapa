@@ -20,33 +20,31 @@ Mopapa.ask = (function () {
   var queryTerms = Mopapa.askParts.query.queryTerms;
 
   var aliasModule = Mopapa.askParts.aliases;
+  var learning = Mopapa.askParts.learning;
+
+  var matchContext = Mopapa.askParts.matchContext.create({
+    norm: norm,
+    stem: stem,
+    aliases: aliasModule.map,
+    termsClose: termsClose,
+    learnedData: learning.learnedData,
+    sortNewest: sortNewest
+  });
 
   function entryStems(e) {
-    return Mopapa.askParts.match.entryStems(e, norm, stem);
+    return matchContext.entryStems(e);
   }
 
   function includesAllTerms(e, terms) {
-    return Mopapa.askParts.match.includesAllTerms(
-      e,
-      terms,
-      entryStems,
-      aliasModule.map
-    );
+    return matchContext.includesAllTerms(e, terms);
   }
   
   function rankedMatches(entries, terms, room, sig) {
-    return Mopapa.askParts.ranking.rankedMatches(
+    return matchContext.rankedMatches(
       entries,
       terms,
       room,
-      sig,
-      {
-        aliases: aliasModule.map,
-        termsClose: termsClose,
-        learnedData: learning.learnedData,
-        entryStems: entryStems,
-        sortNewest: sortNewest
-      }
+      sig
     );
   }
 
@@ -59,7 +57,6 @@ Mopapa.ask = (function () {
     return Mopapa.askParts.moneyFormat.formatMoney(n);
   }
 
-  var learning = Mopapa.askParts.learning;
   
   function roomName(id) {
     var r = Mopapa.roomById(id);
