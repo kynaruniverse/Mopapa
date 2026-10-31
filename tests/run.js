@@ -1426,7 +1426,17 @@ test('question detection recognises doctor-related sentence fragments', function
     'How the boiler works',
     'How my mum felt after surgery',
     'Who the parcel is for',
-    'Why the medication changed'
+    'Why the medication changed',
+    'What your doctor recommended',
+    'What your mum said about the appointment',
+    'When your next appointment is',
+    'When its warranty expires',
+    'Where your passport is kept',
+    'Where your spare keys belong',
+    'Who your doctor is',
+    'Who its previous owner was',
+    'How your boiler works',
+    'Why your car insurance changed'
   ];
 
   statements.forEach(function (text) {
@@ -1438,6 +1448,28 @@ test('question detection recognises doctor-related sentence fragments', function
   });
 });
 
+test('question detection distinguishes possessive fragments from direct questions', function () {
+  const w = boot({});
+
+  const cases = [
+    { text: 'What your doctor recommended', expected: null },
+    { text: 'Where your passport is kept', expected: null },
+    { text: 'Who your doctor is', expected: null },
+    { text: 'How its engine works', expected: null },
+    { text: 'What is your doctor recommending', expected: 'sure' },
+    { text: 'Where is your passport', expected: 'sure' },
+    { text: 'Who is your doctor', expected: 'sure' },
+    { text: 'How does its engine work', expected: 'sure' }
+  ];
+
+  cases.forEach(function (item) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(item.text),
+      item.expected,
+      'Unexpected question classification: ' + item.text
+    );
+  });
+});
 
 test('question detection still recognises direct questions without question marks', function () {
   const w = boot({});
