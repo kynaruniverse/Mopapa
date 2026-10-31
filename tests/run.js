@@ -26,6 +26,7 @@ function boot(storage) {
     'memory/search',
     'ask/ask-text',
     'ask/ask-people',
+    'ask/ask-person-answer',
     'ask/ask-match',
     'ask/ask-ranking',
     'ask/ask-facts',
@@ -59,6 +60,7 @@ test('ask modules are loaded once and before ask.js', function () {
   const modules = [
     'js/ask/ask-text.js',
     'js/ask/ask-people.js',
+    'js/ask/ask-person-answer.js',
     'js/ask/ask-match.js',
     'js/ask/ask-ranking.js',
     'js/ask/ask-facts.js',
@@ -5544,6 +5546,69 @@ test('location-answer module ignores unrelated questions and ambiguous matches',
     answerLocation('Where are my things?', [first, second], true, norm),
     null
   );
+});
+
+test('person-answer module exposes both answer handlers', function () {
+  const w = boot();
+  const answers = w.Mopapa.askParts.personAnswer;
+
+  assert.strictEqual(
+    typeof answers.answerWhoSomethingIsFor,
+    'function'
+  );
+
+  assert.strictEqual(
+    typeof answers.answerCalledName,
+    'function'
+  );
+});
+
+
+test('person-answer module identifies one recipient without changing its source', function () {
+  const w = boot();
+  const answers = w.Mopapa.askParts.personAnswer;
+
+  const entry = {
+    id: 'recipient-test',
+    text: 'The parcel is for Jasmine Smith'
+  };
+
+  const result = answers.answerWhoSomethingIsFor(
+    'Who is the parcel for?',
+    [entry]
+  );
+
+  assert.strictEqual(
+    result.answer,
+    'It looks like it is for Jasmine Smith.'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'recipient-test');
+});
+
+
+test('person-answer module identifies a called name from its saved entry', function () {
+  const w = boot();
+  const answers = w.Mopapa.askParts.personAnswer;
+
+  const entry = {
+    id: 'called-name-test',
+    text: 'The dentist is called Dr Smith.'
+  };
+
+  const result = answers.answerCalledName(
+    'What is the dentist called?',
+    [entry]
+  );
+
+  assert.strictEqual(
+    result.answer,
+    'The dentist is called Dr Smith.'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'called-name-test');
 });
 
 let failed = 0;

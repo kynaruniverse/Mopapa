@@ -308,7 +308,7 @@ Mopapa.ask = (function () {
 
     if (whenAnswer) return whenAnswer;
 
-    var whoForAnswer = Mopapa.askParts.people.answerWhoSomethingIsFor(
+    var whoForAnswer = Mopapa.askParts.personAnswer.answerWhoSomethingIsFor(
       q,
       matches
     );
@@ -324,7 +324,7 @@ Mopapa.ask = (function () {
 
     if (locationAnswer) return locationAnswer;
     
-    var calledNameAnswer = Mopapa.askParts.people.answerCalledName(
+    var calledNameAnswer = Mopapa.askParts.personAnswer.answerCalledName(
       q,
       matches
     );
