@@ -69,7 +69,7 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-date-filter.js',
     'js/ask/ask-date-intent.js',
     'js/ask/ask-date-overview.js',
-    'js/ask/ask-date-answer.js',,
+    'js/ask/ask-date-answer.js',
     'js/ask/ask-location-answer.js',
     'js/ask/ask-money-intent.js',
     'js/ask/ask-money-answer.js',
