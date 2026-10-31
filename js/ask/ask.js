@@ -347,8 +347,10 @@ Mopapa.ask = (function () {
       currentLocations: currentLocations,
       isStale: isStale
     });
+  }
 
   return {
+    answer: answer,
     answer: answer,
     addAlias: aliasModule.addAlias,
     teachAlias: learning.teachAlias,
