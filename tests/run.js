@@ -1413,6 +1413,73 @@ test('question-shaped text is not a dead end', function () {
   assert.notStrictEqual(w.Mopapa.rules.questionLevel('What if I built a cat cafe?'), 'sure');
 });
 
+test('question detection recognises doctor-related sentence fragments', function () {
+  const w = boot({});
+
+  const statements = [
+    'What the doctor said about surgery',
+    'What our GP recommended yesterday',
+    'When my appointment is',
+    'When the doctor called',
+    'Where the spare key belongs',
+    'Where our passports are',
+    'How the boiler works',
+    'How my mum felt after surgery',
+    'Who the parcel is for',
+    'Why the medication changed'
+  ];
+
+  statements.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Should be filed as a statement: ' + text
+    );
+  });
+});
+
+
+test('question detection still recognises direct questions without question marks', function () {
+  const w = boot({});
+
+  const questions = [
+    'What is the dentist number',
+    'When is the appointment',
+    'Where are my keys',
+    'Who is the parcel for',
+    'How do I reset the boiler',
+    'Which one should I choose',
+    'Why did the boiler stop',
+    'Whose keys are these'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Should be recognised as a question: ' + text
+    );
+  });
+});
+
+
+test('question detection preserves explicit question marks', function () {
+  const w = boot({});
+
+  const questions = [
+    'What the doctor said about surgery?',
+    'When my appointment is?',
+    'Where the spare key belongs?'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure'
+    );
+  });
+});
+
 test('question detection does not misroute statements into Ask', function () {
   const w = boot({});
   const statements = [

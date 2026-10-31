@@ -183,8 +183,27 @@ Mopapa.talk = (function () {
     if (result.missed && Mopapa.ask.logUnanswered(text) && Mopapa.askLearningUI) {
       Mopapa.askLearningUI.render();
     }
+
     renderSources(result.sources);
+
     Mopapa.pet.react(result.sources.length ? 'helpful' : 'curious');
+
+    if (result.missed) {
+      showChoices([
+        {
+          label: 'Keep this instead',
+          primary: true,
+          fn: function () {
+            endChoices();
+            fileIt(text);
+          }
+        },
+        {
+          label: 'Not now',
+          fn: cancel
+        }
+      ]);
+    }
   }
 
   function fileIt(text) {
