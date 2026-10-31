@@ -39,6 +39,7 @@ function boot(storage) {
     'ask/ask-room-intent',
     'ask/ask-query',
     'ask/ask-aliases',
+    'ask/ask-learning',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -68,7 +69,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-question-intent.js',
     'js/ask/ask-room-intent.js',
     'js/ask/ask-query.js',
-    'js/ask/ask-aliases.js'
+    'js/ask/ask-aliases.js',
+    'js/ask/ask-learning.js'
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -5304,6 +5306,74 @@ test('resetting aliases restores built-ins and removes temporary aliases', funct
 
   assert.ok(
     aliases.map[stem('gp')].includes(stem('doctor'))
+  );
+});
+
+test('learning module exposes its complete public interface', function () {
+  const w = boot();
+  const learning = w.Mopapa.askParts.learning;
+
+  [
+    'learnedData',
+    'applyLearned',
+    'rebuildAliases',
+    'teachAlias',
+    'forgetAlias',
+    'signatureOf',
+    'confirmSource',
+    'clearConfirmed',
+    'confirmedBySig',
+    'logUnanswered',
+    'clearUnanswered',
+    'learned'
+  ].forEach(function (name) {
+    assert.strictEqual(
+      typeof learning[name],
+      'function',
+      name + ' must be exposed'
+    );
+  });
+});
+
+
+test('learning module creates stable question signatures', function () {
+  const w = boot();
+  const learning = w.Mopapa.askParts.learning;
+
+  assert.strictEqual(
+    learning.signatureOf('Where is my car?'),
+    learning.signatureOf('Where is the car?')
+  );
+
+  assert.strictEqual(
+    learning.signatureOf('Where is my car?'),
+    learning.signatureOf('car where is my')
+  );
+});
+
+
+test('learning module returns independent copies of saved summaries', function () {
+  const w = boot(stored([], {}, {
+    aliases: [['couch', 'sofa']],
+    boosts: {},
+    unanswered: [
+      { q: 'Where are my keys?', at: '2026-01-01' }
+    ]
+  }));
+
+  w.Mopapa.store.load();
+
+  const first = w.Mopapa.askParts.learning.learned();
+
+  first.aliases[0][0] = 'changed';
+  first.unanswered[0].q = 'changed';
+
+  const second = w.Mopapa.askParts.learning.learned();
+
+  assert.strictEqual(second.aliases[0][0], 'couch');
+  assert.strictEqual(
+    second.unanswered[0].q,
+    'Where are my keys?'
   );
 });
 
