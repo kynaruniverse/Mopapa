@@ -124,7 +124,9 @@ function bootTalk() {
     'confirm': makeTalkElement(),
     'answer-sources': makeTalkElement()
   };
-
+  elements.confirm.hidden = true;
+  elements['answer-sources'].hidden = true;
+  
   const calls = [];
 
   const M = {
