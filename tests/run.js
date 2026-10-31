@@ -805,9 +805,9 @@ test('ask: historical event questions are treated as logged questions', function
   );
 });
 
-test('date-intent next appointment handler selects the earliest upcoming appointment', function () {
+test('date-overview next appointment handler selects the earliest upcoming appointment', function () {
   const w = boot({});
-  const intent = w.Mopapa.askParts.dateIntent;
+  const dateOverview = w.Mopapa.askParts.dateOverview;
 
   const soon = new Date(Date.now() + 2 * 86400000).toISOString();
   const later = new Date(Date.now() + 5 * 86400000).toISOString();
@@ -831,7 +831,7 @@ test('date-intent next appointment handler selects the earliest upcoming appoint
     }
   ];
 
-  const result = intent.answerNextAppointment(
+  const result = dateOverview.answerNextAppointment(
     'What is my next appointment?',
     entries,
     function (a, b) {
@@ -855,9 +855,9 @@ test('date-intent next appointment handler selects the earliest upcoming appoint
   );
 });
 
-test('date-intent overdue handler excludes completed and non-task entries', function () {
+test('date-overview overdue handler excludes completed and non-task entries', function () {
   const w = boot({});
-  const intent = w.Mopapa.askParts.dateIntent;
+  const dateOverview = w.Mopapa.askParts.dateOverview;
   const past = new Date(Date.now() - 4 * 86400000).toISOString();
 
   const entries = [
@@ -897,7 +897,7 @@ test('date-intent overdue handler excludes completed and non-task entries', func
 
   ];
 
-  const result = intent.answerOverdueTasks(
+  const result = dateOverview.answerOverdueTasks(
     'Show me my overdue tasks',
     entries,
     function (a, b) {
