@@ -162,92 +162,103 @@ Mopapa.ask = (function () {
     var matches = resolution.matches;
     var isLocationQuestion = resolution.isLocationQuestion;
     
-    // Structured answers: item lists take priority over location lookups.
-    var structuredAnswer = Mopapa.askParts.factAnswer.answerStructured(
-      q,
-      terms,
-      all,
-      date,
-      isLocationQuestion,
-      {
-        norm: norm,
-        words: words,
-        stem: stem,
-        aliases: aliasModule.map,
-        confirmedBySig: learning.confirmedBySig
+
+    return Mopapa.askParts.answerFlow.resolve(q, matches, {
+      sortNewest: sortNewest,
+      isCostQuestion: isCostQuestion,
+
+      handlers: {
+        structured: function () {
+          return Mopapa.askParts.factAnswer.answerStructured(
+            q,
+            terms,
+            all,
+            date,
+            isLocationQuestion,
+            {
+              norm: norm,
+              words: words,
+              stem: stem,
+              aliases: aliasModule.map,
+              confirmedBySig: learning.confirmedBySig
+            }
+          );
+        },
+
+        nextAppointment: function () {
+          return Mopapa.askParts.dateOverview.answerNextAppointment(
+            q,
+            all,
+            sortByWhen
+          );
+        },
+
+        overdue: function () {
+          return Mopapa.askParts.dateOverview.answerOverdueTasks(
+            q,
+            all,
+            sortByWhen
+          );
+        },
+
+        when: function () {
+          return Mopapa.askParts.dateAnswer.answerWhen(
+            q,
+            matches,
+            sig,
+            {
+              isWhenQuestion: isWhenQuestion,
+              sortByWhen: sortByWhen,
+              confirmedBySig: learning.confirmedBySig,
+              extractTextDate: extractTextDate
+            }
+          );
+        },
+
+        whoFor: function () {
+          return Mopapa.askParts.personAnswer.answerWhoSomethingIsFor(
+            q,
+            matches
+          );
+        },
+
+        location: function () {
+          return Mopapa.askParts.locationAnswer.answerLocation(
+            q,
+            matches,
+            isLocationQuestion,
+            norm
+          );
+        },
+
+        calledName: function () {
+          return Mopapa.askParts.personAnswer.answerCalledName(
+            q,
+            matches
+          );
+        },
+
+        cost: function () {
+          return answerCost(q, all, room, date);
+        },
+
+        fallback: function (question, sortedMatches) {
+          return Mopapa.askParts.results.answerMatches(
+            question,
+            sortedMatches,
+            {
+              all: all,
+              date: date,
+              room: room,
+              roomName: roomName,
+              norm: norm,
+              questionIntent: questionIntent,
+              currentLocations: currentLocations,
+              isStale: isStale
+            }
+          );
+        }
       }
-    );
-
-    if (structuredAnswer) return structuredAnswer;
-
-    var nextAppointmentAnswer = Mopapa.askParts.dateOverview.answerNextAppointment(
-      q,
-      all,
-      sortByWhen
-    );
-
-    if (nextAppointmentAnswer) return nextAppointmentAnswer;
-
-    var overdueAnswer = Mopapa.askParts.dateOverview.answerOverdueTasks(
-      q,
-      all,
-      sortByWhen
-    );
-
-    if (overdueAnswer) return overdueAnswer;
-
-    var whenAnswer = Mopapa.askParts.dateAnswer.answerWhen(
-      q,
-      matches,
-      sig,
-      {
-        isWhenQuestion: isWhenQuestion,
-        sortByWhen: sortByWhen,
-        confirmedBySig: learning.confirmedBySig,
-        extractTextDate: extractTextDate
-      }
-    );
-
-    if (whenAnswer) return whenAnswer;
-
-    var whoForAnswer = Mopapa.askParts.personAnswer.answerWhoSomethingIsFor(
-      q,
-      matches
-    );
-
-    if (whoForAnswer) return whoForAnswer;
-   
-    var locationAnswer = Mopapa.askParts.locationAnswer.answerLocation(
-      q,
-      matches,
-      isLocationQuestion,
-      norm
-    );
-
-    if (locationAnswer) return locationAnswer;
-    
-    var calledNameAnswer = Mopapa.askParts.personAnswer.answerCalledName(
-      q,
-      matches
-    );
-
-    if (calledNameAnswer) return calledNameAnswer;
-
-    matches.sort(sortNewest);
-
-    if (isCostQuestion(q)) {
-      return answerCost(q, all, room, date);
-    }
-
-    return Mopapa.askParts.results.answerMatches(q, matches, {
-      all: all,
-      date: date,
-      room: room,
-      roomName: roomName,
-      norm: norm,
-      questionIntent: questionIntent,
-      currentLocations: currentLocations,
-      isStale: isStale
     });
   }
 

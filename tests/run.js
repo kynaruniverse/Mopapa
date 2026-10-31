@@ -48,6 +48,7 @@ function boot(storage) {
     'ask/ask-query',
     'ask/ask-aliases',
     'ask/ask-learning',
+    'ask/ask-answer-flow',
     'ask/ask',
     'memory/agenda'
   ].forEach(function (f) {
@@ -86,7 +87,8 @@ test('ask modules are loaded once and before ask.js', function () {
     'js/ask/ask-room-intent.js',
     'js/ask/ask-query.js',
     'js/ask/ask-aliases.js',
-    'js/ask/ask-learning.js'
+    'js/ask/ask-learning.js',
+    'js/ask/ask-answer-flow.js'
   ];
 
   const askTag = '<script src="js/ask/ask.js"></script>';
@@ -6324,6 +6326,143 @@ test('person-answer module identifies a called name from its saved entry', funct
 
   assert.strictEqual(result.sources.length, 1);
   assert.strictEqual(result.sources[0].id, 'called-name-test');
+});
+
+function makeAnswerFlowContext(overrides) {
+  const calls = [];
+
+  const handlers = {
+    structured: function () { calls.push('structured'); return null; },
+    nextAppointment: function () { calls.push('nextAppointment'); return null; },
+    overdue: function () { calls.push('overdue'); return null; },
+    when: function () { calls.push('when'); return null; },
+    whoFor: function () { calls.push('whoFor'); return null; },
+    location: function () { calls.push('location'); return null; },
+    calledName: function () { calls.push('calledName'); return null; },
+    cost: function () { calls.push('cost'); return { answer: 'cost' }; },
+    fallback: function (q, matches) {
+      calls.push('fallback');
+      return { answer: 'fallback', matches: matches };
+    }
+  };
+
+  Object.keys(overrides || {}).forEach(function (key) {
+    handlers[key] = overrides[key];
+  });
+
+  return {
+    calls: calls,
+    handlers: handlers,
+    sortNewest: function (a, b) {
+      return b.created - a.created;
+    },
+    isCostQuestion: function () {
+      return false;
+    }
+  };
+}
+
+test('answer-flow module exposes its resolve function', function () {
+  const w = boot();
+
+  assert.strictEqual(
+    typeof w.Mopapa.askParts.answerFlow.resolve,
+    'function'
+  );
+});
+
+test('answer-flow stops at the first successful handler', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext({
+    structured: function () {
+      context.calls.push('structured');
+      return { answer: 'structured' };
+    }
+  });
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'What did I save?',
+    [],
+    context
+  );
+
+  assert.strictEqual(result.answer, 'structured');
+  assert.deepStrictEqual(context.calls, ['structured']);
+});
+
+test('answer-flow preserves the complete answer-handler order', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  w.Mopapa.askParts.answerFlow.resolve(
+    'What did I save?',
+    [],
+    context
+  );
+
+  assert.deepStrictEqual(context.calls, [
+    'structured',
+    'nextAppointment',
+    'overdue',
+    'when',
+    'whoFor',
+    'location',
+    'calledName',
+    'fallback'
+  ]);
+});
+
+test('answer-flow checks cost answers before general fallback', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  context.isCostQuestion = function () {
+    return true;
+  };
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'How much did it cost?',
+    [],
+    context
+  );
+
+  assert.strictEqual(result.answer, 'cost');
+
+  assert.strictEqual(
+    context.calls[context.calls.length - 1],
+    'cost'
+  );
+
+  assert.strictEqual(
+    context.calls.indexOf('fallback'),
+    -1
+  );
+});
+
+test('answer-flow sorts matches before passing them to fallback', function () {
+  const w = boot();
+  const context = makeAnswerFlowContext();
+
+  const entries = [
+    { id: 'old', created: 1 },
+    { id: 'new', created: 3 },
+    { id: 'middle', created: 2 }
+  ];
+
+  const result = w.Mopapa.askParts.answerFlow.resolve(
+    'What did I save?',
+    entries,
+    context
+  );
+
+  assert.strictEqual(result.answer, 'fallback');
+
+  assert.deepStrictEqual(
+    result.matches.map(function (entry) {
+      return entry.id;
+    }),
+    ['new', 'middle', 'old']
+  );
 });
 
 let failed = 0;
