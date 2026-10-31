@@ -27,6 +27,7 @@ function boot(storage) {
     'ask/ask-text',
     'ask/ask-people',
     'ask/ask-person-answer',
+    'ask/ask-results',
     'ask/ask-match',
     'ask/ask-ranking',
     'ask/ask-facts',

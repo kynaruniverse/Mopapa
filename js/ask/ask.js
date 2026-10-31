@@ -351,7 +351,6 @@ Mopapa.ask = (function () {
 
   return {
     answer: answer,
-    answer: answer,
     addAlias: aliasModule.addAlias,
     teachAlias: learning.teachAlias,
     forgetAlias: learning.forgetAlias,
