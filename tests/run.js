@@ -101,7 +101,8 @@ function makeTalkElement() {
     },
     click: function () {
       this.dispatch('click', {});
-    }
+    },
+    focus: function () {}
   };
 
   Object.defineProperty(element, 'innerHTML', {
@@ -121,6 +122,9 @@ function bootTalk() {
   const elements = {
     'talk-input': makeTalkElement(),
     'talk-form': makeTalkElement(),
+    'talk-mode-keep': makeTalkElement(),
+    'talk-mode-ask': makeTalkElement(),
+    'send': makeTalkElement(),
     'confirm': makeTalkElement(),
     'answer-sources': makeTalkElement()
   };
@@ -274,12 +278,113 @@ test('talk interface loads and attaches its submit handler', function () {
   );
 });
 
+test('composer starts in Keep mode', function () {
+  const app = bootTalk();
+
+  assert.strictEqual(
+    app.elements['talk-mode-keep'].attributes['aria-pressed'],
+    'true'
+  );
+
+  assert.strictEqual(
+    app.elements['talk-mode-ask'].attributes['aria-pressed'],
+    'false'
+  );
+
+  assert.strictEqual(
+    app.elements['talk-input'].placeholder,
+    'Write something to remember…'
+  );
+});
+
+test('switching composer modes updates the selected state', function () {
+  const app = bootTalk();
+
+  app.elements['talk-mode-ask'].click();
+
+  assert.strictEqual(
+    app.elements['talk-mode-keep'].attributes['aria-pressed'],
+    'false'
+  );
+
+  assert.strictEqual(
+    app.elements['talk-mode-ask'].attributes['aria-pressed'],
+    'true'
+  );
+
+  assert.strictEqual(
+    app.elements['talk-input'].placeholder,
+    'Ask about something you have saved…'
+  );
+
+  app.elements['talk-mode-keep'].click();
+
+  assert.strictEqual(
+    app.elements['talk-mode-keep'].attributes['aria-pressed'],
+    'true'
+  );
+
+  assert.strictEqual(
+    app.elements['talk-mode-ask'].attributes['aria-pressed'],
+    'false'
+  );
+});
+
+test('Keep mode saves question-shaped text without asking', function () {
+  const app = bootTalk();
+  const text = 'Where did I put the spare key?';
+
+  app.elements['talk-input'].value = text;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  const saved = app.calls.find(function (call) {
+    return call.type === 'save';
+  });
+
+  assert.ok(saved);
+  assert.strictEqual(saved.entry.text, text);
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'answer';
+    }),
+    false
+  );
+});
+
+
+test('Ask mode searches statement-shaped text without filing it', function () {
+  const app = bootTalk();
+  const text = 'The spare key is in the kitchen drawer';
+
+  app.elements['talk-mode-ask'].click();
+  app.elements['talk-input'].value = text;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'answer' && call.question === text;
+  }));
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'save';
+    }),
+    false
+  );
+});
 
 test('missed questions show Keep this instead and Not now choices', function () {
   const app = bootTalk();
   const input = app.elements['talk-input'];
   const confirm = app.elements.confirm;
 
+  app.elements['talk-mode-ask'].click();
   input.value = 'Where did I put the spare key?';
 
   app.elements['talk-form'].dispatch('submit', {
@@ -394,6 +499,7 @@ test('answered questions without a miss do not show filing choices', function ()
     sources: []
   };
 
+  app.elements['talk-mode-ask'].click();
   app.elements['talk-input'].value = 'Where is my spare key?';
 
   app.elements['talk-form'].dispatch('submit', {
@@ -410,6 +516,7 @@ test('source selection confirms the chosen saved entry', function () {
   const app = bootTalk();
   const question = 'Where is my spare key?';
 
+  app.elements['talk-mode-ask'].click();
   app.answerResult = {
     answer: 'I found a possible match.',
     missed: false,
@@ -449,6 +556,7 @@ test('source selection confirms the chosen saved entry', function () {
 test('source selection supports Space as a keyboard action', function () {
   const app = bootTalk();
 
+  app.elements['talk-mode-ask'].click();
   app.answerResult = {
     answer: 'I found a possible match.',
     missed: false,
@@ -484,6 +592,7 @@ test('Enter submits a question from the talk input', function () {
   const app = bootTalk();
   const input = app.elements['talk-input'];
 
+  app.elements['talk-mode-ask'].click();
   input.value = 'Where is my passport?';
 
   let prevented = false;
@@ -511,6 +620,7 @@ test('Enter does not submit while text composition is active', function () {
   const app = bootTalk();
   const input = app.elements['talk-input'];
 
+  app.elements['talk-mode-ask'].click();
   input.value = 'Where is my passport?';
   input.dispatch('compositionstart');
 

@@ -52,8 +52,12 @@ button:disabled{cursor:not-allowed;opacity:.55}
 @keyframes nod{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(2px) rotate(-3deg)}70%{transform:translateY(-2px) rotate(2deg)}}
 
 /* Input */
-.den-talk{display:flex;gap:10px;align-items:stretch}
-.den-talk textarea{flex:1;min-width:0;min-height:52px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;resize:vertical}
+.den-talk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:stretch}
+.talk-mode{grid-column:1/-1;display:flex;gap:6px}
+.talk-mode button{min-width:76px;min-height:44px;padding:8px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--dim);font-weight:600}
+.talk-mode button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.talk-mode button:disabled{opacity:.5;cursor:not-allowed}
+.den-talk textarea{grid-column:1;grid-row:2;min-width:0;min-height:88px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;resize:vertical}
 .den-talk textarea::placeholder,input::placeholder{color:var(--dim)}
 .den-talk textarea{transition:border-color .16s ease,box-shadow .16s ease}
 .den-talk textarea:focus-visible{border-color:var(--accent);box-shadow:0 0 0 3px rgba(226,180,106,.12)}
@@ -65,7 +69,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
   min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--raised);color:var(--text)}
 #send,.chip.primary,.memory-button.primary,.agenda-button.done-button,.memory-search-controls .memory-search-submit,.edit-save,.custom-room-actions button.primary{
   background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
-#send{min-width:72px;border:0;border-radius:var(--r);padding:0 18px}
+#send{grid-column:2;grid-row:2;align-self:stretch;min-width:76px;min-height:44px;border:0;border-radius:var(--r);padding:0 18px}
 .link{background:none;border:0;padding:10px 0;color:var(--dim);text-decoration:underline;text-underline-offset:3px}
 
 /* Sections: separated by a rule, not boxed */

@@ -1,13 +1,32 @@
 var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.talk = (function () {
-  var input, form, box, busy = false, composing = false, lastQuestion = '';
+  var input, form, box, keepMode, askMode, sendButton;
+  var busy = false, composing = false, lastQuestion = '';
+  var mode = 'keep';
 
   function init() {
     input = document.getElementById('talk-input');
     form = document.getElementById('talk-form');
     box = document.getElementById('confirm');
-    form.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+    keepMode = document.getElementById('talk-mode-keep');
+    askMode = document.getElementById('talk-mode-ask');
+    sendButton = document.getElementById('send');
+
+    keepMode.addEventListener('click', function () {
+      setMode('keep');
+    });
+
+    askMode.addEventListener('click', function () {
+      setMode('ask');
+    });
+
+    setMode('keep');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submit();
+    });
 
     input.addEventListener('compositionstart', function () {
       composing = true;
@@ -31,9 +50,32 @@ Mopapa.talk = (function () {
     });
   }
 
+  function setMode(next) {
+    mode = next === 'ask' ? 'ask' : 'keep';
+
+    keepMode.setAttribute(
+      'aria-pressed',
+      mode === 'keep' ? 'true' : 'false'
+    );
+
+    askMode.setAttribute(
+      'aria-pressed',
+      mode === 'ask' ? 'true' : 'false'
+    );
+
+    sendButton.textContent = 'Send';
+
+    input.placeholder = mode === 'ask'
+      ? 'Ask about something you have saved…'
+      : 'Write something to remember…';
+  }
+  
   function showChoices(list) {
     busy = true;
     input.disabled = true;
+    keepMode.disabled = true;
+    askMode.disabled = true;
+    sendButton.disabled = true;
     box.innerHTML = '';
     list.forEach(function (c) {
       var b = document.createElement('button');
@@ -51,6 +93,9 @@ Mopapa.talk = (function () {
     box.innerHTML = '';
     busy = false;
     input.disabled = false;
+    keepMode.disabled = false;
+    askMode.disabled = false;
+    sendButton.disabled = false;
   }
 
   function cancel() {
@@ -132,6 +177,7 @@ Mopapa.talk = (function () {
   function teachAliasFrom(a, b) {
     if (Mopapa.ask.teachAlias(a, b)) {
       input.value = '';
+      input.focus();
       Mopapa.pet.say('Okay. When you ask, I will treat "' + a + '" and "' + b + '" as the same thing.');
       if (Mopapa.askLearningUI) Mopapa.askLearningUI.render();
     } else {
@@ -145,26 +191,13 @@ Mopapa.talk = (function () {
 
     var taught = text.match(/^by\s+["“']?([a-z0-9]{2,30})["”']?\s+i\s+mean\s+["“']?([a-z0-9]{2,30})["”']?\s*\.?$/i);
 
-    if (taught) {
+    if (mode === 'ask' && taught) {
       teachAliasFrom(taught[1], taught[2]);
       return;
     }
-    var q = Mopapa.rules.questionLevel(text);
-    var looksLikeQuestion = /^(when|what|who|where|why|how|which|whose|whom|is|are|am|was|were|do|does|did|can|could|would|will|should|has|have|had)\b/i.test(text.trim()) ||
-      /\?$/.test(text.trim());
 
-    if (q === 'sure' || (q === 'maybe' && looksLikeQuestion)) {
+    if (mode === 'ask') {
       noAnswer(text);
-      return;
-    }
-
-    if (q === 'maybe') {
-      Mopapa.pet.say('Is that a question for me, or something to file?');
-      showChoices([
-        { label: 'A question', primary: true, fn: function () { endChoices(); noAnswer(text); } },
-        { label: 'File it', fn: function () { endChoices(); fileIt(text); } },
-        { label: 'Cancel', fn: cancel }
-      ]);
       return;
     }
 
@@ -274,6 +307,7 @@ Mopapa.talk = (function () {
     }
 
     input.value = '';
+    input.focus();
     var line = 'Filed under ' + room.name.toLowerCase() + '.';
     if (withDate) line += ' ' + Mopapa.rules.describe(ctx.parse.date, ctx.parse.hasTime) + '.';
     if (ctx.money) line += ' ' + ctx.money + ' noted.';

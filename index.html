@@ -29,9 +29,13 @@
     </div>
 
     <form id="talk-form" class="den-talk">
-      <label class="visually-hidden" for="talk-input">Tell Mopapa something or ask a question</label>
-      <textarea id="talk-input" rows="2" maxlength="1000" placeholder="Write something to keep, or ask a question"></textarea>
-      <button type="submit" id="send">Add</button>
+      <div class="talk-mode" role="group" aria-label="Choose what to do">
+        <button type="button" id="talk-mode-keep" aria-pressed="true">Keep</button>
+        <button type="button" id="talk-mode-ask" aria-pressed="false">Ask</button>
+      </div>
+      <label class="visually-hidden" for="talk-input">Text to keep or question to ask</label>
+      <textarea id="talk-input" rows="3" maxlength="1000" placeholder="Write something to remember…"></textarea>
+      <button type="submit" id="send">Send</button>
     </form>
 
     <div id="confirm" class="den-confirm" role="group" aria-live="polite" hidden></div>
