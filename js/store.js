@@ -206,6 +206,16 @@ function cleanLegacyLearned(value) {
     var scores = value[term];
 
     if (
+      typeof scores === 'number' &&
+      isFinite(scores) &&
+      scores >= 1 &&
+      scores <= 1000
+    ) {
+      out[term] = Math.floor(scores);
+      return;
+    }
+
+    if (
       !scores ||
       typeof scores !== 'object' ||
       Array.isArray(scores)
