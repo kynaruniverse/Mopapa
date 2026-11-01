@@ -2,9 +2,11 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
+  var SCHEMA_VERSION = 1;
   var lastKnownRaw = null;
   var saveError = null;
   var data = {
+    schemaVersion: SCHEMA_VERSION,
     entries: [],
     learned: {},
     customRooms: [],
@@ -179,6 +181,63 @@ function normaliseLegacyAmounts(list) {
 
     return copy;
   });
+}
+
+function cleanLegacyLearned(value) {
+  var out = Object.create(null);
+
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value)
+  ) {
+    return out;
+  }
+
+  Object.keys(value).slice(0, 500).forEach(function (term) {
+    if (
+      !term ||
+      term.length > 100 ||
+      !term.trim()
+    ) {
+      return;
+    }
+
+    var scores = value[term];
+
+    if (
+      !scores ||
+      typeof scores !== 'object' ||
+      Array.isArray(scores)
+    ) {
+      return;
+    }
+
+    var cleanScores = Object.create(null);
+
+    Object.keys(scores).slice(0, 20).forEach(function (room) {
+      var score = scores[room];
+
+      if (
+        !room ||
+        room.length > 50 ||
+        typeof score !== 'number' ||
+        !isFinite(score) ||
+        score < 1 ||
+        score > 1000
+      ) {
+        return;
+      }
+
+      cleanScores[room] = Math.floor(score);
+    });
+
+    if (Object.keys(cleanScores).length) {
+      out[term] = cleanScores;
+    }
+  });
+
+  return out;
 }
 
 function cleanEntries(list) {
@@ -357,6 +416,7 @@ function load() {
   saveError = null;
 
   data = {
+    schemaVersion: SCHEMA_VERSION,
     entries: [],
     learned: {},
     customRooms: [],
@@ -389,7 +449,23 @@ function load() {
 
     if (raw) {
       var p = JSON.parse(raw);
+      var storedVersion = p &&
+        Object.prototype.hasOwnProperty.call(p, 'schemaVersion')
+          ? p.schemaVersion
+          : 0;
+
+      if (
+        typeof storedVersion !== 'number' ||
+        !isFinite(storedVersion) ||
+        Math.floor(storedVersion) !== storedVersion ||
+        storedVersion < 0 ||
+        storedVersion > SCHEMA_VERSION
+      ) {
+        throw new Error('unsupported schema version');
+      }
+
       if (p && Array.isArray(p.entries)) {
+        data.schemaVersion = SCHEMA_VERSION;
         var cleanedEntries = cleanEntries(normaliseLegacyAmounts(p.entries));
 
         if (cleanedEntries.length < p.entries.length) {
@@ -398,7 +474,7 @@ function load() {
         }
 
         data.entries = cleanedEntries;
-        data.learned = p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {};
+        data.learned = cleanLegacyLearned(p.learned);
         data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
         data.ask = cleanAsk(p.ask);
       } else {
@@ -589,6 +665,16 @@ function load() {
           !p ||
           typeof p !== 'object' ||
           Array.isArray(p) ||
+          (
+            Object.prototype.hasOwnProperty.call(p, 'schemaVersion') &&
+            (
+              typeof p.schemaVersion !== 'number' ||
+              !isFinite(p.schemaVersion) ||
+              Math.floor(p.schemaVersion) !== p.schemaVersion ||
+              p.schemaVersion < 0 ||
+              p.schemaVersion > SCHEMA_VERSION
+            )
+          ) ||
           !validImportedEntries(p.entries) ||
           (
             Object.prototype.hasOwnProperty.call(p, 'learned') &&
@@ -609,8 +695,9 @@ function load() {
         var previous = data;
 
         data = {
+          schemaVersion: SCHEMA_VERSION,
           entries: cleanEntries(normaliseLegacyAmounts(p.entries)),
-          learned: p.learned && typeof p.learned === 'object' && !Array.isArray(p.learned) ? p.learned : {},
+          learned: cleanLegacyLearned(p.learned),
           customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
           ask: cleanAsk(p.ask)
         };

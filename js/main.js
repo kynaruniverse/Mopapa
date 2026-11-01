@@ -37,6 +37,12 @@
     ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
     : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only. Use Back up data to start a download you can keep separately.");
     
+  if (M.store.data().roomRepairSaveFailed) {
+    M.pet.say(
+      "I moved an entry with a missing room into Notes, but couldn't save that repair. Back up your data and check available browser storage."
+    );
+  }    
+    
     document.getElementById('btn-export').addEventListener('click', function () {
     try {
       M.store.exportJSON();
@@ -96,7 +102,13 @@
           M.refreshPanels();
           M.askLearningUI.render();
           
-          M.pet.say('Backup restored successfully. Your saved data has been replaced with the backup.');
+          if (M.store.data().roomRepairSaveFailed) {
+            M.pet.say(
+              "The backup was restored, but I couldn't save a room repair. Back up your data and check available browser storage."
+            );
+          } else {
+            M.pet.say('Backup restored successfully. Your saved data has been replaced with the backup.');
+          }
         });
       },
       true

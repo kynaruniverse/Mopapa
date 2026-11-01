@@ -83,7 +83,11 @@ Mopapa.customRooms = (function () {
       }
     });
 
-    if (repaired) Mopapa.store.save();
+    Mopapa.store.data().roomRepairSaveFailed = false;
+
+    if (repaired && !Mopapa.store.save()) {
+      Mopapa.store.data().roomRepairSaveFailed = true;
+    }
   }
 
   function add(name, icon) {

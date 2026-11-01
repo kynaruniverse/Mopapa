@@ -3276,6 +3276,85 @@ test('entries referencing missing custom rooms are recovered into notes', functi
   assert.strictEqual(w.Mopapa.store.save(), true);
 });
 
+test('loading unversioned data upgrades it to schema version 1', function () {
+  const w = boot(stored([
+    { id: 'legacy', text: 'Older saved memory', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+
+  assert.strictEqual(w.Mopapa.store.save(), true);
+
+  const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
+
+  assert.strictEqual(saved.schemaVersion, 1);
+  assert.strictEqual(saved.entries[0].id, 'legacy');
+});
+
+test('loading a future schema version preserves it as corrupt recovery data', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      schemaVersion: 2,
+      entries: []
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 1);
+});
+
+test('loading rejects a non-numeric schema version', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      schemaVersion: '1',
+      entries: []
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+});
+
+test('failed orphan-room repair is reported without changing persisted data', function () {
+  const w = boot(stored([{
+    id: 'orphaned-entry',
+    text: 'The spare key is in the kitchen drawer',
+    room: 'custom_missing'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.localStorage.failWrites = true;
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'notes'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().roomRepairSaveFailed,
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    before
+  );
+});
+
 test('store saves successfully when storage has not changed', function () {
   const w = boot(stored([{
     id: 'original',
@@ -3707,6 +3786,83 @@ test('custom room reload rejects names outside the permitted length', function (
     }),
     false
   );
+});
+
+test('restore rejects a future schema version without replacing current data', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        schemaVersion: 2,
+        entries: [
+          { id: 'future', text: 'Future-format entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage.getItem('mopapa.v1'), before);
+});
+
+test('restore upgrades a valid unversioned backup to schema version 1', function () {
+  const w = boot(stored([
+    { id: 'old', text: 'Old entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'imported', text: 'Imported older entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'imported');
+
+  const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
+
+  assert.strictEqual(saved.schemaVersion, 1);
 });
 
 test('restore rejects JSON without an entries array', function () {
@@ -5395,6 +5551,37 @@ test('load rejects array-shaped learned data', function () {
     JSON.parse(JSON.stringify(w.Mopapa.store.data().learned)),
     {}
   );
+});
+
+test('legacy learned data keeps valid scores and discards malformed values', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {
+        grocery: {
+          wishlist: 99,
+          invalidText: 'high',
+          invalidNegative: -2,
+          invalidExcessive: 5000
+        },
+        invalidTextValue: 'not-an-object',
+        invalidArray: ['not', 'a', 'score-map'],
+        invalidEmpty: {}
+      }
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  const learned = JSON.parse(
+    JSON.stringify(w.Mopapa.store.data().learned)
+  );
+
+  assert.deepStrictEqual(learned, {
+    grocery: {
+      wishlist: 99
+    }
+  });
 });
 
 test('learning: invalid aliases are discarded during cleanup', function () {
