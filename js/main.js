@@ -32,7 +32,7 @@
       ' rejected because the data was invalid. ' +
       (recoverySaved
         ? 'A copy of the original saved data was preserved in this browser. Use Download recovery copy to save it to a file before making further changes.'
-        : 'Mopapa could not create a recovery copy, so back up any entries that remain before making further changes.')
+        : 'Mopapa could not preserve the original data in a separate browser copy. Changes have been locked to protect the original record. Use Download original data to save the exact original record. Back up data can export the readable entries, but that backup will not contain the rejected entries. Restore a valid backup to resume normal changes.')
     );
   }
 
@@ -42,6 +42,8 @@
     M.pet.say("I can't access your saved memories right now. Please reload me after checking browser storage. Don't enter new memories until then.");
   } else if (M.store.data().corrupt) {
     M.pet.say("I couldn't read your saved memories, so I've locked normal changes to protect the original data. Download a recovery copy if available, or restore a valid backup.");
+  } else if (M.store.data().recoveryBlocked) {
+    M.pet.say("Some saved entries were invalid, and I couldn't preserve the original record separately. I've locked changes to protect it. Download the original data before restoring a valid backup.");
   } else {
     M.pet.say(n
       ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
@@ -70,7 +72,10 @@
   });
 
   var recoveryButton = document.getElementById('btn-recovery-export');
+  var originalRecoveryButton = document.getElementById('btn-original-recovery-export');
   var recoveryPanel = document.getElementById('recovery-panel');
+
+  originalRecoveryButton.hidden = !M.store.data().recoveryBlocked;
   var recoveryList = document.getElementById('recovery-copy-list');
 
   function renderRecoveryCopies() {
@@ -143,6 +148,14 @@
     }
   });
 
+  originalRecoveryButton.addEventListener('click', function () {
+    if (M.store.exportOriginalRecoveryCopy()) {
+      M.pet.say('The original saved data download has started. Check your Downloads folder and keep that file safe.');
+    } else {
+      M.pet.say("I couldn't download the original data. It remains unchanged in this browser. Do not clear browser storage.");
+    }
+  });
+
   renderRecoveryCopies();
 
   var importButton = document.getElementById('btn-import');
@@ -174,6 +187,7 @@
             return;
           }
 
+          originalRecoveryButton.hidden = true;
           M.customRooms.reload();
           M.room.renderRooms();
           M.refreshPanels();

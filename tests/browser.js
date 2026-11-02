@@ -164,6 +164,113 @@ async function run() {
     );
   });
 
+  await check('failed recovery preservation locks writes and permits exact original download', async function (page) {
+    var originalRaw = JSON.stringify({
+      entries: [
+        {
+          id: 'valid-memory',
+          text: 'This readable memory must survive',
+          room: 'notes'
+        },
+        null
+      ],
+      learned: {},
+      customRooms: [],
+      ask: {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      }
+    });
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.addInitScript(function () {
+      var originalSetItem = Storage.prototype.setItem;
+
+      Storage.prototype.setItem = function (key, value) {
+        if (
+          String(key).indexOf('mopapa.v1.recovery.') === 0
+        ) {
+          throw new Error('simulated recovery storage failure');
+        }
+
+        return originalSetItem.call(this, key, value);
+      };
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    var originalButton = page.locator(
+      '#btn-original-recovery-export'
+    );
+
+    assert.strictEqual(
+      await originalButton.isVisible(),
+      true
+    );
+
+    await page.locator('#talk-input').fill(
+      'This new memory must not overwrite the original'
+    );
+
+    await page.locator('#send').click();
+
+    assert.strictEqual(
+      await page.locator('#talk-input').inputValue(),
+      'This new memory must not overwrite the original'
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+
+    var originalDownloadPromise = page.waitForEvent('download');
+
+    await originalButton.click();
+
+    var originalDownload = await originalDownloadPromise;
+    var originalPath = await originalDownload.path();
+
+    assert.ok(originalPath);
+
+    assert.strictEqual(
+      fs.readFileSync(originalPath, 'utf8'),
+      originalRaw
+    );
+
+    var readableBackupPromise = page.waitForEvent('download');
+
+    await page.locator('#btn-export').click();
+
+    var readableBackup = await readableBackupPromise;
+    var readablePath = await readableBackup.path();
+
+    assert.ok(readablePath);
+
+    var readableData = JSON.parse(
+      fs.readFileSync(readablePath, 'utf8')
+    );
+
+    assert.strictEqual(readableData.entries.length, 1);
+    assert.strictEqual(
+      readableData.entries[0].id,
+      'valid-memory'
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+  });
+  
   await check('recovery inventory displays every copy in correct order', async function (page) {
     await page.evaluate(function () {
       localStorage.setItem('mopapa.v1.recovery.1000', 'older');

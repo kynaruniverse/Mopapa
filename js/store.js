@@ -488,6 +488,7 @@ function load() {
         if (cleanedEntries.length < p.entries.length) {
           data.rejectedEntries = p.entries.length - cleanedEntries.length;
           data.recoveryCopySaved = preserveRecoveryCopy(raw);
+          data.recoveryBlocked = !data.recoveryCopySaved;
         }
 
         data.entries = cleanedEntries;
@@ -535,6 +536,11 @@ function load() {
 
     if (data.corrupt) {
       saveError = 'corrupt';
+      return false;
+    }
+
+    if (data.recoveryBlocked) {
+      saveError = 'recovery';
       return false;
     }
 
@@ -602,6 +608,55 @@ function load() {
     setTimeout(function () {
       URL.revokeObjectURL(url);
     }, 2000);
+  }
+
+  function exportOriginalRecoveryCopy() {
+    if (!data.recoveryBlocked || lastKnownRaw === null) {
+      return false;
+    }
+
+    try {
+      if (localStorage.getItem(KEY) !== lastKnownRaw) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+
+    var url;
+
+    try {
+      var blob = new Blob(
+        [lastKnownRaw],
+        { type: 'application/json' }
+      );
+
+      url = URL.createObjectURL(blob);
+
+      var a = document.createElement('a');
+
+      a.href = url;
+      a.download = 'mopapa-original-unrecovered-' +
+        new Date().toISOString().slice(0, 10) + '.json';
+
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+      }, 2000);
+
+      return true;
+    } catch (e) {
+      if (url) {
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e2) {}
+      }
+
+      return false;
+    }
   }
 
   function recoveryCopies() {
@@ -866,6 +921,7 @@ function load() {
     save: save,
     saveError: function () { return saveError; },
     exportJSON: exportJSON,
+    exportOriginalRecoveryCopy: exportOriginalRecoveryCopy,
     recoveryCopies: recoveryCopies,
     exportRecoveryCopy: exportRecoveryCopy,
     importJSON: importJSON

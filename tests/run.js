@@ -974,6 +974,17 @@ test('loading rejected entries reports when recovery backup fails', function () 
   });
 
   assert.strictEqual(recoveryKeys.length, 0);
+  assert.strictEqual(w.Mopapa.store.data().recoveryBlocked, true);
+
+  const originalRaw = w.localStorage._['mopapa.v1'];
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1'],
+    originalRaw
+  );  
 });
 
 test('search finds entries containing prototype-like words', function () {

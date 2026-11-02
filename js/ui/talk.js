@@ -295,6 +295,10 @@ Mopapa.talk = (function () {
         Mopapa.pet.say(
           'Another tab changed your saved data. I kept your text in the box, and I did not overwrite the newer data. Copy your text, reload Mopapa, then add it again.'
         );
+      } else if (Mopapa.store.saveError() === 'recovery') {
+        Mopapa.pet.say(
+          "I haven't saved this because some original data could not be preserved. Download the original data, keep it safe, then restore a valid backup. Your text is still in the box."
+        );
       } else {
         Mopapa.pet.say(
           "I couldn't save this on your device. Your text is still in the box. Copy it or try again."
