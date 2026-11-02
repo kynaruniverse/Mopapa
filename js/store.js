@@ -518,6 +518,8 @@ function cleanImportedCustomRooms(list) {
 
   return cleaned;
 }
+
+function load() {
   lastKnownRaw = null;
   saveError = null;
 
