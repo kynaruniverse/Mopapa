@@ -548,19 +548,41 @@ function load() {
   }
 
   function exportJSON() {
+    var currentRaw;
+
+    saveError = null;
+
     if (data.storageUnavailable) {
+      saveError = 'storage';
       throw new Error('Storage is unavailable. Reload Mopapa before creating a backup.');
+    }
+
+    try {
+      currentRaw = localStorage.getItem(KEY);
+    } catch (e) {
+      saveError = 'storage';
+      throw new Error('Mopapa could not check the saved data. No backup was created.');
+    }
+
+    if (currentRaw !== lastKnownRaw) {
+      saveError = 'conflict';
+      throw new Error('Saved data changed in another tab. Reload Mopapa before creating a backup.');
     }
 
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
+
     a.href = url;
     a.download = 'mopapa-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+
     document.body.appendChild(a);
     a.click();
     a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+
+    setTimeout(function () {
+      URL.revokeObjectURL(url);
+    }, 2000);
   }
 
   function recoveryCopies() {

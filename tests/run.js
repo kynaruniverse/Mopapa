@@ -3721,6 +3721,43 @@ test('store refuses to overwrite data changed by another tab', function () {
   assert.strictEqual(saved.entries[0].text, 'Saved by another tab');
 });
 
+test('backup export refuses to create a stale copy after another tab changes saved data', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const newerData = JSON.stringify({
+    entries: [{
+      id: 'newer',
+      text: 'Saved by another tab',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerData);
+
+  assert.throws(function () {
+    w.Mopapa.store.exportJSON();
+  }, /Saved data changed in another tab/);
+
+  assert.strictEqual(
+    w.Mopapa.store.saveError(),
+    'conflict'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerData
+  );
+});
+
 test('store refuses to save when the original storage key disappears', function () {
   const w = boot(stored([{
     id: 'original',
@@ -3741,6 +3778,29 @@ test('store refuses to save when the original storage key disappears', function 
   assert.strictEqual(w.Mopapa.store.save(), false);
   assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
   assert.strictEqual(w.localStorage.getItem('mopapa.v1'), null);
+});
+
+test('backup export refuses to proceed when saved data cannot be checked', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.getItem = function () {
+    throw new Error('simulated storage access failure');
+  };
+
+  assert.throws(function () {
+    w.Mopapa.store.exportJSON();
+  }, /could not check the saved data/);
+
+  assert.strictEqual(
+    w.Mopapa.store.saveError(),
+    'storage'
+  );
 });
 
 test('store distinguishes storage failures from save conflicts', function () {

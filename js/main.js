@@ -57,7 +57,11 @@
       M.store.exportJSON();
       M.pet.say('Backup download started. Check your Downloads folder before relying on it.');
     } catch (e) {
-      M.pet.say("I couldn't start the backup download. Your saved data is still in this browser.");
+      if (M.store.saveError() === 'conflict') {
+        M.pet.say("Your saved data changed in another tab. I didn't create an outdated backup. Reload Mopapa, check your memories, then try again.");
+      } else {
+        M.pet.say("I couldn't start the backup download. Your saved data is still in this browser.");
+      }
     }
   });
 
