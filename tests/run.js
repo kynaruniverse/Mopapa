@@ -3031,6 +3031,329 @@ test('restore accepts valid structured money and location facts', function () {
   assert.strictEqual(entry.fact.value, 'in the kitchen drawer');
 });
 
+test('restore rejects malformed custom rooms without changing existing data', function () {
+  const invalidRooms = [
+    [null],
+    [['not-a-room']],
+    [{ id: 'wrong_prefix', name: 'Books', icon: 'book' }],
+    [{ id: 'custom_books', name: 'A', icon: 'book' }],
+    [{ id: 'custom_books', name: 'Books', icon: 'unknown' }],
+    [{ id: 'custom_books', name: 'Books' }],
+    [
+      { id: 'custom_books', name: 'Books', icon: 'book' },
+      { id: 'custom_books', name: 'Travel', icon: 'plane' }
+    ],
+    [
+      { id: 'custom_books', name: 'Books', icon: 'book' },
+      { id: 'custom_travel', name: 'books', icon: 'plane' }
+    ],
+    [{ id: 'custom_notes', name: 'Notes', icon: 'book' }],
+    [{ id: 'custom_books', name: 'B'.repeat(21), icon: 'book' }]
+  ];
+
+  invalidRooms.forEach(function (rooms, index) {
+    const w = boot(stored([
+      {
+        id: 'keep',
+        text: 'Keep this entry',
+        room: 'notes'
+      }
+    ]));
+
+    w.Mopapa.store.load();
+
+    const before = w.localStorage.getItem('mopapa.v1');
+
+    w.FileReader = function () {
+      this.readAsText = function (file) {
+        this.result = file.content;
+        this.onload();
+      };
+    };
+
+    let result = null;
+
+    w.Mopapa.store.importJSON(
+      {
+        size: 300,
+        content: JSON.stringify({
+          entries: [
+            {
+              id: 'replacement',
+              text: 'Replacement entry',
+              room: 'notes'
+            }
+          ],
+          customRooms: rooms
+        })
+      },
+      function (ok) {
+        result = ok;
+      }
+    );
+
+    assert.strictEqual(result, false, 'Invalid case ' + index);
+
+    assert.strictEqual(
+      w.Mopapa.store.data().entries[0].id,
+      'keep'
+    );
+
+    assert.strictEqual(
+      w.localStorage.getItem('mopapa.v1'),
+      before
+    );
+  });
+});
+
+test('restore rejects more than ten custom rooms without changing existing data', function () {
+  const rooms = [];
+
+  for (let i = 0; i < 11; i++) {
+    rooms.push({
+      id: 'custom_room' + i,
+      name: 'Room ' + i,
+      icon: 'book'
+    });
+  }
+
+  const w = boot(stored([
+    {
+      id: 'keep',
+      text: 'Keep this entry',
+      room: 'notes'
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [],
+        customRooms: rooms
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, false);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    before
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'keep'
+  );
+});
+
+test('restore normalises legacy custom-room icons', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [],
+        customRooms: [
+          {
+            id: 'custom_books',
+            name: '  Reading   Room  ',
+            icon: '\ud83d\udcda'
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+
+  const room = w.Mopapa.store.data().customRooms[0];
+
+  assert.strictEqual(room.name, 'Reading Room');
+  assert.strictEqual(room.icon, 'book');
+  assert.strictEqual(room.id, 'custom_books');
+});
+
+test('restore accepts older backups without a customRooms field', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          {
+            id: 'older-backup',
+            text: 'Older saved memory',
+            room: 'notes'
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'older-backup'
+  );
+
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().customRooms),
+    []
+  );
+});
+
+test('restore rejects custom rooms that duplicate after whitespace normalisation', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [],
+        customRooms: [
+          {
+            id: 'custom_one',
+            name: 'Reading Room',
+            icon: 'book'
+          },
+          {
+            id: 'custom_two',
+            name: ' Reading   Room ',
+            icon: 'star'
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms.length,
+    0
+  );
+});
+
+test('failed custom-room restore preserves existing custom rooms', function () {
+  const existingRoom = {
+    id: 'custom_existing',
+    name: 'Existing Room',
+    icon: 'book'
+  };
+
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().customRooms = [existingRoom];
+
+  assert.strictEqual(w.Mopapa.store.save(), true);
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 300,
+      content: JSON.stringify({
+        entries: [],
+        customRooms: [
+          {
+            id: 'custom_invalid',
+            name: 'Invalid Room',
+            icon: 'not-supported'
+          }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, false);
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].id,
+    'custom_existing'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    before
+  );
+});
+
 test('restore rejects malformed top-level data without changing existing data', function () {
   const invalidBackups = [
     { entries: [], learned: [] },

@@ -432,7 +432,92 @@ function validImportedEntries(list) {
   });
 }
 
-function load() {
+function cleanImportedCustomRooms(list) {
+  if (!Array.isArray(list) || list.length > 10) {
+    return null;
+  }
+
+  var icons = [
+    'book',
+    'sprout',
+    'palette',
+    'paw',
+    'music',
+    'plane',
+    'home',
+    'briefcase',
+    'telescope',
+    'star'
+  ];
+
+  var legacyIcons = Object.create(null);
+
+  legacyIcons['\ud83d\udcda'] = 'book';
+  legacyIcons['\ud83c\udf31'] = 'sprout';
+  legacyIcons['\ud83c\udfa8'] = 'palette';
+  legacyIcons['\ud83d\udc3e'] = 'paw';
+  legacyIcons['\ud83c\udfb5'] = 'music';
+  legacyIcons['\u2708\ufe0f'] = 'plane';
+  legacyIcons['\ud83c\udfe0'] = 'home';
+  legacyIcons['\ud83d\udcbc'] = 'briefcase';
+  legacyIcons['\ud83d\udd2d'] = 'telescope';
+  legacyIcons['\u2b50'] = 'star';
+
+  var builtInNames = [
+    'to-dos',
+    'appointments',
+    'wish list',
+    'feelings',
+    'ideas',
+    'notes'
+  ];
+
+  var ids = Object.create(null);
+  var names = Object.create(null);
+  var cleaned = [];
+
+  for (var i = 0; i < list.length; i++) {
+    var room = list[i];
+
+    if (
+      !room ||
+      typeof room !== 'object' ||
+      Array.isArray(room) ||
+      typeof room.id !== 'string' ||
+      !/^custom_[a-z0-9]+$/.test(room.id) ||
+      typeof room.name !== 'string' ||
+      typeof room.icon !== 'string'
+    ) {
+      return null;
+    }
+
+    var name = room.name.replace(/\s+/g, ' ').trim();
+    var nameKey = name.toLowerCase();
+    var icon = legacyIcons[room.icon] || room.icon;
+
+    if (
+      name.length < 2 ||
+      name.length > 20 ||
+      icons.indexOf(icon) === -1 ||
+      ids[room.id] ||
+      names[nameKey] ||
+      builtInNames.indexOf(nameKey) !== -1
+    ) {
+      return null;
+    }
+
+    ids[room.id] = true;
+    names[nameKey] = true;
+
+    cleaned.push({
+      id: room.id,
+      name: name,
+      icon: icon
+    });
+  }
+
+  return cleaned;
+}
   lastKnownRaw = null;
   saveError = null;
 
@@ -863,8 +948,20 @@ function load() {
 
       try {
         var p = JSON.parse(r.result);
+
         if (p && Array.isArray(p.entries)) {
           p.entries = normaliseLegacyAmounts(p.entries);
+        }
+
+        var importedCustomRooms = [];
+
+        if (
+          p &&
+          Object.prototype.hasOwnProperty.call(p, 'customRooms')
+        ) {
+          importedCustomRooms = cleanImportedCustomRooms(
+            p.customRooms
+          );
         }
 
         if (
@@ -890,10 +987,7 @@ function load() {
               Array.isArray(p.learned)
             )
           ) ||
-          (
-            Object.prototype.hasOwnProperty.call(p, 'customRooms') &&
-            !Array.isArray(p.customRooms)
-          )
+          !importedCustomRooms
         ) {
           throw new Error('bad file');
         }
@@ -904,7 +998,7 @@ function load() {
           schemaVersion: SCHEMA_VERSION,
           entries: cleanEntries(normaliseLegacyAmounts(p.entries)),
           learned: cleanLegacyLearned(p.learned),
-          customRooms: Array.isArray(p.customRooms) ? p.customRooms : [],
+          customRooms: importedCustomRooms,
           ask: cleanAsk(p.ask)
         };
 
