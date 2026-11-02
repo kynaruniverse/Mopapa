@@ -3949,6 +3949,38 @@ test('store saves successfully when storage has not changed', function () {
   assert.strictEqual(saved.entries[0].text, 'Updated memory');
 });
 
+test('read-only tab cannot save or overwrite existing data', function () {
+  const original = stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]);
+
+  const w = boot(original);
+
+  w.Mopapa.store.setWriteMode('readonly');
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+
+  w.Mopapa.store.data().entries[0].text = 'Read-only attempted edit';
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'readonly');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  const saved = JSON.parse(originalRaw);
+
+  assert.strictEqual(
+    saved.entries[0].text,
+    'Original memory'
+  );
+});
+
 test('store refuses to overwrite data changed by another tab', function () {
   const w = boot(stored([{
     id: 'original',

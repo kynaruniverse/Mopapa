@@ -1,6 +1,26 @@
 (function () {
   var M = window.Mopapa;
-  M.store.load();
+  var started = false;
+
+  function start(writeMode) {
+    if (started) return;
+    started = true;
+
+    M.store.setWriteMode(writeMode);
+    M.store.load();
+
+    var writeStatus = document.getElementById('write-status');
+
+    if (writeStatus && writeMode === 'readonly') {
+      writeStatus.textContent =
+        'This tab is read-only because Mopapa is already open in another tab. Close the other tab, then reload this one to make changes.';
+      writeStatus.hidden = false;
+    } else if (writeStatus && writeMode === 'unprotected') {
+      writeStatus.textContent =
+        'This browser does not support Mopapa’s single-tab write protection. Avoid editing Mopapa in more than one tab at a time.';
+      writeStatus.hidden = false;
+    }
+    
   M.customRooms.init();
   M.pet.init();
   M.talk.init();
@@ -205,4 +225,35 @@
       true
     );
   });
+  }
+
+  if (
+    navigator.locks &&
+    typeof navigator.locks.request === 'function'
+  ) {
+    navigator.locks.request(
+      'mopapa-active-tab',
+      {
+        mode: 'exclusive',
+        ifAvailable: true
+      },
+      function (lock) {
+        if (!lock) {
+          start('readonly');
+          return;
+        }
+
+        start('owner');
+
+        // Keep the exclusive lock for the lifetime of this page.
+        return new Promise(function () {});
+      }
+    ).catch(function () {
+      if (!started) {
+        start('unprotected');
+      }
+    });
+  } else {
+    start('unprotected');
+  }
 })();

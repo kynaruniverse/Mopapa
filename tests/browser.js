@@ -712,6 +712,120 @@ async function run() {
     );
   });
 
+  var lockTest = await openPage();
+  var secondPage = null;
+  var secondPageErrors = [];
+
+  try {
+    secondPage = await lockTest.context.newPage();
+
+    secondPage.on('pageerror', function (error) {
+      secondPageErrors.push(error.message);
+    });
+
+    await secondPage.route(
+      /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
+      function (route) {
+        return route.abort();
+      }
+    );
+
+    await secondPage.goto(baseUrl, { waitUntil: 'load' });
+
+    assert.strictEqual(
+      await lockTest.page.locator('#write-status').isVisible(),
+      false,
+      'The first tab should own the write lock'
+    );
+
+    assert.strictEqual(
+      await secondPage.locator('#write-status').isVisible(),
+      true,
+      'The second tab should be read-only'
+    );
+
+    assert.ok(
+      (await secondPage.locator('#write-status').textContent())
+        .includes('read-only')
+    );
+
+    await saveText(
+      lockTest.page,
+      'Saved by the writable tab'
+    );
+
+    await secondPage.locator('#talk-input').fill(
+      'Attempted edit from the read-only tab'
+    );
+
+    await secondPage.locator('#send').click();
+
+    var protectedData = await savedData(secondPage);
+
+    assert.strictEqual(protectedData.entries.length, 1);
+
+    assert.strictEqual(
+      protectedData.entries[0].text,
+      'Saved by the writable tab'
+    );
+
+    assert.strictEqual(
+      await secondPage.locator('#talk-input').inputValue(),
+      'Attempted edit from the read-only tab'
+    );
+
+    assert.ok(
+      (await secondPage.locator('#bubble').textContent())
+        .includes('read-only')
+    );
+
+    await lockTest.page.close();
+
+    await secondPage.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await secondPage.locator('#write-status').isVisible(),
+      false,
+      'The remaining tab should acquire the lock after reload'
+    );
+
+    await saveText(
+      secondPage,
+      'Saved after the original tab closed'
+    );
+
+    var releasedData = await savedData(secondPage);
+
+    assert.strictEqual(releasedData.entries.length, 2);
+
+    assert.ok(
+      releasedData.entries.some(function (entry) {
+        return entry.text === 'Saved after the original tab closed';
+      })
+    );
+
+    assert.deepStrictEqual(
+      lockTest.pageErrors,
+      [],
+      'First-tab JavaScript errors'
+    );
+
+    assert.deepStrictEqual(
+      secondPageErrors,
+      [],
+      'Second-tab JavaScript errors'
+    );
+
+    passed++;
+    console.log('PASS', 'two tabs enforce exclusive write ownership and release the lock correctly');
+  } catch (error) {
+    failures++;
+    console.error('FAIL', 'two tabs enforce exclusive write ownership and release the lock correctly');
+    console.error(error.stack || error.message);
+  } finally {
+    await lockTest.context.close();
+  }
+  
   console.log('');
   console.log(passed + '/' + (passed + failures) + ' browser tests passed');
 

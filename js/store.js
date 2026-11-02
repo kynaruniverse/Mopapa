@@ -12,6 +12,17 @@ Mopapa.store = (function () {
     customRooms: [],
     ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
   };
+  var writeMode = 'unprotected';
+
+  function setWriteMode(mode) {
+    writeMode = mode === 'owner' || mode === 'readonly'
+      ? mode
+      : 'unprotected';
+  }
+
+  function getWriteMode() {
+    return writeMode;
+  }
 
   // What Ask has learned from the person. Kept apart from "learned",
   // which belongs to the room sorter and stays untouched.
@@ -529,6 +540,11 @@ function load() {
 
     saveError = null;
 
+    if (writeMode === 'readonly') {
+      saveError = 'readonly';
+      return false;
+    }
+
     if (data.storageUnavailable) {
       saveError = 'storage';
       return false;
@@ -920,6 +936,8 @@ function load() {
     load: load,
     save: save,
     saveError: function () { return saveError; },
+    setWriteMode: setWriteMode,
+    writeMode: getWriteMode,
     exportJSON: exportJSON,
     exportOriginalRecoveryCopy: exportOriginalRecoveryCopy,
     recoveryCopies: recoveryCopies,

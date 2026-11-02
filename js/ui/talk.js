@@ -291,7 +291,11 @@ Mopapa.talk = (function () {
     if (!r.saved) {
       input.value = ctx.text;
 
-      if (Mopapa.store.saveError() === 'conflict') {
+      if (Mopapa.store.saveError() === 'readonly') {
+        Mopapa.pet.say(
+          'This tab is read-only because Mopapa is already open in another tab. Your text is still in the box. Close the other tab, then reload this one to make changes.'
+        );
+      } else if (Mopapa.store.saveError() === 'conflict') {
         Mopapa.pet.say(
           'Another tab changed your saved data. I kept your text in the box, and I did not overwrite the newer data. Copy your text, reload Mopapa, then add it again.'
         );

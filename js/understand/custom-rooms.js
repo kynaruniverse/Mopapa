@@ -93,6 +93,18 @@ Mopapa.customRooms = (function () {
 
     Mopapa.store.data().roomRepairSaveFailed = false;
 
+    if (
+      Mopapa.store.writeMode &&
+      Mopapa.store.writeMode() === 'readonly'
+    ) {
+      entries.forEach(function (entry, index) {
+        entry.room = previousEntryRooms[index];
+      });
+
+      Mopapa.store.data().roomRepairPending = repaired;
+      return;
+    }
+
     if (repaired && !Mopapa.store.save()) {
       entries.forEach(function (entry, index) {
         entry.room = previousEntryRooms[index];
