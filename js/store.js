@@ -524,6 +524,11 @@ function load() {
       return false;
     }
 
+    if (data.corrupt) {
+      saveError = 'corrupt';
+      return false;
+    }
+
     try {
       currentRaw = localStorage.getItem(KEY);
     } catch (e) {
@@ -555,6 +560,11 @@ function load() {
     if (data.storageUnavailable) {
       saveError = 'storage';
       throw new Error('Storage is unavailable. Reload Mopapa before creating a backup.');
+    }
+
+    if (data.corrupt) {
+      saveError = 'corrupt';
+      throw new Error('Saved data is unreadable. Export a recovery copy or restore a valid backup instead.');
     }
 
     try {

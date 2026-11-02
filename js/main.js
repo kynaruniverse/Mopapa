@@ -40,6 +40,8 @@
 
   if (M.store.data().storageUnavailable) {
     M.pet.say("I can't access your saved memories right now. Please reload me after checking browser storage. Don't enter new memories until then.");
+  } else if (M.store.data().corrupt) {
+    M.pet.say("I couldn't read your saved memories, so I've locked normal changes to protect the original data. Download a recovery copy if available, or restore a valid backup.");
   } else {
     M.pet.say(n
       ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
@@ -59,6 +61,8 @@
     } catch (e) {
       if (M.store.saveError() === 'conflict') {
         M.pet.say("Your saved data changed in another tab. I didn't create an outdated backup. Reload Mopapa, check your memories, then try again.");
+      } else if (M.store.saveError() === 'corrupt') {
+        M.pet.say("Your saved data is unreadable. I didn't create a misleading backup. Use Download recovery copy if available, or restore a valid backup.");
       } else {
         M.pet.say("I couldn't start the backup download. Your saved data is still in this browser.");
       }

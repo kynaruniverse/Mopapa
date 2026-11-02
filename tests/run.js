@@ -3499,6 +3499,134 @@ test('loading a future schema version preserves it as corrupt recovery data', fu
   assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 1);
 });
 
+test('store refuses to overwrite data loaded from an unsupported schema', function () {
+  const originalRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'corrupt');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+});
+
+test('store protects corrupt data even when recovery-copy creation fails', function () {
+  const originalRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.corrupt.') === 0) {
+      throw new Error('simulated recovery-copy failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, false);
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'corrupt');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+});
+
+test('normal backup export refuses to export an empty replacement for corrupt data', function () {
+  const originalRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.Mopapa.store.load();
+
+  assert.throws(function () {
+    w.Mopapa.store.exportJSON();
+  }, /Saved data is unreadable/);
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'corrupt');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+});
+
+test('valid backup restore can replace corrupt saved data', function () {
+  const originalRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'restored', text: 'Recovered memory', room: 'notes' }
+        ],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().corrupt, undefined);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'restored');
+
+  const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
+
+  assert.strictEqual(saved.entries[0].id, 'restored');
+  assert.strictEqual(saved.schemaVersion, 1);
+});
+
 test('loading rejects a non-numeric schema version', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
