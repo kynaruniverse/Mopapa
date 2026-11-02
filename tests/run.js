@@ -883,10 +883,10 @@ test('recovery copies can be discovered after reloading storage', function () {
 
   assert.strictEqual(copies.length, 2);
 
-  assert.strictEqual(copies[0].key, 'mopapa.v1.recovery.100');
-  assert.strictEqual(copies[0].kind, 'recovery');
-  assert.strictEqual(copies[1].key, 'mopapa.v1.corrupt.200');
-  assert.strictEqual(copies[1].kind, 'corrupt');
+  assert.strictEqual(copies[0].key, 'mopapa.v1.corrupt.200');
+  assert.strictEqual(copies[0].kind, 'corrupt');
+  assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.100');
+  assert.strictEqual(copies[1].kind, 'recovery');
 
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1'), false);
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1.recovery.missing'), false);
@@ -902,16 +902,16 @@ test('recovery copies are ordered by numeric timestamp and collision suffix', fu
 
   const copies = w.Mopapa.store.recoveryCopies();
 
-  assert.deepStrictEqual(
-    copies.map(function (copy) {
+  assert.strictEqual(
+    JSON.stringify(copies.map(function (copy) {
       return copy.key;
-    }),
-    [
+    })),
+    JSON.stringify([
       'mopapa.v1.corrupt.2000.10',
       'mopapa.v1.corrupt.2000.9',
       'mopapa.v1.recovery.2000',
       'mopapa.v1.recovery.1000'
-    ]
+    ])
   );
 
   assert.strictEqual(copies[0].timestamp, 2000);
