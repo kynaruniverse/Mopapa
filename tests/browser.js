@@ -313,7 +313,7 @@ async function run() {
     );
 
     await page.evaluate(function () {
-      Object.defineProperty(localStorage, 'key', {
+      Object.defineProperty(Storage.prototype, 'key', {
         configurable: true,
         value: function () {
           throw new Error('simulated storage enumeration failure');
