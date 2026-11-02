@@ -164,6 +164,45 @@ async function run() {
     );
   });
 
+  await check('recovery inventory displays every copy in correct order', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem('mopapa.v1.recovery.1000', 'older');
+      localStorage.setItem('mopapa.v1.recovery.2000', 'newer');
+      localStorage.setItem('mopapa.v1.corrupt.2000.9', 'ninth');
+      localStorage.setItem('mopapa.v1.corrupt.2000.10', 'tenth');
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    var items = page.locator('.recovery-copy-item');
+
+    assert.strictEqual(await items.count(), 4);
+
+    var labels = await items.locator('.recovery-copy-label').allTextContents();
+
+    assert.deepStrictEqual(labels, [
+      'Corrupt-data copy',
+      'Corrupt-data copy',
+      'Rejected-entry recovery',
+      'Rejected-entry recovery'
+    ]);
+
+    var dates = await items.locator('.recovery-copy-date').allTextContents();
+
+    assert.ok(dates[0].includes('Copy 11'));
+    assert.ok(dates[1].includes('Copy 10'));
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-download').count(),
+      4
+    );
+  });
+  
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(
       await page.locator('#talk-mode-keep').getAttribute('aria-pressed'),

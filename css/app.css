@@ -159,3 +159,58 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .app-dialog-actions .app-dialog-ok.danger{background:var(--bad);border-color:var(--bad)}
 .done-toggle{display:flex;align-items:center;gap:8px;min-height:40px}
 .toast{position:fixed;left:16px;right:16px;bottom:16px;max-width:528px;margin:0 auto;padding:12px 14px;background:var(--text);color:#2a2536;border-radius:var(--r);z-index:100}
+/* Recovery-copy inventory */
+.recovery-panel{
+  margin-top:24px;
+  padding-top:20px;
+  border-top:1px solid var(--line)
+}
+.recovery-panel h2{
+  font-size:1.1rem
+}
+.recovery-description{
+  margin:6px 0 12px;
+  color:var(--dim);
+  font-size:.9rem
+}
+.recovery-copy-list{
+  list-style:none;
+  margin:0;
+  padding:0
+}
+.recovery-copy-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px 0;
+  border-top:1px solid var(--line)
+}
+.recovery-copy-details{
+  min-width:0;
+  overflow-wrap:anywhere
+}
+.recovery-copy-label{
+  margin:0;
+  font-weight:600
+}
+.recovery-copy-date{
+  margin:3px 0 0;
+  color:var(--dim);
+  font-size:.85rem
+}
+.recovery-copy-download{
+  flex:none;
+  min-height:44px;
+  padding:8px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  background:var(--raised);
+  color:var(--text)
+}
+@media(max-width:360px){
+  .recovery-copy-item{
+    align-items:flex-start;
+    flex-direction:column
+  }
+}

@@ -892,6 +892,48 @@ test('recovery copies can be discovered after reloading storage', function () {
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1.recovery.missing'), false);
 });
 
+test('recovery copies are ordered by numeric timestamp and collision suffix', function () {
+  const w = boot({
+    'mopapa.v1.recovery.1000': 'older',
+    'mopapa.v1.recovery.2000': 'newer',
+    'mopapa.v1.corrupt.2000.9': 'ninth',
+    'mopapa.v1.corrupt.2000.10': 'tenth'
+  });
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.deepStrictEqual(
+    copies.map(function (copy) {
+      return copy.key;
+    }),
+    [
+      'mopapa.v1.corrupt.2000.10',
+      'mopapa.v1.corrupt.2000.9',
+      'mopapa.v1.recovery.2000',
+      'mopapa.v1.recovery.1000'
+    ]
+  );
+
+  assert.strictEqual(copies[0].timestamp, 2000);
+  assert.strictEqual(copies[0].sequence, 10);
+  assert.strictEqual(copies[0].kind, 'corrupt');
+  assert.strictEqual(copies[2].sequence, 0);
+});
+
+test('recovery inventory retains malformed legacy keys without misdating them', function () {
+  const w = boot({
+    'mopapa.v1.recovery.not-a-date': 'legacy',
+    'mopapa.v1.corrupt.2000': 'valid'
+  });
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 2);
+  assert.strictEqual(copies[0].timestamp, 2000);
+  assert.strictEqual(copies[1].timestamp, null);
+  assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.not-a-date');
+});
+
 test('recovery discovery returns an empty list when storage enumeration fails', function () {
   const w = boot({});
 

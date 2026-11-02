@@ -159,10 +159,18 @@
 
     <div id="tools" class="den-tools">
       <button type="button" id="btn-export" class="link">Back up data</button>
-      <button type="button" id="btn-recovery-export" class="link" hidden>Download recovery copy</button>
+      <button type="button" id="btn-recovery-export" class="link" hidden>Download newest recovery copy</button>
       <button type="button" id="btn-import" class="link">Restore backup</button>
       <input id="file-import" type="file" accept=".json,application/json" hidden>
     </div>
+
+    <section id="recovery-panel" class="recovery-panel" hidden aria-labelledby="recovery-heading">
+      <h2 id="recovery-heading">Preserved recovery copies</h2>
+      <p class="recovery-description">
+        These copies are kept separately from your current memories. Download any copy you want to keep outside this browser.
+      </p>
+      <ul id="recovery-copy-list" class="recovery-copy-list" aria-label="Available recovery copies"></ul>
+    </section>
   </section>
 
   <section id="screen-room" hidden>

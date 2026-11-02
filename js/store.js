@@ -614,18 +614,51 @@ function load() {
         var key = localStorage.key(i);
         if (!key) continue;
 
+        var kind = null;
+        var suffix = '';
+
         if (key.indexOf(recoveryPrefix) === 0) {
-          copies.push({ key: key, kind: 'recovery' });
+          kind = 'recovery';
+          suffix = key.slice(recoveryPrefix.length);
         } else if (key.indexOf(corruptPrefix) === 0) {
-          copies.push({ key: key, kind: 'corrupt' });
+          kind = 'corrupt';
+          suffix = key.slice(corruptPrefix.length);
         }
+
+        if (!kind) continue;
+
+        var match = suffix.match(/^(\d+)(?:\.(\d+))?$/);
+        var timestamp = match ? Number(match[1]) : null;
+        var sequence = match && match[2]
+          ? Number(match[2])
+          : 0;
+
+        copies.push({
+          key: key,
+          kind: kind,
+          timestamp: timestamp !== null && isFinite(timestamp)
+            ? timestamp
+            : null,
+          sequence: isFinite(sequence) ? sequence : 0
+        });
       }
     } catch (e) {
       return [];
     }
 
     copies.sort(function (a, b) {
-      return a.key < b.key ? 1 : a.key > b.key ? -1 : 0;
+      if (a.timestamp === null && b.timestamp !== null) return 1;
+      if (a.timestamp !== null && b.timestamp === null) return -1;
+
+      if (a.timestamp !== b.timestamp) {
+        return b.timestamp - a.timestamp;
+      }
+
+      if (a.sequence !== b.sequence) {
+        return b.sequence - a.sequence;
+      }
+
+      return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
     });
 
     return copies;

@@ -70,20 +70,79 @@
   });
 
   var recoveryButton = document.getElementById('btn-recovery-export');
-  recoveryButton.hidden = M.store.recoveryCopies().length === 0;
+  var recoveryPanel = document.getElementById('recovery-panel');
+  var recoveryList = document.getElementById('recovery-copy-list');
+
+  function renderRecoveryCopies() {
+    var copies = M.store.recoveryCopies();
+
+    recoveryButton.hidden = copies.length === 0;
+    recoveryPanel.hidden = copies.length === 0;
+    recoveryList.innerHTML = '';
+
+    copies.forEach(function (copy) {
+      var item = document.createElement('li');
+      var details = document.createElement('div');
+      var label = document.createElement('p');
+      var date = document.createElement('p');
+      var button = document.createElement('button');
+
+      item.className = 'recovery-copy-item';
+      details.className = 'recovery-copy-details';
+      label.className = 'recovery-copy-label';
+      date.className = 'recovery-copy-date';
+
+      label.textContent = copy.kind === 'corrupt'
+        ? 'Corrupt-data copy'
+        : 'Rejected-entry recovery';
+
+      if (
+        copy.timestamp !== null &&
+        isFinite(new Date(copy.timestamp).getTime())
+      ) {
+        date.textContent = new Date(copy.timestamp).toLocaleString();
+      } else {
+        date.textContent = 'Date unavailable';
+      }
+
+      if (copy.sequence > 0) {
+        date.textContent += ' · Copy ' + (copy.sequence + 1);
+      }
+
+      button.type = 'button';
+      button.className = 'recovery-copy-download';
+      button.textContent = 'Download copy';
+
+      button.addEventListener('click', function () {
+        if (M.store.exportRecoveryCopy(copy.key)) {
+          M.pet.say('Recovery download started. Check your Downloads folder before relying on it.');
+        } else {
+          M.pet.say("I couldn't export that recovery copy. The original may still be in this browser.");
+        }
+      });
+
+      details.appendChild(label);
+      details.appendChild(date);
+      item.appendChild(details);
+      item.appendChild(button);
+      recoveryList.appendChild(item);
+    });
+  }
 
   recoveryButton.addEventListener('click', function () {
     try {
       if (M.store.exportRecoveryCopy()) {
-        M.pet.say('Recovery download started. Check your Downloads folder before relying on it.');
+        M.pet.say('Newest recovery download started. Check your Downloads folder before relying on it.');
       } else {
-        recoveryButton.hidden = M.store.recoveryCopies().length === 0;
+        renderRecoveryCopies();
         M.pet.say("I couldn't export a recovery copy. The original saved data may still be in this browser.");
       }
     } catch (e) {
       M.pet.say("I couldn't start the recovery download. Check whether browser downloads are available.");
     }
   });
+
+  renderRecoveryCopies();
 
   var importButton = document.getElementById('btn-import');
   var importInput = document.getElementById('file-import');
