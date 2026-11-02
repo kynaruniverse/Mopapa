@@ -36,6 +36,10 @@ Mopapa.customRooms = (function () {
   }
 
   function reload() {
+    if (Mopapa.store.data().storageUnavailable) {
+      return;
+    }
+
     Mopapa.rooms = Mopapa.rooms.filter(function (room) {
       return room.id.indexOf('custom_') !== 0;
     });

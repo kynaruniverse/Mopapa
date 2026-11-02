@@ -2424,6 +2424,81 @@ test('failed edits, tags, done, pin and move all revert in memory', function () 
   assert.strictEqual(w.Mopapa.store.data().entries[0].room, 'notes');
 });
 
+test('custom room reload does not repair entries when storage is unavailable', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().storageUnavailable = true;
+  w.Mopapa.store.data().entries.push({
+    id: 'orphan',
+    text: 'An entry with an unknown room',
+    room: 'custom_missing'
+  });
+
+  const before = JSON.stringify(w.Mopapa.store.data().entries);
+
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().entries),
+    before
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().roomRepairSaveFailed,
+    undefined
+  );
+
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+});
+
+test('custom room operations revert when storage is unavailable', function () {
+  const w = boot(stored());
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().storageUnavailable = true;
+
+  const room = {
+    id: 'custom_books',
+    name: 'Books',
+    icon: 'book'
+  };
+
+  w.Mopapa.store.data().customRooms.push(room);
+  w.Mopapa.rooms.push({
+    id: room.id,
+    name: room.name,
+    icon: room.icon,
+    dated: false,
+    words: ['Books']
+  });
+
+  const added = w.Mopapa.customRooms.add('Travel', 'plane');
+  const renamed = w.Mopapa.customRooms.rename('custom_books', 'Reading');
+  const removed = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(added.ok, false);
+  assert.strictEqual(renamed.ok, false);
+  assert.strictEqual(removed.ok, false);
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms.length,
+    1
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.rooms.some(function (item) {
+      return item.id === 'custom_books' && item.name === 'Books';
+    }),
+    true
+  );
+});
+
 test('custom room creation rejects non-string names', function () {
   const w = boot(stored());
   w.Mopapa.store.load();
