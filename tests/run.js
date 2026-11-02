@@ -409,6 +409,7 @@ test('Keep this instead files the original missed question', function () {
   const confirm = app.elements.confirm;
   const original = 'Where did I put the spare key?';
 
+  app.elements['talk-mode-ask'].click();
   input.value = original;
 
   app.elements['talk-form'].dispatch('submit', {
@@ -444,6 +445,7 @@ test('Not now cancels a missed question without saving it', function () {
   const confirm = app.elements.confirm;
   const original = 'Where did I put the spare key?';
 
+  app.elements['talk-mode-ask'].click();
   input.value = original;
 
   app.elements['talk-form'].dispatch('submit', {
@@ -470,7 +472,7 @@ test('Keep this instead preserves text when storage fails', function () {
   const input = app.elements['talk-input'];
   const original = 'Where did I put the spare key?';
 
-  app.saveResult = false;
+  app.elements['talk-mode-ask'].click();
   input.value = original;
 
   app.elements['talk-form'].dispatch('submit', {
