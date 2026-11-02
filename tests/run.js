@@ -1213,6 +1213,48 @@ test('corrupt storage is backed up, not lost', function () {
   }));
 });
 
+test('repeated corrupt loads never overwrite an existing recovery copy', function () {
+  const firstRaw = '{first broken backup';
+  const secondRaw = '{second broken backup';
+
+  const w = boot({
+    'mopapa.v1': firstRaw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+
+  w.localStorage.setItem('mopapa.v1', secondRaw);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+
+  const keys = Object.keys(w.localStorage._).filter(function (key) {
+    return key.indexOf('mopapa.v1.corrupt.') === 0;
+  });
+
+  assert.strictEqual(keys.length, 2);
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.corrupt.123456'],
+    firstRaw
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.corrupt.123456.1'],
+    secondRaw
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 2);
+});
+
 test('corrupt storage reports when its recovery copy cannot be saved', function () {
   const w = boot({ 'mopapa.v1': '{broken json' });
 

@@ -501,7 +501,16 @@ function load() {
   } catch (e) {
     if (raw !== null) {
       try {
-        localStorage.setItem(KEY + '.corrupt.' + Date.now(), raw);
+        var corruptBase = KEY + '.corrupt.' + Date.now();
+        var corruptKey = corruptBase;
+        var corruptSuffix = 1;
+
+        while (localStorage.getItem(corruptKey) !== null) {
+          corruptKey = corruptBase + '.' + corruptSuffix;
+          corruptSuffix++;
+        }
+
+        localStorage.setItem(corruptKey, raw);
         data.corruptCopySaved = true;
       } catch (e2) {
         data.corruptCopySaved = false;
