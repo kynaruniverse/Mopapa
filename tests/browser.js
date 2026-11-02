@@ -203,6 +203,132 @@ async function run() {
     );
   });
   
+  await check('recovery downloads have distinct filenames and preserve exact contents', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem(
+        'mopapa.v1.corrupt.2000.10',
+        'tenth-copy-data'
+      );
+
+      localStorage.setItem(
+        'mopapa.v1.corrupt.2000.9',
+        'ninth-copy-data'
+      );
+
+      localStorage.setItem(
+        'mopapa.v1.recovery.not-a-date',
+        'malformed-date-copy-data'
+      );
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    var buttons = page.locator('.recovery-copy-download');
+
+    assert.strictEqual(await buttons.count(), 3);
+
+    var expected = [
+      {
+        filename: 'mopapa-corrupt-copy-2000.10.json',
+        contents: 'tenth-copy-data'
+      },
+      {
+        filename: 'mopapa-corrupt-copy-2000.9.json',
+        contents: 'ninth-copy-data'
+      },
+      {
+        filename: 'mopapa-recovery-copy-not-a-date.json',
+        contents: 'malformed-date-copy-data'
+      }
+    ];
+
+    for (var i = 0; i < expected.length; i++) {
+      var downloadPromise = page.waitForEvent('download');
+
+      await buttons.nth(i).click();
+
+      var download = await downloadPromise;
+
+      assert.strictEqual(
+        download.suggestedFilename(),
+        expected[i].filename
+      );
+
+      var downloadPath = await download.path();
+
+      assert.ok(downloadPath);
+
+      assert.strictEqual(
+        fs.readFileSync(downloadPath, 'utf8'),
+        expected[i].contents
+      );
+    }
+  });
+
+  await check('recovery inventory refreshes when a stored copy disappears', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem(
+        'mopapa.v1.corrupt.3000',
+        'temporary-copy'
+      );
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      1
+    );
+
+    await page.evaluate(function () {
+      localStorage.removeItem('mopapa.v1.corrupt.3000');
+    });
+
+    await page.locator('.recovery-copy-download').click();
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      0
+    );
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      false
+    );
+  });
+  
+  await check('recovery inventory handles storage enumeration failure without crashing', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem(
+        'mopapa.v1.recovery.4000',
+        'temporary-copy'
+      );
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    await page.evaluate(function () {
+      Object.defineProperty(localStorage, 'key', {
+        configurable: true,
+        value: function () {
+          throw new Error('simulated storage enumeration failure');
+        }
+      });
+    });
+
+    await page.locator('.recovery-copy-download').click();
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      false
+    );
+  });  
+  
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(
       await page.locator('#talk-mode-keep').getAttribute('aria-pressed'),

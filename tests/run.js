@@ -890,6 +890,8 @@ test('recovery copies can be discovered after reloading storage', function () {
 
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1'), false);
   assert.strictEqual(w.Mopapa.store.exportRecoveryCopy('mopapa.v1.recovery.missing'), false);
+  assert.strictEqual(w.Mopapa.store.exportRecoveryCopy(123), false);
+  assert.strictEqual(w.Mopapa.store.exportRecoveryCopy({}), false);
 });
 
 test('recovery copies are ordered by numeric timestamp and collision suffix', function () {

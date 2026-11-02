@@ -117,7 +117,8 @@
         if (M.store.exportRecoveryCopy(copy.key)) {
           M.pet.say('Recovery download started. Check your Downloads folder before relying on it.');
         } else {
-          M.pet.say("I couldn't export that recovery copy. The original may still be in this browser.");
+          renderRecoveryCopies();
+          M.pet.say("I couldn't export that recovery copy. The inventory has been refreshed because the copy may no longer be available.");
         }
       });
 

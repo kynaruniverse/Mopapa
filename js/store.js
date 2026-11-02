@@ -667,6 +667,14 @@ function load() {
   function exportRecoveryCopy(key) {
     var copies = recoveryCopies();
 
+    if (
+      key !== undefined &&
+      key !== null &&
+      typeof key !== 'string'
+    ) {
+      return false;
+    }
+
     if (!key) {
       if (!copies.length) return false;
       key = copies[0].key;
@@ -679,11 +687,16 @@ function load() {
 
     if (!isRecovery && !isCorrupt) return false;
 
-    var exists = copies.some(function (copy) {
-      return copy.key === key;
-    });
+    var copy = null;
 
-    if (!exists) return false;
+    for (var i = 0; i < copies.length; i++) {
+      if (copies[i].key === key) {
+        copy = copies[i];
+        break;
+      }
+    }
+
+    if (!copy) return false;
 
     var raw;
 
@@ -700,13 +713,33 @@ function load() {
     var a;
 
     try {
+      var keyPrefix = isCorrupt
+        ? corruptPrefix
+        : recoveryPrefix;
+
+      var filenameSuffix = key.slice(keyPrefix.length);
+
+      try {
+        filenameSuffix = encodeURIComponent(filenameSuffix);
+      } catch (e) {
+        filenameSuffix = filenameSuffix.replace(
+          /[^a-zA-Z0-9._-]/g,
+          '_'
+        );
+      }
+
+      if (!filenameSuffix) {
+        filenameSuffix = 'unnamed';
+      }
+
       blob = new Blob([raw], { type: 'application/json' });
       url = URL.createObjectURL(blob);
       a = document.createElement('a');
+
       a.href = url;
       a.download = 'mopapa-' +
         (isCorrupt ? 'corrupt' : 'recovery') +
-        '-copy-' + new Date().toISOString().slice(0, 10) + '.json';
+        '-copy-' + filenameSuffix + '.json';
 
       document.body.appendChild(a);
       a.click();
@@ -719,7 +752,9 @@ function load() {
       return true;
     } catch (e) {
       if (url) {
-        try { URL.revokeObjectURL(url); } catch (e2) {}
+        try {
+          URL.revokeObjectURL(url);
+        } catch (e2) {}
       }
 
       return false;
