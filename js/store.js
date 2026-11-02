@@ -452,11 +452,18 @@ function load() {
   }
 
   var raw = null;
-  
+
   try {
     raw = localStorage.getItem(KEY);
-    lastKnownRaw = raw;
+  } catch (e) {
+    data.storageUnavailable = true;
+    saveError = 'storage';
+    return data;
+  }
 
+  lastKnownRaw = raw;
+
+  try {
     if (raw) {
       var p = JSON.parse(raw);
       var storedVersion = p &&
@@ -512,6 +519,11 @@ function load() {
 
     saveError = null;
 
+    if (data.storageUnavailable) {
+      saveError = 'storage';
+      return false;
+    }
+
     try {
       currentRaw = localStorage.getItem(KEY);
     } catch (e) {
@@ -536,6 +548,10 @@ function load() {
   }
 
   function exportJSON() {
+    if (data.storageUnavailable) {
+      throw new Error('Storage is unavailable. Reload Mopapa before creating a backup.');
+    }
+
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');

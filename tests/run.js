@@ -3468,6 +3468,83 @@ test('failed orphan-room repair is reported without changing persisted data', fu
   );
 });
 
+test('store identifies unavailable storage during startup', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  const originalGetItem = w.localStorage.getItem;
+
+  w.localStorage.getItem = function () {
+    throw new Error('simulated storage access failure');
+  };
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().storageUnavailable,
+    true
+  );
+
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  w.localStorage.getItem = originalGetItem;
+});
+
+test('store refuses to overwrite unread data after storage becomes available again', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+  const originalGetItem = w.localStorage.getItem;
+
+  w.localStorage.getItem = function () {
+    throw new Error('simulated temporary storage failure');
+  };
+
+  w.Mopapa.store.load();
+
+  w.localStorage.getItem = originalGetItem;
+
+  w.Mopapa.store.data().entries.push({
+    id: 'accidental',
+    text: 'Must not overwrite original data',
+    room: 'notes'
+  });
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+});
+
+test('store refuses to export a backup when startup storage access failed', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.localStorage.getItem = function () {
+    throw new Error('simulated storage access failure');
+  };
+
+  w.Mopapa.store.load();
+
+  assert.throws(function () {
+    w.Mopapa.store.exportJSON();
+  }, /Storage is unavailable/);
+});
+
 test('store saves successfully when storage has not changed', function () {
   const w = boot(stored([{
     id: 'original',

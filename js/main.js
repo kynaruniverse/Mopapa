@@ -13,7 +13,11 @@
   M.customRoomsUI.init();
   M.askLearningUI.init();
 
-  if (M.store.data().corrupt) {
+  if (M.store.data().storageUnavailable) {
+    M.dialog.notice(
+      'Mopapa could not access this browser’s saved data. Your existing memories have not been loaded. Do not add or restore anything yet. Check browser storage permissions and reload Mopapa.'
+    );
+  } else if (M.store.data().corrupt) {
     M.dialog.notice(
       M.store.data().corruptCopySaved
         ? 'Your saved data could not be read. A copy was preserved in this browser. Use Download recovery copy to save it to a file.'
@@ -33,9 +37,14 @@
   }
 
   var n = M.store.data().entries.length;
-  M.pet.say(n
-    ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
-    : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only. Use Back up data to start a download you can keep separately.");
+
+  if (M.store.data().storageUnavailable) {
+    M.pet.say("I can't access your saved memories right now. Please reload me after checking browser storage. Don't enter new memories until then.");
+  } else {
+    M.pet.say(n
+      ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'
+      : "Hi, I'm Mopapa. Tell me anything and I'll file it in the right room. Everything stays in this browser only. Use Back up data to start a download you can keep separately.");
+  }
     
   if (M.store.data().roomRepairSaveFailed) {
     M.pet.say(
