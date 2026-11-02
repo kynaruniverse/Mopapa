@@ -464,7 +464,7 @@ function load() {
   lastKnownRaw = raw;
 
   try {
-    if (raw) {
+    if (raw !== null) {
       var p = JSON.parse(raw);
       var storedVersion = p &&
         Object.prototype.hasOwnProperty.call(p, 'schemaVersion')
@@ -499,7 +499,7 @@ function load() {
       }
     }
   } catch (e) {
-    if (raw) {
+    if (raw !== null) {
       try {
         localStorage.setItem(KEY + '.corrupt.' + Date.now(), raw);
         data.corruptCopySaved = true;

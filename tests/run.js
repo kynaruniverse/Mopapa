@@ -3499,6 +3499,46 @@ test('loading a future schema version preserves it as corrupt recovery data', fu
   assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 1);
 });
 
+test('loading an existing empty storage value treats it as corrupt', function () {
+  const w = boot({
+    'mopapa.v1': ''
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 0);
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 1);
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'corrupt');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    ''
+  );
+});
+
+test('normal backup refuses to export when existing storage is empty and corrupt', function () {
+  const w = boot({
+    'mopapa.v1': ''
+  });
+
+  w.Mopapa.store.load();
+
+  assert.throws(function () {
+    w.Mopapa.store.exportJSON();
+  }, /Saved data is unreadable/);
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'corrupt');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    ''
+  );
+});
+
 test('store refuses to overwrite data loaded from an unsupported schema', function () {
   const originalRaw = JSON.stringify({
     schemaVersion: 2,
