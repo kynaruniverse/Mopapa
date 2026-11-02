@@ -3529,7 +3529,7 @@ test('failed orphan-room repair is reported without changing persisted data', fu
 
   assert.strictEqual(
     w.Mopapa.store.data().entries[0].room,
-    'notes'
+    'custom_missing'
   );
 
   assert.strictEqual(
@@ -3540,6 +3540,51 @@ test('failed orphan-room repair is reported without changing persisted data', fu
   assert.strictEqual(
     w.localStorage.getItem('mopapa.v1'),
     before
+  );
+});
+
+test('failed orphan-room repair can be retried without losing the original assignment', function () {
+  const w = boot(stored([{
+    id: 'orphaned-entry',
+    text: 'The spare key is in the kitchen drawer',
+    room: 'custom_missing'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'custom_missing'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().roomRepairSaveFailed,
+    true
+  );
+
+  w.localStorage.failWrites = false;
+  w.Mopapa.customRooms.reload();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'notes'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().roomRepairSaveFailed,
+    false
+  );
+
+  const saved = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(
+    saved.entries[0].room,
+    'notes'
   );
 });
 

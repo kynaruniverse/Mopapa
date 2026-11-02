@@ -48,7 +48,7 @@
     
   if (M.store.data().roomRepairSaveFailed) {
     M.pet.say(
-      "I moved an entry with a missing room into Notes, but couldn't save that repair. Back up your data and check available browser storage."
+      "I found an entry assigned to a missing room, but couldn't save the repair. The entry has been left unchanged. Back up your data and check available browser storage."
     );
   }    
     
