@@ -212,6 +212,8 @@ async function run() {
       true
     );
 
+    await page.locator('.app-dialog-ok').click();
+
     await page.locator('#talk-input').fill(
       'This new memory must not overwrite the original'
     );
