@@ -472,6 +472,7 @@ test('Keep this instead preserves text when storage fails', function () {
   const input = app.elements['talk-input'];
   const original = 'Where did I put the spare key?';
 
+  app.saveResult = false;
   app.elements['talk-mode-ask'].click();
   input.value = original;
 
