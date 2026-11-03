@@ -1605,6 +1605,108 @@ test('questions beginning do I or do you are not direct tasks', function () {
   });
 });
 
+test('hypothetical intentions are not confidently classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'If I need to renew my passport',
+    'I might need to call the dentist',
+    'Maybe I should pay council tax',
+    'I could submit the application'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Hypothetical statement was classified as a task: ' + text
+    );
+  });
+});
+
+test('quoted task instructions are not confidently classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    '"Call the dentist tomorrow"',
+    "'Please complete the application by Friday'",
+    'The phrase "renew my passport" appears in this note'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Quoted instruction was classified as a task: ' + text
+    );
+  });
+});
+
+test('reported instructions are not automatically classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'The email says to call the dentist tomorrow',
+    'My partner asked me to renew the passport',
+    'The note says I should pay council tax'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Reported instruction was classified as a task: ' + text
+    );
+  });
+});
+
+test('indirect questions are not confidently classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'Should I call the dentist?',
+    'Could I renew my passport?',
+    'Would it be sensible to pay council tax?',
+    'Might I need to submit the application?'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Indirect question was classified as a task: ' + text
+    );
+  });
+});
+
+test('completed actions are not automatically classified as new tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'I called the dentist yesterday',
+    'I already paid the electricity bill',
+    'We submitted the application last week'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Completed action was classified as a new task: ' + text
+    );
+  });
+});
+
 test('how do I questions are not direct task instructions', function () {
   const w = boot({});
 

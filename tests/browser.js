@@ -575,6 +575,66 @@ async function run() {
     assert.strictEqual(data.entries[0].room, 'notes');
     assert.strictEqual(data.entries[0].text, text);
   });
+
+  await check('hypothetical task intentions are saved as Notes', async function (page) {
+    var text = 'I might need to call the dentist';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+
+  await check('quoted task instructions are saved as Notes', async function (page) {
+    var text = '"Please complete the application by Friday"';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+
+  await check('reported instructions are saved as Notes', async function (page) {
+    var text = 'The email says to renew my passport';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+
+  await check('indirect questions are saved as Notes', async function (page) {
+    var text = 'Should I call the dentist?';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+
+  await check('completed actions are saved as Notes, not new tasks', async function (page) {
+    var text = 'I already paid the electricity bill';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
   
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(
