@@ -56,9 +56,20 @@ Mopapa.sorter = (function () {
   );
 
   var REMINDER_TASK_RE = new RegExp(
-    '^(?:(?:please\\s+)?remember\\s+to|' +
-    "(?:please\\s+)?(?:do\\s+not|don['’]?t|never)\\s+forget\\s+to)\\s+" +
-    TASK_ACTION + '\\b',
+    '^(?:(?:please\\\\s+)?remember\\\\s+to|' +
+    "(?:please\\\\s+)?(?:do\\\\s+not|don['’]?t|never)\\\\s+forget\\\\s+to)\\\\s+" +
+    TASK_ACTION + '\\\\b',
+    'i'
+  );
+
+  var REPORTED_TASK_RE = new RegExp(
+    '^(?:(?:the|an|a|my|this|that)\\\\s+' +
+    '(?:email|message|text|note|letter)\\\\s+' +
+    '(?:says?|said|asks?|asked|tells?|told|mentions?|mentioned)\\\\s+' +
+    '(?:(?:that\\\\s+)?(?:i\\\\s+should\\\\s+|to\\\\s+))|' +
+    '(?:my|the)\\\\s+(?:partner|friend|colleague|boss)\\\\s+' +
+    'asked me to\\\\s+)' +
+    TASK_ACTION + '\\\\b',
     'i'
   );
 
@@ -88,6 +99,14 @@ Mopapa.sorter = (function () {
   // Classification uses explicit rules only.
   function classify(text, parse) {
     var command = String(text || '').trim();
+
+    if (REPORTED_TASK_RE.test(command)) {
+      return {
+        room: 'notes',
+        confident: true,
+        ranked: ['notes', 'todo', 'appointments', 'wishlist', 'feelings', 'ideas']
+      };
+    }
 
     if (isTaskInstruction(command)) {
       return {
