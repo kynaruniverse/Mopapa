@@ -522,6 +522,18 @@ async function run() {
       'Do I need to pay council tax?'
     );
   });
+
+  await check('negative instructions are saved as Notes, not To-dos', async function (page) {
+    var text = 'Do not renew my passport';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(data.entries[0].text, text);
+  });
   
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(

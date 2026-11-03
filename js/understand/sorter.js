@@ -50,7 +50,7 @@ Mopapa.sorter = (function () {
 
   var REMINDER_TASK_RE = new RegExp(
     '^(?:(?:please\\s+)?remember\\s+to|' +
-    "(?:please\\s+)?(?:do\\s+not|don['’]?t)\\s+forget\\s+to)\\s+" +
+    "(?:please\\s+)?(?:do\\s+not|don['’]?t|never)\\s+forget\\s+to)\\s+" +
     TASK_ACTION + '\\b',
     'i'
   );
@@ -58,14 +58,24 @@ Mopapa.sorter = (function () {
   var QUESTION_AUX_RE =
     /^(?:do|does|did)\s+(?:i|we|you|they)\b/i;
 
+  var NEGATIVE_COMMAND_RE =
+    /^(?:please\s+)?(?:do\s+not|don['’]?t|never)\s+/i;
+
   function isTaskInstruction(command) {
     if (QUESTION_AUX_RE.test(command)) {
       return false;
     }
 
+    if (REMINDER_TASK_RE.test(command)) {
+      return true;
+    }
+
+    if (NEGATIVE_COMMAND_RE.test(command)) {
+      return false;
+    }
+
     return DIRECT_TASK_RE.test(command) ||
-      INTENT_TASK_RE.test(command) ||
-      REMINDER_TASK_RE.test(command);
+      INTENT_TASK_RE.test(command);
   }
 
   // Classification uses explicit rules only.

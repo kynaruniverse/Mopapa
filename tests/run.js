@@ -1460,7 +1460,8 @@ test('remember and do not forget instructions are classified as to-dos', functio
     'Remember to book the vet',
     'Please remember to renew the passport',
     'Do not forget to pay the bill',
-    "Don't forget to call the dentist"
+    "Don't forget to call the dentist",
+    'Never forget to renew my passport'
   ];
 
   examples.forEach(function (text) {
@@ -1468,6 +1469,30 @@ test('remember and do not forget instructions are classified as to-dos', functio
 
     assert.strictEqual(result.room, 'todo');
     assert.strictEqual(result.confident, true);
+  });
+});
+
+test('negative instructions are not confidently classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'Do not renew my passport',
+    'Please do not call the dentist',
+    "Don't pay the electricity bill",
+    'Never contact the council',
+    'I do not need to renew my passport',
+    'I should not call the dentist',
+    'I must not submit the application'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Negative instruction was incorrectly classified as a task: ' + text
+    );
   });
 });
 
