@@ -910,6 +910,262 @@ async function run() {
     );
   });
 
+
+  await check('successful browser restore replaces data and preserves custom rooms and Ask learning', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: [
+          { id: 'old', text: 'Old memory', room: 'notes' }
+        ],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }));
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    var backup = {
+      schemaVersion: 1,
+      entries: [
+        { id: 'restored', text: 'Restored memory', room: 'notes' }
+      ],
+      learned: { example: 3 },
+      customRooms: [
+        { id: 'custom_books', name: 'Books', icon: 'book' }
+      ],
+      ask: {
+        aliases: [['gp', 'doctor']],
+        boosts: {},
+        unanswered: [{ q: 'Who was that?', at: '2026-01-01' }]
+      }
+    };
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'valid-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+      return data.entries &&
+        data.entries.length === 1 &&
+        data.entries[0].id === 'restored';
+    });
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.schemaVersion, 1);
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, 'Restored memory');
+    assert.strictEqual(data.learned.example, 3);
+    assert.strictEqual(data.customRooms.length, 1);
+    assert.strictEqual(data.customRooms[0].name, 'Books');
+    assert.strictEqual(data.ask.aliases[0][0], 'gp');
+    assert.strictEqual(data.ask.unanswered.length, 1);
+
+    assert.ok(
+      await page.locator('#bubble').textContent()
+    );
+  });
+
+  await check('duplicate IDs in a browser restore preserve existing data', async function (page) {
+    await saveText(page, 'Existing memory must survive');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    var backup = {
+      entries: [
+        { id: 'duplicate', text: 'First entry', room: 'notes' },
+        { id: 'duplicate', text: 'Second entry', room: 'notes' }
+      ]
+    };
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'duplicate-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].text,
+      'Existing memory must survive'
+    );
+  });
+
+  await check('unsupported schema version in browser restore preserves existing data', async function (page) {
+    await saveText(page, 'Schema protection memory');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    var backup = {
+      schemaVersion: 999,
+      entries: [
+        { id: 'future', text: 'Future memory', room: 'notes' }
+      ]
+    };
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'future-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].text,
+      'Schema protection memory'
+    );
+  });
+
+  await check('cancelling browser restore leaves existing memories untouched', async function (page) {
+    await saveText(page, 'Memory must remain after cancellation');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'cancelled-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Must not be imported', room: 'notes' }
+        ]
+      }))
+    });
+
+    await page.locator('.app-dialog-cancel').click();
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+  });
+
+  await check('browser restore refuses to overwrite data changed by another tab', async function (page) {
+    await saveText(page, 'Original tab memory');
+
+    var externalData = JSON.stringify({
+      schemaVersion: 1,
+      entries: [
+        { id: 'external', text: 'Memory saved elsewhere', room: 'notes' }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    });
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'stale-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Stale replacement', room: 'notes' }
+        ]
+      }))
+    });
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, externalData);
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      externalData
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries[0].id, 'external');
+    assert.strictEqual(data.entries[0].text, 'Memory saved elsewhere');
+  });
+
+  await check('browser restore rejects oversized files without changing existing data', async function (page) {
+    await saveText(page, 'Oversized import protection memory');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'oversized-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.alloc(5 * 1024 * 1024 + 1, 32)
+    });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      false
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes('larger than 5 MB')
+    );
+  });
+
   var lockTest = await openPage();
   var secondPage = null;
   var secondPageErrors = [];
