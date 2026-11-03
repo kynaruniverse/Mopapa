@@ -482,6 +482,46 @@ async function run() {
       finalStatus.includes('persistent-storage')
     );
   });
+
+  await check('first-person task intentions are saved in To-dos', async function (page) {
+    await saveText(
+      page,
+      'I need to renew my passport next month'
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].room,
+      'todo'
+    );
+
+    assert.strictEqual(
+      data.entries[0].text,
+      'I need to renew my passport next month'
+    );
+  });
+
+  await check('question-shaped need-to text is not saved as a To-do', async function (page) {
+    await saveText(
+      page,
+      'Do I need to pay council tax?'
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].room,
+      'notes'
+    );
+
+    assert.strictEqual(
+      data.entries[0].text,
+      'Do I need to pay council tax?'
+    );
+  });
   
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(

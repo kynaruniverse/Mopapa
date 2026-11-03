@@ -29,11 +29,50 @@ Mopapa.sorter = (function () {
     return out;
   }
 
+  var TASK_ACTION =
+    '(?:do|complete|prepare|submit|file|sort|organise|organize|' +
+    'arrange|collect|pick\\s+up|drop\\s+off|follow\\s+up|chase|' +
+    'finish|call|email|pay|book|renew|send|tidy|clean|contact|' +
+    'cancel|return|check|apply|register|schedule|make|find|' +
+    'look\\s+up|research)';
+
+  var DIRECT_TASK_RE = new RegExp(
+    '^(?:please\\s+)?' + TASK_ACTION + '\\b',
+    'i'
+  );
+
+  var INTENT_TASK_RE = new RegExp(
+    '^(?:i|we)\\s+(?:(?:really|definitely)\\s+)?' +
+    '(?:need|have|must|should|plan|intend)\\s+to\\s+' +
+    TASK_ACTION + '\\b',
+    'i'
+  );
+
+  var REMINDER_TASK_RE = new RegExp(
+    '^(?:(?:please\\s+)?remember\\s+to|' +
+    '(?:please\\s+)?don[\\'’]?t\\s+forget\\s+to)\\s+' +
+    TASK_ACTION + '\\b',
+    'i'
+  );
+
+  var QUESTION_AUX_RE =
+    /^(?:do|does|did)\s+(?:i|we|you|they)\b/i;
+
+  function isTaskInstruction(command) {
+    if (QUESTION_AUX_RE.test(command)) {
+      return false;
+    }
+
+    return DIRECT_TASK_RE.test(command) ||
+      INTENT_TASK_RE.test(command) ||
+      REMINDER_TASK_RE.test(command);
+  }
+
   // Classification uses explicit rules only.
   function classify(text, parse) {
     var command = String(text || '').trim();
 
-    if (/^(?:please\s+)?(?:do|complete|prepare|submit|file|sort|organise|organize|arrange|collect|pick\s+up|drop\s+off|follow\s+up|chase|finish)\b/i.test(command)) {
+    if (isTaskInstruction(command)) {
       return {
         room: 'todo',
         confident: true,

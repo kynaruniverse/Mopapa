@@ -2,9 +2,9 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.rooms = [
   { id: 'todo', name: 'To-dos', icon: 'check', dated: true, words: [
-    'remind me', 'reminder', 'need to', 'have to', 'must', 'dont forget',
-    'to do', 'todo', 'remember to', 'should', 'call', 'email', 'pay',
-    'book', 'renew', 'finish', 'send', 'tidy', 'clean'
+    'remind me', 'reminder', 'dont forget', 'to do', 'todo',
+    'remember to', 'call', 'email', 'pay', 'book', 'renew',
+    'finish', 'send', 'tidy', 'clean'
   ]},
   { id: 'appointments', name: 'Appointments', icon: 'calendar', dated: true, words: [
     'appointment', 'doctor', 'doctors', 'dentist', 'dental', 'gp', 'hospital',

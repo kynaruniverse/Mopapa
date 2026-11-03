@@ -1397,6 +1397,147 @@ test('ordinary questions are not classified as direct task instructions', functi
   assert.notStrictEqual(result.room, 'todo');
 });
 
+test('first-person task intentions are classified as to-dos', function () {
+  const w = boot({});
+
+  const examples = [
+    'I need to renew my passport next month',
+    'I have to pay council tax',
+    'I should call the dentist',
+    'I plan to submit the application',
+    'I intend to book the appointment'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.strictEqual(
+      result.room,
+      'todo',
+      'Expected a To-do classification for: ' + text
+    );
+
+    assert.strictEqual(result.confident, true);
+  });
+});
+
+test('direct action commands are classified as to-dos', function () {
+  const w = boot({});
+
+  const examples = [
+    'Call the dentist tomorrow',
+    'Pay the electricity bill',
+    'Email the council',
+    'Renew my passport',
+    'Please send the application'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.strictEqual(
+      result.room,
+      'todo',
+      'Expected a To-do classification for: ' + text
+    );
+
+    assert.strictEqual(result.confident, true);
+  });
+});
+
+test('remember and do not forget instructions are classified as to-dos', function () {
+  const w = boot({});
+
+  const examples = [
+    'Remember to book the vet',
+    'Please remember to renew the passport',
+    'Do not forget to pay the bill',
+    "Don't forget to call the dentist"
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.strictEqual(result.room, 'todo');
+    assert.strictEqual(result.confident, true);
+  });
+});
+
+test('need to know is not automatically classified as a task', function () {
+  const w = boot({});
+
+  const result = w.Mopapa.sorter.classify(
+    'I need to know how passport renewal works',
+    null
+  );
+
+  assert.notStrictEqual(
+    result.confident && result.room === 'todo',
+    true
+  );
+});
+
+test('should understand is not automatically classified as a task', function () {
+  const w = boot({});
+
+  const result = w.Mopapa.sorter.classify(
+    'I should understand how the boiler works',
+    null
+  );
+
+  assert.notStrictEqual(
+    result.confident && result.room === 'todo',
+    true
+  );
+});
+
+test('questions beginning do I or do you are not direct tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'Do I need to pay council tax?',
+    'Do you think I should call the dentist?',
+    'Does my passport need renewing?',
+    'Did I need to submit that form?'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Question was incorrectly classified as a task: ' + text
+    );
+  });
+});
+
+test('how do I questions are not direct task instructions', function () {
+  const w = boot({});
+
+  const result = w.Mopapa.sorter.classify(
+    'How do I renew my passport?',
+    null
+  );
+
+  assert.notStrictEqual(
+    result.confident && result.room === 'todo',
+    true
+  );
+});
+
+test('wishlist buying intentions remain in the wish list', function () {
+  const w = boot({});
+
+  const result = w.Mopapa.sorter.classify(
+    'I want to buy a new laptop',
+    null
+  );
+
+  assert.strictEqual(result.room, 'wishlist');
+  assert.strictEqual(result.confident, true);
+});
+
 test('polite direct task instructions are classified as to-dos', function () {
   const w = boot({});
   const text = 'Please complete the application by Friday';
