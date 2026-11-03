@@ -50,7 +50,7 @@ Mopapa.sorter = (function () {
 
   var REMINDER_TASK_RE = new RegExp(
     '^(?:(?:please\\s+)?remember\\s+to|' +
-    '(?:please\\s+)?don[\\'’]?t\\s+forget\\s+to)\\s+' +
+    "(?:please\\s+)?(?:do\\s+not|don['’]?t)\\s+forget\\s+to)\\s+" +
     TASK_ACTION + '\\b',
     'i'
   );
