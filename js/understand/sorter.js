@@ -29,12 +29,19 @@ Mopapa.sorter = (function () {
     return out;
   }
 
-  var TASK_ACTION =
-    '(?:do|complete|prepare|submit|file|sort|organise|organize|' +
-    'arrange|collect|pick\\s+up|drop\\s+off|follow\\s+up|chase|' +
+    var TASK_ACTION =
+    '(?:fill\\s+in|fill\\s+out|set\\s+up|log\\s+in|log\\s+out|' +
+    'back\\s+up|hand\\s+in|sort\\s+out|look\\s+into|write\\s+down|' +
+    'sign\\s+up|get\\s+in\\s+touch|pick\\s+up|drop\\s+off|' +
+    'follow\\s+up|look\\s+up|pay\\s+off|put\\s+away|take\\s+back|' +
+    'send\\s+off|check\\s+in|check\\s+out|do|complete|prepare|' +
+    'submit|file|sort|organise|organize|arrange|collect|chase|' +
     'finish|call|email|pay|book|renew|send|tidy|clean|contact|' +
     'cancel|return|check|apply|register|schedule|make|find|' +
-    'look\\s+up|research)';
+    'research|review|update|repair|fix|install|replace|order|' +
+    'buy|download|upload|print|scan|sign|read|write|watch|' +
+    'listen|visit|move|remove|delete|create|build|compare|' +
+    'measure|wash|cook|water|feed|charge)';
 
   var DIRECT_TASK_RE = new RegExp(
     '^(?:please\\s+)?' + TASK_ACTION + '\\b',

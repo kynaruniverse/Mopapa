@@ -503,6 +503,30 @@ async function run() {
     );
   });
 
+  await check('expanded direct actions are saved in To-dos', async function (page) {
+    var text = 'Review the tenancy agreement tomorrow';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'todo');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+
+  await check('multi-word task intentions are saved in To-dos', async function (page) {
+    var text = 'I need to fill out the council application';
+
+    await saveText(page, text);
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].room, 'todo');
+    assert.strictEqual(data.entries[0].text, text);
+  });
+  
   await check('question-shaped need-to text is not saved as a To-do', async function (page) {
     await saveText(
       page,

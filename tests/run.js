@@ -1409,7 +1409,16 @@ test('first-person task intentions are classified as to-dos', function () {
     'I intend to book the appointment',
     'We need to arrange the collection',
     'I really need to finish the form',
-    'I definitely plan to contact the solicitor'
+    'I definitely plan to contact the solicitor',
+    'I need to review the tenancy agreement',
+    'I have to update my address',
+    'We plan to repair the garden gate',
+    'I intend to install the printer',
+    'I must replace the broken tap',
+    'I should fill out the application',
+    'I need to back up my phone',
+    'We have to set up online banking',
+    'I plan to download the documents'
   ];
 
   examples.forEach(function (text) {
@@ -1437,7 +1446,20 @@ test('direct action commands are classified as to-dos', function () {
     'Pay the electricity bill',
     'Email the council',
     'Renew my passport',
-    'Please send the application'
+    'Please send the application',
+    'Review the tenancy agreement',
+    'Update my address',
+    'Fix the leaking tap',
+    'Install the printer',
+    'Download the council form',
+    'Print the application',
+    'Sign the consent form',
+    'Set up online banking',
+    'Back up my phone',
+    'Fill out the application',
+    'Buy a new laptop',
+    'Delete the duplicate files',
+    'Water the plants'
   ];
 
   examples.forEach(function (text) {
@@ -1447,6 +1469,39 @@ test('direct action commands are classified as to-dos', function () {
       result.room,
       'todo',
       'Expected a To-do classification for: ' + text
+    );
+
+    assert.strictEqual(
+      result.confident,
+      true,
+      'Action was not recognised confidently: ' + text
+    );
+  });
+});
+
+test('multi-word task actions are recognised correctly', function () {
+  const w = boot({});
+
+  const examples = [
+    'Fill in the registration form',
+    'Fill out the council application',
+    'Set up the new router',
+    'Log in to the account',
+    'Back up my photographs',
+    'Hand in the completed form',
+    'Sort out the paperwork',
+    'Look into the repair costs',
+    'Write down the reference number',
+    'Get in touch with the solicitor'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.strictEqual(
+      result.room,
+      'todo',
+      'Multi-word action was not classified as a To-do: ' + text
     );
 
     assert.strictEqual(result.confident, true);
@@ -1480,6 +1535,9 @@ test('negative instructions are not confidently classified as tasks', function (
     'Please do not call the dentist',
     "Don't pay the electricity bill",
     'Never contact the council',
+    'Do not delete the duplicate files',
+    'Never install that application',
+    "Don't update my address yet",
     'I do not need to renew my passport',
     'I should not call the dentist',
     'I must not submit the application'
@@ -1531,7 +1589,9 @@ test('questions beginning do I or do you are not direct tasks', function () {
     'Do I need to pay council tax?',
     'Do you think I should call the dentist?',
     'Does my passport need renewing?',
-    'Did I need to submit that form?'
+    'Did I need to submit that form?',
+    'Do I need to review the tenancy agreement?',
+    'Do you want me to update the address?'
   ];
 
   examples.forEach(function (text) {
