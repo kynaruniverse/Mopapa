@@ -1241,7 +1241,9 @@ async function run() {
 
     await page.locator('.app-dialog-ok').click();
 
-    var data = await savedData(page);
+    var data = await page.evaluate(function () {
+      return window.Mopapa.store.data();
+    });
 
     assert.strictEqual(data.entries.length, 2);
     assert.strictEqual(data.entries[0].id, 'valid');
