@@ -1626,11 +1626,15 @@ async function run() {
     await page.locator('.app-dialog-ok').click();
 
     await page.waitForFunction(function () {
-      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+      try {
+        var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
 
-      return data.entries &&
-        data.entries.length === 1 &&
-        data.entries[0].id === 'recovered';
+        return data.entries &&
+          data.entries.length === 1 &&
+          data.entries[0].id === 'recovered';
+      } catch (error) {
+        return false;
+      }
     });
 
     var data = await savedData(page);
