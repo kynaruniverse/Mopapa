@@ -24,6 +24,76 @@ Mopapa.store = (function () {
     return writeMode;
   }
 
+  function storagePersistenceStatus() {
+    var storage = window.navigator && window.navigator.storage;
+
+    if (!storage || typeof storage.persisted !== 'function') {
+      return Promise.resolve({
+        supported: false,
+        persisted: false
+      });
+    }
+
+    try {
+      return Promise.resolve(storage.persisted()).then(
+        function (persisted) {
+          return {
+            supported: true,
+            persisted: persisted === true
+          };
+        },
+        function () {
+          return {
+            supported: true,
+            persisted: false,
+            failed: true
+          };
+        }
+      );
+    } catch (e) {
+      return Promise.resolve({
+        supported: true,
+        persisted: false,
+        failed: true
+      });
+    }
+  }
+
+  function requestStoragePersistence() {
+    var storage = window.navigator && window.navigator.storage;
+
+    if (!storage || typeof storage.persist !== 'function') {
+      return Promise.resolve({
+        supported: false,
+        granted: false
+      });
+    }
+
+    try {
+      return Promise.resolve(storage.persist()).then(
+        function (granted) {
+          return {
+            supported: true,
+            granted: granted === true
+          };
+        },
+        function () {
+          return {
+            supported: true,
+            granted: false,
+            failed: true
+          };
+        }
+      );
+    } catch (e) {
+      return Promise.resolve({
+        supported: true,
+        granted: false,
+        failed: true
+      });
+    }
+  }
+
   // What Ask has learned from the person. Kept apart from "learned",
   // which belongs to the room sorter and stays untouched.
 
@@ -1034,6 +1104,8 @@ function load() {
     saveError: function () { return saveError; },
     setWriteMode: setWriteMode,
     writeMode: getWriteMode,
+    storagePersistenceStatus: storagePersistenceStatus,
+    requestStoragePersistence: requestStoragePersistence,
     exportJSON: exportJSON,
     exportOriginalRecoveryCopy: exportOriginalRecoveryCopy,
     recoveryCopies: recoveryCopies,

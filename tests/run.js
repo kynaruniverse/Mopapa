@@ -1,6 +1,6 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 
-function boot(storage) {
+function boot(storage, storageApi) {
   const ls = {
     _: Object.assign({}, storage),
     failWrites: false,
@@ -12,7 +12,13 @@ function boot(storage) {
       this._[k] = String(v);
     }
   };
-  const win = { localStorage: ls, console };
+  const win = {
+    localStorage: ls,
+    console,
+    navigator: {
+      storage: storageApi
+    }
+  };
   win.window = win;
   vm.createContext(win);
 
@@ -8476,10 +8482,119 @@ test('answer-flow passes the original question to general fallback', function ()
   assert.strictEqual(result.answer, 'fallback');
 });
 
-let failed = 0;
-tests.forEach(function (t) {
-  try { t[1](); console.log('PASS', t[0]); }
-  catch (e) { failed++; console.log('FAIL', t[0], '-', e.message); }
+test('storage persistence reports unsupported browsers', async function () {
+  const w = boot();
+  const result = await w.Mopapa.store.storagePersistenceStatus();
+
+  assert.strictEqual(result.supported, false);
+  assert.strictEqual(result.persisted, false);
 });
-console.log((tests.length - failed) + '/' + tests.length + ' tests passed');
-process.exit(failed ? 1 : 0);
+
+test('storage persistence reports an existing browser grant', async function () {
+  const w = boot(null, {
+    persisted: function () {
+      return Promise.resolve(true);
+    }
+  });
+
+  const result = await w.Mopapa.store.storagePersistenceStatus();
+
+  assert.strictEqual(result.supported, true);
+  assert.strictEqual(result.persisted, true);
+});
+
+test('storage persistence handles a denied status check', async function () {
+  const w = boot(null, {
+    persisted: function () {
+      return Promise.reject(new Error('status unavailable'));
+    }
+  });
+
+  const result = await w.Mopapa.store.storagePersistenceStatus();
+
+  assert.strictEqual(result.supported, true);
+  assert.strictEqual(result.persisted, false);
+  assert.strictEqual(result.failed, true);
+});
+
+test('storage persistence request reports unsupported browsers', async function () {
+  const w = boot();
+  const result = await w.Mopapa.store.requestStoragePersistence();
+
+  assert.strictEqual(result.supported, false);
+  assert.strictEqual(result.granted, false);
+});
+
+test('storage persistence request records a browser grant', async function () {
+  const w = boot(null, {
+    persist: function () {
+      return Promise.resolve(true);
+    }
+  });
+
+  const result = await w.Mopapa.store.requestStoragePersistence();
+
+  assert.strictEqual(result.supported, true);
+  assert.strictEqual(result.granted, true);
+});
+
+test('storage persistence request handles denial and rejection', async function () {
+  const denied = boot(null, {
+    persist: function () {
+      return Promise.resolve(false);
+    }
+  });
+
+  const deniedResult =
+    await denied.Mopapa.store.requestStoragePersistence();
+
+  assert.strictEqual(deniedResult.supported, true);
+  assert.strictEqual(deniedResult.granted, false);
+
+  const rejected = boot(null, {
+    persist: function () {
+      return Promise.reject(new Error('request failed'));
+    }
+  });
+
+  const rejectedResult =
+    await rejected.Mopapa.store.requestStoragePersistence();
+
+  assert.strictEqual(rejectedResult.supported, true);
+  assert.strictEqual(rejectedResult.granted, false);
+  assert.strictEqual(rejectedResult.failed, true);
+});
+
+test('storage protection interface explains that it does not replace backups', function () {
+  const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+  const main = fs.readFileSync(__dirname + '/../js/main.js', 'utf8');
+
+  assert.ok(html.includes('id="storage-protection"'));
+  assert.ok(html.includes('id="storage-protection-status"'));
+  assert.ok(html.includes('id="storage-protection-request"'));
+  assert.ok(html.includes('does not replace an external backup'));
+
+  assert.ok(main.includes('M.store.storagePersistenceStatus()'));
+  assert.ok(main.includes('M.store.requestStoragePersistence()'));
+  assert.ok(main.includes('The browser granted persistent storage.'));
+  assert.ok(main.includes('The browser did not grant persistent storage.'));
+});
+
+(async function () {
+  let failed = 0;
+
+  for (let i = 0; i < tests.length; i++) {
+    const t = tests[i];
+
+    try {
+      await t[1]();
+      console.log('PASS', t[0]);
+    } catch (e) {
+      failed++;
+      console.log('FAIL', t[0], '-', e.message);
+    }
+  }
+
+  console.log((tests.length - failed) + '/' + tests.length + ' tests passed');
+  process.exit(failed ? 1 : 0);
+})();

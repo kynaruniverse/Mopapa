@@ -437,6 +437,51 @@ async function run() {
       false
     );
   });  
+
+  await check('browser storage protection explains its status and backup limitation', async function (page) {
+    var status = page.locator('#storage-protection-status');
+    var button = page.locator('#storage-protection-request');
+
+    assert.strictEqual(
+      await page.locator('#storage-protection').isVisible(),
+      true
+    );
+
+    assert.ok(
+      (await page.locator('.storage-protection-description').textContent())
+        .includes('does not replace an external backup')
+    );
+
+    await page.waitForFunction(function () {
+      var element = document.getElementById(
+        'storage-protection-status'
+      );
+
+      return element &&
+        !element.textContent.includes('Checking browser storage');
+    });
+
+    if (await button.isVisible()) {
+      await button.click();
+
+      await page.waitForFunction(function () {
+        var element = document.getElementById(
+          'storage-protection-status'
+        );
+
+        return element &&
+          !element.textContent.includes('Requesting storage protection');
+      });
+    }
+
+    var finalStatus = await status.textContent();
+
+    assert.ok(finalStatus.length > 10);
+    assert.ok(
+      finalStatus.includes('persistent storage') ||
+      finalStatus.includes('persistent-storage')
+    );
+  });
   
   await check('Keep is selected by default', async function (page) {
     assert.strictEqual(

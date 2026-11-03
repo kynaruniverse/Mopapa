@@ -20,7 +20,80 @@
         'This browser does not support Mopapa’s single-tab write protection. Avoid editing Mopapa in more than one tab at a time.';
       writeStatus.hidden = false;
     }
-    
+
+    var storageProtectionStatus = document.getElementById(
+      'storage-protection-status'
+    );
+
+    var storageProtectionButton = document.getElementById(
+      'storage-protection-request'
+    );
+
+    function renderStorageProtection(result) {
+      if (!storageProtectionStatus || !storageProtectionButton) {
+        return;
+      }
+
+      if (!result.supported) {
+        storageProtectionStatus.textContent =
+          'This browser does not offer persistent-storage protection. Keep a separate backup of your memories.';
+        storageProtectionButton.hidden = true;
+        return;
+      }
+
+      if (result.persisted) {
+        storageProtectionStatus.textContent =
+          'This browser has granted persistent storage. This reduces automatic cleanup risk, but it is not a backup.';
+        storageProtectionButton.hidden = true;
+        return;
+      }
+
+      storageProtectionStatus.textContent = result.failed
+        ? 'Mopapa could not check storage protection. You can still request it, and should keep a separate backup.'
+        : 'Persistent storage has not been granted. You can ask the browser to protect Mopapa from automatic cleanup.';
+
+      storageProtectionButton.hidden = false;
+    }
+
+    M.store.storagePersistenceStatus()
+      .then(renderStorageProtection)
+      .catch(function () {
+        renderStorageProtection({
+          supported: true,
+          persisted: false,
+          failed: true
+        });
+      });
+
+    storageProtectionButton.addEventListener('click', function () {
+      storageProtectionButton.disabled = true;
+      storageProtectionStatus.textContent =
+        'Requesting storage protection…';
+
+      M.store.requestStoragePersistence()
+        .then(function (result) {
+          if (result.granted) {
+            storageProtectionStatus.textContent =
+              'The browser granted persistent storage. This reduces automatic cleanup risk, but it is not a backup.';
+            storageProtectionButton.hidden = true;
+          } else if (!result.supported) {
+            storageProtectionStatus.textContent =
+              'This browser does not offer persistent-storage protection. Keep a separate backup of your memories.';
+            storageProtectionButton.hidden = true;
+          } else {
+            storageProtectionStatus.textContent = result.failed
+              ? 'The browser could not complete the request. Keep a separate backup of your memories.'
+              : 'The browser did not grant persistent storage. Mopapa will continue to work, but automatic cleanup remains possible.';
+            storageProtectionButton.disabled = false;
+          }
+        })
+        .catch(function () {
+          storageProtectionStatus.textContent =
+            'The request failed. Mopapa will continue to work, but automatic cleanup remains possible.';
+          storageProtectionButton.disabled = false;
+        });
+    });
+
   M.customRooms.init();
   M.pet.init();
   M.talk.init();
