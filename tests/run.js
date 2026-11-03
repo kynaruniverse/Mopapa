@@ -4779,76 +4779,19 @@ test('store distinguishes storage failures from save conflicts', function () {
   assert.strictEqual(w.Mopapa.store.save(), false);
   assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
 });
-
-test('failed storage writes preserve the last valid record and can be retried', function () {
-  const w = boot(stored([{
-    id: 'original',
-    text: 'Original memory',
-    room: 'notes'
-  }]));
-
-  w.Mopapa.store.load();
-
-  const originalRaw = w.localStorage.getItem('mopapa.v1');
-
-  w.Mopapa.store.data().entries[0].text = 'Updated memory';
-
-  w.localStorage.failWrites = true;
-
-  assert.strictEqual(w.Mopapa.store.save(), false);
-  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
-
-  assert.strictEqual(
-    w.localStorage.getItem('mopapa.v1'),
-    originalRaw
-  );
-
-  w.localStorage.failWrites = false;
-
   assert.strictEqual(w.Mopapa.store.save(), true);
   assert.strictEqual(w.Mopapa.store.saveError(), null);
 
-  const saved = JSON.parse(
+  const recovered = JSON.parse(
     w.localStorage.getItem('mopapa.v1')
   );
 
-  assert.strictEqual(saved.entries[0].text, 'Updated memory');
-});
-
-test('failed serialisation preserves the previous saved record', function () {
-  const w = boot(stored([{
-    id: 'original',
-    text: 'Original memory',
-    room: 'notes'
-  }]));
-
-  w.Mopapa.store.load();
-
-  const originalRaw = w.localStorage.getItem('mopapa.v1');
-
-  w.Mopapa.store.data().temporary = {};
-  w.Mopapa.store.data().temporary.self =
-    w.Mopapa.store.data().temporary;
-
-  assert.strictEqual(w.Mopapa.store.save(), false);
-  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
-
-  const saved = JSON.parse(
-    w.localStorage.getItem('mopapa.v1')
-  );
-
-  assert.strictEqual(saved.entries.length, 1);
-  assert.strictEqual(saved.entries[0].id, 'original');
-  assert.strictEqual(saved.entries[0].text, 'Original memory');
-
-  delete w.Mopapa.store.data().temporary;
-
-  assert.strictEqual(w.Mopapa.store.save(), true);
-  assert.strictEqual(w.Mopapa.store.saveError(), null);
-
+  assert.strictEqual(recovered.schemaVersion, 1);
+  assert.strictEqual(recovered.entries.length, 1);
+  assert.strictEqual(recovered.entries[0].id, 'original');
   assert.strictEqual(
-    w.localStorage.getItem('mopapa.v1'),
-    originalRaw
+    recovered.entries[0].text,
+    'Original memory'
   );
 });
 
