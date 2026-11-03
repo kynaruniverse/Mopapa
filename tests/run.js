@@ -1417,7 +1417,11 @@ test('first-person task intentions are classified as to-dos', function () {
       'Expected a To-do classification for: ' + text
     );
 
-    assert.strictEqual(result.confident, true);
+    assert.strictEqual(
+      result.confident,
+      true,
+      'Task intention was not recognised confidently: ' + text
+    );
   });
 });
 
