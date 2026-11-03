@@ -228,6 +228,82 @@ async function runStorageBenchmark() {
         });
       });
 
+      var longRows = [];
+      var longSizes = [250, 500, 1000, 1500, 2000, 2500, 3000];
+
+      longSizes.forEach(function (size) {
+        var entries = [];
+
+        for (var i = 0; i < size; i++) {
+          var prefix = 'Maximum-length synthetic memory ' + i + ': ';
+          var entryText = prefix +
+            new Array(1000 - prefix.length + 1).join('x');
+
+          entries.push({
+            id: 'long_benchmark_' + size + '_' + i,
+            text: entryText,
+            room: 'notes',
+            when: null,
+            hasTime: false,
+            amount: null,
+            fact: null,
+            amounts: null,
+            created: '2026-01-15T12:00:00.000Z',
+            done: false
+          });
+        }
+
+        var data = store.data();
+        data.schemaVersion = 1;
+        data.entries = entries;
+        data.learned = {};
+        data.customRooms = [];
+        data.ask = {
+          aliases: [],
+          boosts: Object.create(null),
+          unanswered: []
+        };
+
+        var attemptedJson = JSON.stringify(data);
+
+        var stringifyMs = medianTime(function () {
+          JSON.stringify(data);
+        });
+
+        var start = performance.now();
+        var saved = store.save();
+        var saveMs = Number((performance.now() - start).toFixed(2));
+
+        var row = {
+          entries: size,
+          entryCharacters: 1000,
+          attemptedJsonCharacters: attemptedJson.length,
+          approximateUtf16Bytes: attemptedJson.length * 2,
+          stringifyMedianMs: stringifyMs,
+          saveMs: saveMs,
+          saved: saved,
+          saveError: saved ? null : store.saveError()
+        };
+
+        if (saved) {
+          var raw = localStorage.getItem('mopapa.v1');
+
+          row.storedJsonCharacters = raw.length;
+
+          row.parseMedianMs = medianTime(function () {
+            JSON.parse(raw);
+          });
+
+          row.appLoadMedianMs = medianTime(function () {
+            store.load();
+          });
+
+          row.loadedEntries = store.data().entries.length;
+        }
+
+        longRows.push(row);
+      });
+      
       var recoveryCount = 0;
       var recoveryCharacters = 0;
       var corruptCount = 0;
@@ -254,6 +330,7 @@ async function runStorageBenchmark() {
       var largest = rows[rows.length - 1];
       return {
         rows: rows,
+        longRows: longRows,
         recoveryCount: recoveryCount,
         recoveryCharacters: recoveryCharacters,
         corruptCount: corruptCount,
@@ -269,8 +346,11 @@ async function runStorageBenchmark() {
       };
     });
 
-    console.log('STORAGE BENCHMARK (synthetic data; timings in ms)');
+    console.log('STORAGE BENCHMARK: SHORT ENTRIES');
     console.table(report.rows);
+
+    console.log('STORAGE BENCHMARK: 1000-CHARACTER ENTRIES');
+    console.table(report.longRows);
     console.log('Recovery copies:', report.recoveryCount,
       'Stored characters:', report.recoveryCharacters);
     console.log('Corrupt copies:', report.corruptCount,
@@ -279,12 +359,18 @@ async function runStorageBenchmark() {
 
     assert.deepStrictEqual(opened.pageErrors, []);
     assert.strictEqual(report.rows.length, 4);
+    assert.strictEqual(report.longRows.length, 7);
 
     report.rows.forEach(function (row) {
       if (row.saved) {
         assert.strictEqual(row.loadedEntries, row.entries);
       }
     });
+    report.longRows.forEach(function (row) {
+      if (row.saved) {
+        assert.strictEqual(row.loadedEntries, row.entries);
+      }
+    });    
   } finally {
     await opened.context.close();
   }
