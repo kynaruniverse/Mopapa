@@ -1138,6 +1138,208 @@ test('search uses newest entries to break equal relevance scores', function () {
   assert.strictEqual(result.results[1].entry.id, 'older');
 });
 
+test('search is case-insensitive and normalises punctuation', function () {
+  const w = boot(stored([
+    {
+      id: 'punctuation',
+      text: 'The PASSPORT, drawer and spare-key details.',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('PASSPORT, SPARE-KEY');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'punctuation');
+});
+
+test('search normalises apostrophes without losing the matching word', function () {
+  const w = boot(stored([
+    {
+      id: 'apostrophe',
+      text: "Charles' mother's spare key",
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('mothers key');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'apostrophe');
+});
+
+test('search supports pound amounts and numeric terms', function () {
+  const w = boot(stored([
+    {
+      id: 'payment',
+      text: 'Paid £125 for the replacement passport',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const amount = w.Mopapa.search.find('£125');
+  const number = w.Mopapa.search.find('125');
+
+  assert.strictEqual(amount.total, 1);
+  assert.strictEqual(amount.results[0].entry.id, 'payment');
+
+  assert.strictEqual(number.total, 1);
+  assert.strictEqual(number.results[0].entry.id, 'payment');
+});
+
+test('search matches prefixes only at the beginning of a word', function () {
+  const w = boot(stored([
+    {
+      id: 'carpet',
+      text: 'Buy a new carpet',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'scarlet',
+      text: 'Scarlet paint colour',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('car');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'carpet');
+});
+
+test('search ignores single-character words when meaningful words exist', function () {
+  const w = boot(stored([
+    {
+      id: 'key',
+      text: 'I need a spare key',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('a key');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'key');
+});
+
+test('search can match words across text tags and room fields', function () {
+  const w = boot(stored([
+    {
+      id: 'cross-field',
+      text: 'Keep the important document safe',
+      room: 'todo',
+      tags: ['passport'],
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('document passport todo');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'cross-field');
+});
+
+test('search ranks exact word matches above prefix-only matches', function () {
+  const w = boot(stored([
+    {
+      id: 'prefix',
+      text: 'Keyboard replacement',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'exact',
+      text: 'Replacement key',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('key');
+
+  assert.strictEqual(result.total, 2);
+  assert.strictEqual(result.results[0].entry.id, 'exact');
+});
+
+test('search returns every match rather than applying the display limit', function () {
+  const entries = [];
+
+  for (let i = 0; i < 15; i++) {
+    entries.push({
+      id: 'search-result-' + i,
+      text: 'Passport information record ' + i,
+      room: 'notes',
+      created: ago(i + 1)
+    });
+  }
+
+  const w = boot(stored(entries));
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport');
+
+  assert.strictEqual(result.total, 15);
+  assert.strictEqual(result.results.length, 15);
+});
+
+test('search reports punctuation-only queries as too short', function () {
+  const w = boot(stored([
+    {
+      id: 'entry',
+      text: 'A saved memory',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('!?.,');
+
+  assert.strictEqual(result.tooShort, true);
+  assert.strictEqual(result.total, 0);
+  assert.deepStrictEqual(Array.from(result.results), []);
+});
+
+test('search reports a single-character-only query as too short', function () {
+  const w = boot(stored([
+    {
+      id: 'entry',
+      text: 'A saved memory',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('x');
+
+  assert.strictEqual(result.tooShort, true);
+  assert.strictEqual(result.total, 0);
+  assert.deepStrictEqual(Array.from(result.results), []);
+});
+
 test('search finds entries containing prototype-like words', function () {
   const w = boot(stored([
     {
