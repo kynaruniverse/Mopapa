@@ -993,6 +993,151 @@ test('loading rejected entries reports when recovery backup fails', function () 
   );  
 });
 
+test('search requires every meaningful query word to match', function () {
+  const w = boot(stored([
+    {
+      id: 'garden',
+      text: 'Garden maintenance notes',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('garden insurance');
+
+  assert.strictEqual(result.total, 0);
+  assert.deepStrictEqual(Array.from(result.results), []);
+});
+
+test('search includes saved tags when matching entries', function () {
+  const w = boot(stored([
+    {
+      id: 'holiday',
+      text: 'Prepare the suitcase',
+      room: 'notes',
+      tags: ['holiday', 'packing'],
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('holiday');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'holiday');
+});
+
+test('search includes room names and IDs when matching entries', function () {
+  const w = boot(stored([
+    {
+      id: 'task-room',
+      text: 'Renew insurance',
+      room: 'todo',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('todo');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'task-room');
+});
+
+test('search supports incomplete final words', function () {
+  const w = boot(stored([
+    {
+      id: 'passport',
+      text: 'Passport is in the top drawer',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passpor');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'passport');
+});
+
+test('search ignores stop words and duplicate query words', function () {
+  const w = boot(stored([
+    {
+      id: 'garden',
+      text: 'Garden maintenance notes',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('the garden garden');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'garden');
+
+  const empty = w.Mopapa.search.find('the and to');
+
+  assert.strictEqual(empty.tooShort, true);
+  assert.strictEqual(empty.total, 0);
+});
+
+test('search prioritises an exact phrase over separate word matches', function () {
+  const w = boot(stored([
+    {
+      id: 'separate',
+      text: 'Passport information and a drawer inventory',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'phrase',
+      text: 'Passport drawer',
+      room: 'notes',
+      created: ago(10)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport drawer');
+
+  assert.strictEqual(result.total, 2);
+  assert.strictEqual(result.results[0].entry.id, 'phrase');
+});
+
+test('search uses newest entries to break equal relevance scores', function () {
+  const w = boot(stored([
+    {
+      id: 'older',
+      text: 'Passport information',
+      room: 'notes',
+      created: ago(10)
+    },
+    {
+      id: 'newer',
+      text: 'Passport details',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport');
+
+  assert.strictEqual(result.total, 2);
+  assert.strictEqual(result.results[0].entry.id, 'newer');
+  assert.strictEqual(result.results[1].entry.id, 'older');
+});
+
 test('search finds entries containing prototype-like words', function () {
   const w = boot(stored([
     {
