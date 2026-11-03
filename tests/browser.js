@@ -1166,6 +1166,263 @@ async function run() {
     );
   });
 
+  await check('corrupt startup data is preserved and downloadable without being overwritten', async function (page) {
+    var originalRaw = '{"entries": [this is deliberately corrupt';
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+
+    var downloadPromise = page.waitForEvent('download');
+
+    await page.locator('#btn-recovery-export').click();
+
+    var download = await downloadPromise;
+    var downloadPath = await download.path();
+
+    assert.ok(downloadPath);
+
+    assert.strictEqual(
+      require('node:fs').readFileSync(downloadPath, 'utf8'),
+      originalRaw
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+  });
+
+  await check('partially rejected startup data preserves the exact original recovery copy', async function (page) {
+    var originalRaw = JSON.stringify({
+      entries: [
+        { id: 'valid', text: 'Readable memory', room: 'notes' },
+        null,
+        { id: 'another-valid', text: 'Another memory', room: 'notes' }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    });
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 2);
+    assert.strictEqual(data.entries[0].id, 'valid');
+    assert.strictEqual(data.entries[1].id, 'another-valid');
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    var downloadPromise = page.waitForEvent('download');
+
+    await page.locator('#btn-recovery-export').click();
+
+    var download = await downloadPromise;
+    var downloadPath = await download.path();
+
+    assert.ok(downloadPath);
+
+    assert.strictEqual(
+      require('node:fs').readFileSync(downloadPath, 'utf8'),
+      originalRaw
+    );
+  });
+
+  await check('storage access failure blocks saving and restoring without attempting writes', async function (page) {
+    await page.addInitScript(function () {
+      window.__mopapaWriteAttempts = 0;
+
+      var originalGet = Storage.prototype.getItem;
+      var originalSet = Storage.prototype.setItem;
+
+      Storage.prototype.getItem = function (key) {
+        if (key === 'mopapa.v1') {
+          throw new Error('simulated storage access failure');
+        }
+
+        return originalGet.call(this, key);
+      };
+
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'mopapa.v1') {
+          window.__mopapaWriteAttempts++;
+        }
+
+        return originalSet.call(this, key, value);
+      };
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return window.Mopapa.store.data().storageUnavailable;
+      }),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.locator('#talk-input').fill(
+      'This memory must not be saved'
+    );
+
+    await page.locator('#send').click();
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return window.Mopapa.store.data().storageUnavailable;
+      }),
+      true
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return window.__mopapaWriteAttempts;
+      }),
+      0
+    );
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'storage-unavailable-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Must not overwrite', room: 'notes' }
+        ]
+      }))
+    });
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return window.__mopapaWriteAttempts;
+      }),
+      0
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return window.Mopapa.store.data().entries.length;
+      }),
+      0
+    );
+  });
+
+  await check('valid browser restore can recover from corrupt startup data', async function (page) {
+    var originalRaw = '{"entries": broken';
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('.app-dialog-ok').click();
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    var backup = {
+      schemaVersion: 1,
+      entries: [
+        { id: 'recovered', text: 'Recovered memory', room: 'notes' }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    };
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'recovery-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(backup))
+    });
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+
+      return data.entries &&
+        data.entries.length === 1 &&
+        data.entries[0].id === 'recovered';
+    });
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, 'Recovered memory');
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1.corrupt.' + 
+          Object.keys(localStorage)
+            .filter(function (key) {
+              return key.indexOf('mopapa.v1.corrupt.') === 0;
+            })[0].slice('mopapa.v1.corrupt.'.length)
+        );
+      }),
+      originalRaw
+    );
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+  });
+
   var lockTest = await openPage();
   var secondPage = null;
   var secondPageErrors = [];
