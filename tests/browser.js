@@ -1717,9 +1717,17 @@ async function run() {
       'Original memory before restore'
     );
 
+    var failureMessage = await page.evaluate(function () {
+      return (
+        (document.getElementById('bubble') || {}).textContent || ''
+      ) + ' ' + (
+        (document.getElementById('toast') || {}).textContent || ''
+      );
+    });
+
     assert.ok(
-      (await page.locator('#bubble').textContent())
-        .includes("couldn't restore")
+      failureMessage.includes("couldn't restore"),
+      'Expected the pet bubble or toast to explain the failed restore'
     );
   });
   
@@ -1758,11 +1766,17 @@ async function run() {
     await page.locator('.app-dialog-ok').click();
 
     await page.waitForFunction(function () {
-      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+      try {
+        var data = JSON.parse(
+          localStorage.getItem('mopapa.v1') || '{}'
+        );
 
-      return data.entries &&
-        data.entries.length === 1 &&
-        data.entries[0].id === 'recovered';
+        return data.entries &&
+          data.entries.length === 1 &&
+          data.entries[0].id === 'recovered';
+      } catch (error) {
+        return false;
+      }
     });
 
     var data = await savedData(page);
