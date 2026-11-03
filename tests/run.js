@@ -4774,11 +4774,13 @@ test('store distinguishes storage failures from save conflicts', function () {
 
   w.Mopapa.store.load();
 
+  // Test storage failure
   w.localStorage.failWrites = true;
-
   assert.strictEqual(w.Mopapa.store.save(), false);
   assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
-});
+
+  // Test successful save after resolving storage issue
+  w.localStorage.failWrites = false;
   assert.strictEqual(w.Mopapa.store.save(), true);
   assert.strictEqual(w.Mopapa.store.saveError(), null);
 
