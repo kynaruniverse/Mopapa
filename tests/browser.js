@@ -145,6 +145,151 @@ async function check(name, test) {
   }
 }
 
+async function runStorageBenchmark() {
+  var opened = await openPage();
+
+  try {
+    var report = await opened.page.evaluate(function () {
+      var sizes = [250, 1000, 3000, 5000];
+      var store = window.Mopapa.store;
+      var rows = [];
+
+      function medianTime(fn) {
+        var times = [];
+        for (var i = 0; i < 3; i++) {
+          var start = performance.now();
+          fn();
+          times.push(performance.now() - start);
+        }
+        times.sort(function (a, b) { return a - b; });
+        return Number(times[1].toFixed(2));
+      }
+
+      sizes.forEach(function (size) {
+        var entries = [];
+        for (var i = 0; i < size; i++) {
+          entries.push({
+            id: 'benchmark_' + size + '_' + i,
+            text: 'Synthetic memory ' + i +
+              ': a representative note containing ordinary personal details, ' +
+              'a location, a reminder and useful context.',
+            room: 'notes',
+            when: null,
+            hasTime: false,
+            amount: null,
+            fact: null,
+            amounts: null,
+            created: '2026-01-15T12:00:00.000Z',
+            done: false
+          });
+        }
+
+        var data = store.data();
+        data.schemaVersion = 1;
+        data.entries = entries;
+        data.learned = {};
+        data.customRooms = [];
+        data.ask = {
+          aliases: [],
+          boosts: Object.create(null),
+          unanswered: []
+        };
+
+        var stringifyMs = medianTime(function () {
+          JSON.stringify(data);
+        });
+        var start = performance.now();
+        var saved = store.save();
+        var saveMs = Number((performance.now() - start).toFixed(2));
+
+        if (!saved) {
+          rows.push({
+            entries: size,
+            saved: false,
+            saveError: store.saveError()
+          });
+          return;
+        }
+
+        var raw = localStorage.getItem('mopapa.v1');
+        var parseMs = medianTime(function () { JSON.parse(raw); });
+        var loadMs = medianTime(function () { store.load(); });
+
+        rows.push({
+          entries: size,
+          saved: true,
+          jsonCharacters: raw.length,
+          approximateUtf16Bytes: raw.length * 2,
+          stringifyMedianMs: stringifyMs,
+          saveMs: saveMs,
+          parseMedianMs: parseMs,
+          appLoadMedianMs: loadMs,
+          loadedEntries: store.data().entries.length
+        });
+      });
+
+      var recoveryCount = 0;
+      var recoveryCharacters = 0;
+      var corruptCount = 0;
+      var corruptCharacters = 0;
+
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+        if (!key) continue;
+        if (
+          key.indexOf('mopapa.v1.recovery.') !== 0 &&
+          key.indexOf('mopapa.v1.corrupt.') !== 0
+        ) continue;
+
+        var value = localStorage.getItem(key) || '';
+        if (key.indexOf('mopapa.v1.recovery.') === 0) {
+          recoveryCount++;
+          recoveryCharacters += key.length + value.length;
+        } else {
+          corruptCount++;
+          corruptCharacters += key.length + value.length;
+        }
+      }
+
+      var largest = rows[rows.length - 1];
+      return {
+        rows: rows,
+        recoveryCount: recoveryCount,
+        recoveryCharacters: recoveryCharacters,
+        corruptCount: corruptCount,
+        corruptCharacters: corruptCharacters,
+        projectedCopies: largest && largest.saved
+          ? [1, 5, 10].map(function (count) {
+              return {
+                additionalCopies: count,
+                approximateUtf16Bytes: largest.approximateUtf16Bytes * count
+              };
+            })
+          : []
+      };
+    });
+
+    console.log('STORAGE BENCHMARK (synthetic data; timings in ms)');
+    console.table(report.rows);
+    console.log('Recovery copies:', report.recoveryCount,
+      'Stored characters:', report.recoveryCharacters);
+    console.log('Corrupt copies:', report.corruptCount,
+      'Stored characters:', report.corruptCharacters);
+    console.log('Projected extra full-record copies:', report.projectedCopies);
+
+    assert.deepStrictEqual(opened.pageErrors, []);
+    assert.strictEqual(report.rows.length, 4);
+
+    report.rows.forEach(function (row) {
+      if (row.saved) {
+        assert.strictEqual(row.loadedEntries, row.entries);
+      }
+    });
+  } finally {
+    await opened.context.close();
+  }
+}
+
 async function run() {
   await startServer();
 
@@ -1538,7 +1683,15 @@ async function run() {
   } finally {
     await lockTest.context.close();
   }
-  
+
+  try {
+    await runStorageBenchmark();
+  } catch (error) {
+    failures++;
+    console.error('FAIL storage benchmark diagnostic');
+    console.error(error.stack || error.message);
+  }
+
   console.log('');
   console.log(passed + '/' + (passed + failures) + ' browser tests passed');
 
