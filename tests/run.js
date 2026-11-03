@@ -1404,8 +1404,12 @@ test('first-person task intentions are classified as to-dos', function () {
     'I need to renew my passport next month',
     'I have to pay council tax',
     'I should call the dentist',
+    'I must email the council',
     'I plan to submit the application',
-    'I intend to book the appointment'
+    'I intend to book the appointment',
+    'We need to arrange the collection',
+    'I really need to finish the form',
+    'I definitely plan to contact the solicitor'
   ];
 
   examples.forEach(function (text) {

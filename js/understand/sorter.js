@@ -43,7 +43,7 @@ Mopapa.sorter = (function () {
 
   var INTENT_TASK_RE = new RegExp(
     '^(?:i|we)\\s+(?:(?:really|definitely)\\s+)?' +
-    '(?:(?:need|have|plan|intend)\\s+to|(?:must|should)\\s+)' +
+    '(?:(?:need|have|plan|intend)\\s+to\\s+|(?:must|should)\\s+)' +
     TASK_ACTION + '\\b',
     'i'
   );
