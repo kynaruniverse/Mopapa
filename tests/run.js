@@ -4797,6 +4797,181 @@ test('store distinguishes storage failures from save conflicts', function () {
   );
 });
 
+test('failed storage writes preserve the exact saved record and can be retried', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+
+  w.Mopapa.store.data().entries[0].text = 'Updated memory';
+
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Updated memory'
+  );
+
+  w.localStorage.failWrites = false;
+
+  assert.strictEqual(w.Mopapa.store.save(), true);
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+
+  const saved = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(saved.entries[0].text, 'Updated memory');
+});
+
+test('failed storage writes retain conflict protection after another tab saves', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  w.Mopapa.store.data().entries[0].text = 'Local attempted edit';
+
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  w.localStorage.failWrites = false;
+
+  const externalRaw = JSON.stringify({
+    schemaVersion: 1,
+    entries: [{
+      id: 'external',
+      text: 'Saved by another tab',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  w.localStorage.setItem('mopapa.v1', externalRaw);
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    externalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Local attempted edit'
+  );
+});
+
+test('failed JSON serialisation preserves the saved record and can be retried', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+
+  const temporary = {};
+  temporary.self = temporary;
+
+  w.Mopapa.store.data().temporary = temporary;
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Original memory'
+  );
+
+  delete w.Mopapa.store.data().temporary;
+
+  assert.strictEqual(w.Mopapa.store.save(), true);
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+
+  const recovered = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(recovered.schemaVersion, 1);
+  assert.strictEqual(recovered.entries.length, 1);
+  assert.strictEqual(recovered.entries[0].id, 'original');
+  assert.strictEqual(
+    recovered.entries[0].text,
+    'Original memory'
+  );
+});
+
+test('failed JSON serialisation retains conflict protection after another tab saves', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const temporary = {};
+  temporary.self = temporary;
+
+  w.Mopapa.store.data().temporary = temporary;
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  delete w.Mopapa.store.data().temporary;
+
+  const externalRaw = JSON.stringify({
+    schemaVersion: 1,
+    entries: [{
+      id: 'external',
+      text: 'Newer external memory',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  w.localStorage.setItem('mopapa.v1', externalRaw);
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    externalRaw
+  );
+});
+
 test('malformed saved rooms do not consume the custom-room limit', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({

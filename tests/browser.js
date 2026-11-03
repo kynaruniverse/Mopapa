@@ -1591,6 +1591,138 @@ async function run() {
     );
   });
 
+  await check('quota-style save failure preserves existing data and keeps the composer text', async function (page) {
+    await saveText(page, 'Original saved memory');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    await page.evaluate(function () {
+      var originalSetItem = Storage.prototype.setItem;
+
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'mopapa.v1') {
+          throw new DOMException(
+            'Simulated storage quota exceeded',
+            'QuotaExceededError'
+          );
+        }
+
+        return originalSetItem.call(this, key, value);
+      };
+    });
+
+    var attemptedText = 'This memory must survive a failed save';
+
+    await saveText(page, attemptedText);
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    assert.strictEqual(
+      await page.locator('#talk-input').inputValue(),
+      attemptedText
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].text,
+      'Original saved memory'
+    );
+
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes("couldn't save")
+    );
+  });
+
+  await check('quota-style restore failure preserves existing saved and in-memory data', async function (page) {
+    await saveText(page, 'Original memory before restore');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    await page.evaluate(function () {
+      var originalSetItem = Storage.prototype.setItem;
+
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'mopapa.v1') {
+          throw new DOMException(
+            'Simulated storage quota exceeded',
+            'QuotaExceededError'
+          );
+        }
+
+        return originalSetItem.call(this, key, value);
+      };
+    });
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'replacement-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify({
+        schemaVersion: 1,
+        entries: [{
+          id: 'replacement',
+          text: 'This replacement must not be saved',
+          room: 'notes'
+        }],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }))
+    });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(
+      data.entries[0].text,
+      'Original memory before restore'
+    );
+
+    var inMemory = await page.evaluate(function () {
+      return window.Mopapa.store.data().entries;
+    });
+
+    assert.strictEqual(inMemory.length, 1);
+    assert.strictEqual(
+      inMemory[0].text,
+      'Original memory before restore'
+    );
+
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes("couldn't restore")
+    );
+  });
+  
   await check('valid browser restore can recover from corrupt startup data', async function (page) {
     var originalRaw = '{"entries": broken';
 
