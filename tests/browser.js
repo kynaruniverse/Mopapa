@@ -508,11 +508,28 @@ async function run() {
 
     await saveText(page, text);
 
+    var confirmation = page.locator('#confirm');
+
+    assert.strictEqual(
+      await confirmation.getByRole('button', {
+        name: 'Yes',
+        exact: true
+      }).isVisible(),
+      true,
+      'The date confirmation should appear'
+    );
+
+    await confirmation.getByRole('button', {
+      name: 'Yes',
+      exact: true
+    }).click();
+
     var data = await savedData(page);
 
     assert.strictEqual(data.entries.length, 1);
     assert.strictEqual(data.entries[0].room, 'todo');
     assert.strictEqual(data.entries[0].text, text);
+    assert.ok(data.entries[0].when);
   });
 
   await check('multi-word task intentions are saved in To-dos', async function (page) {
