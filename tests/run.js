@@ -8299,21 +8299,33 @@ test('opening a saved entry targets and focuses that exact entry', function () {
 
 test('search, agenda, pinned and resurfaced Open buttons target the selected entry', function () {
   const files = [
-    '../js/ui/search.js',
-    '../js/ui/agenda.js',
-    '../js/ui/keepsakes.js',
-    '../js/ui/resurface.js'
+    {
+      path: '../js/ui/search.js',
+      expected: 'Mopapa.room.open(entry.room, entry.id)'
+    },
+    {
+      path: '../js/ui/agenda.js',
+      expected: 'Mopapa.room.open(entry.room, entry.id)'
+    },
+    {
+      path: '../js/ui/keepsakes.js',
+      expected: 'Mopapa.room.open(entry.room, entry.id)'
+    },
+    {
+      path: '../js/ui/resurface.js',
+      expected: 'Mopapa.room.open(item.entry.room, item.entry.id)'
+    }
   ];
 
-  files.forEach(function (path) {
+  files.forEach(function (file) {
     const source = fs.readFileSync(
-      __dirname + '/' + path,
+      __dirname + '/' + file.path,
       'utf8'
     );
 
     assert.ok(
-      source.includes('Mopapa.room.open(entry.room, entry.id)'),
-      path + ' must open the selected entry, not just its room'
+      source.includes(file.expected),
+      file.path + ' must open the selected entry, not just its room'
     );
   });
 });
