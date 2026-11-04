@@ -2441,6 +2441,207 @@ test('an eligible memory can resurface again on the following day', function () 
   assert.strictEqual(followingDay[0].entry.id, 'repeat-memory');
 });
 
+test('legacy memories without a creation date are not resurfaced', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'legacy-no-date',
+    text: 'An older memory without a timestamp',
+    room: 'notes',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 0);
+});
+
+test('date-only ISO creation dates remain eligible when old enough', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'date-only',
+    text: 'A memory with a date-only timestamp',
+    room: 'notes',
+    created: '2026-10-01',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].entry.id, 'date-only');
+});
+
+test('creation timestamps with timezone offsets use their local calendar date', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'offset-anniversary',
+    text: 'A memory with a timezone offset',
+    room: 'notes',
+    created: '2024-11-04T23:30:00-02:00',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 5, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'anniversary');
+  assert.strictEqual(items[0].label, 'On this day in 2024');
+});
+
+test('multiple anniversaries all appear before ordinary memories', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'ordinary',
+      text: 'An ordinary old memory',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary-2022',
+      text: 'A memory from 2022',
+      room: 'ideas',
+      created: '2022-11-04T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary-2020',
+      text: 'A memory from 2020',
+      room: 'wishlist',
+      created: '2020-11-04T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 3);
+  assert.deepStrictEqual(
+    items.slice(0, 2).map(function (item) {
+      return item.kind;
+    }),
+    ['anniversary', 'anniversary']
+  );
+  assert.strictEqual(items[2].kind, 'shelf');
+});
+
+test('multiple anniversaries retain their individual original years', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'anniversary-2021',
+      text: 'Memory from 2021',
+      room: 'notes',
+      created: '2021-11-04T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary-2019',
+      text: 'Memory from 2019',
+      room: 'notes',
+      created: '2019-11-04T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  const years = items.map(function (item) {
+    return item.label;
+  });
+
+  assert.strictEqual(items.length, 2);
+  assert.ok(years.includes('On this day in 2021'));
+  assert.ok(years.includes('On this day in 2019'));
+});
+
+test('anniversary matching uses the calendar date rather than time of day', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'late-anniversary',
+    text: 'A memory saved late in the day',
+    room: 'notes',
+    created: '2024-11-04T23:59:59.000Z',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 8, 0))
+  );
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'anniversary');
+});
+
+test('anniversary ordering is independent of storage order', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  const entries = [
+    {
+      id: 'ordinary-a',
+      text: 'Ordinary memory A',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary-a',
+      text: 'Anniversary A',
+      room: 'notes',
+      created: '2022-11-04T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'ordinary-b',
+      text: 'Ordinary memory B',
+      room: 'ideas',
+      created: '2026-09-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary-b',
+      text: 'Anniversary B',
+      room: 'wishlist',
+      created: '2020-11-04T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  function order() {
+    return Array.from(
+      w.Mopapa.resurface.getToday(now)
+    ).map(function (item) {
+      return item.entry.id;
+    });
+  }
+
+  w.Mopapa.store.data().entries = entries.slice();
+  const firstOrder = order();
+
+  w.Mopapa.store.data().entries = entries.slice().reverse();
+  const secondOrder = order();
+
+  assert.deepStrictEqual(firstOrder, secondOrder);
+});
+
 test('direct task instructions are classified as to-dos', function () {
   const w = boot({});
   const now = new Date(2026, 9, 21, 10, 0);
