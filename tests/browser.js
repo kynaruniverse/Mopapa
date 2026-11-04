@@ -117,6 +117,53 @@ async function saveText(page, text) {
   await page.locator('#send').click();
 }
 
+function dateDaysAgo(days) {
+  var date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setDate(date.getDate() - days);
+  return date.toISOString();
+}
+
+function dateLastYearToday() {
+  var date = new Date();
+  date.setHours(12, 0, 0, 0);
+  date.setFullYear(date.getFullYear() - 1);
+  return date.toISOString();
+}
+
+function resurfaceEntry(id, text, room, created, done) {
+  return {
+    id: id,
+    text: text,
+    room: room,
+    when: null,
+    hasTime: false,
+    amount: null,
+    fact: null,
+    amounts: null,
+    created: created,
+    done: Boolean(done)
+  };
+}
+
+async function seedResurfaceEntries(page, entries) {
+  await page.evaluate(function (savedEntries) {
+    localStorage.setItem('mopapa.v1', JSON.stringify({
+      schemaVersion: 1,
+      entries: savedEntries,
+      learned: {},
+      customRooms: [],
+      ask: {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      }
+    }));
+  }, entries);
+
+  await page.reload({ waitUntil: 'load' });
+}
+
 async function check(name, test) {
   var opened;
 
@@ -2185,6 +2232,353 @@ async function run() {
     );
   });
 
+  await check('memory shelf stays hidden when there are no eligible memories', async function (page) {
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+  });
+
+  await check('memory shelf displays an eligible saved memory and its metadata', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'shelf-display',
+        'The spare keys are inside the blue cabinet',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-label').textContent(),
+      'From your memory shelf'
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'The spare keys are inside the blue cabinet'
+    );
+
+    assert.ok(
+      (await page.locator('#memory-shelf-meta').textContent())
+        .includes('Notes')
+    );
+
+    assert.ok(
+      (await page.locator('#memory-shelf-meta').textContent())
+        .includes('saved')
+    );
+  });
+
+  await check('memory shelf respects the seven-calendar-day minimum age', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'too-recent',
+        'This memory is only six days old',
+        'notes',
+        dateDaysAgo(6),
+        false
+      ),
+      resurfaceEntry(
+        'old-enough',
+        'This memory is seven days old',
+        'notes',
+        dateDaysAgo(7),
+        false
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'This memory is seven days old'
+    );
+  });
+
+  await check('memory shelf excludes feelings and completed memories', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'excluded-feelings',
+        'This is a feelings entry',
+        'feelings',
+        dateDaysAgo(30),
+        false
+      ),
+      resurfaceEntry(
+        'completed-note',
+        'This note has already been completed',
+        'notes',
+        dateDaysAgo(30),
+        true
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+  });
+
+  await check('memory shelf puts anniversaries before ordinary memories', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'ordinary-memory',
+        'An ordinary older memory',
+        'notes',
+        dateDaysAgo(20),
+        false
+      ),
+      resurfaceEntry(
+        'anniversary-memory',
+        'A memory from this date last year',
+        'ideas',
+        dateLastYearToday(),
+        false
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-label').textContent(),
+      'On this day in ' + (new Date().getFullYear() - 1)
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'A memory from this date last year'
+    );
+  });
+
+  await check('memory shelf hides the another-memory button when only one memory qualifies', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'single-memory',
+        'Only one eligible memory',
+        'wishlist',
+        dateDaysAgo(15),
+        false
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-next').isVisible(),
+      false
+    );
+  });
+
+  await check('memory shelf cycles through memories and wraps back to the first', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'cycle-one',
+        'First possible memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'cycle-two',
+        'Second possible memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    var firstText = await page.locator('#memory-shelf-text').textContent();
+
+    var nextButton = page.locator('#memory-shelf-next');
+
+    assert.strictEqual(await nextButton.isVisible(), true);
+
+    assert.ok(
+      (await nextButton.textContent()).includes('1/2')
+    );
+
+    await nextButton.click();
+
+    var secondText = await page.locator('#memory-shelf-text').textContent();
+
+    assert.notStrictEqual(secondText, firstText);
+
+    assert.ok(
+      (await nextButton.textContent()).includes('2/2')
+    );
+
+    await nextButton.click();
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      firstText
+    );
+
+    assert.ok(
+      (await nextButton.textContent()).includes('1/2')
+    );
+  });
+
+  await check('opening a resurfaced memory navigates to that exact saved entry', async function (page) {
+    var first = resurfaceEntry(
+      'open-first',
+      'First resurfaced entry',
+      'notes',
+      dateDaysAgo(12),
+      false
+    );
+
+    var second = resurfaceEntry(
+      'open-second',
+      'Second resurfaced entry',
+      'ideas',
+      dateDaysAgo(13),
+      false
+    );
+
+    await seedResurfaceEntries(page, [first, second]);
+
+    await page.locator('#memory-shelf-next').click();
+
+    var selectedText = await page.locator('#memory-shelf-text').textContent();
+
+    var expectedId = selectedText === first.text
+      ? first.id
+      : second.id;
+
+    await page.locator('#memory-shelf-open').click();
+
+    assert.strictEqual(
+      await page.locator('#screen-room').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#screen-home').isVisible(),
+      false
+    );
+
+    var target = page.locator('#mopapa-entry-' + expectedId);
+
+    assert.strictEqual(await target.count(), 1);
+    assert.strictEqual(await target.isVisible(), true);
+
+    assert.ok(
+      await target.evaluate(function (element) {
+        return element.classList.contains('entry-opened');
+      })
+    );
+  });
+
+  await check('memory shelf refresh preserves the currently selected memory', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'refresh-first',
+        'First refresh memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'refresh-second',
+        'Second refresh memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    await page.locator('#memory-shelf-next').click();
+
+    var selectedText = await page.locator('#memory-shelf-text').textContent();
+
+    await page.evaluate(function () {
+      window.Mopapa.resurfaceUI.refresh();
+    });
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      selectedText
+    );
+  });
+
+  await check('memory shelf displays saved text literally without creating HTML elements', async function (page) {
+    var unsafeLookingText = '<img src=x onerror=alert(1)> Keep this text literally';
+
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'literal-memory',
+        unsafeLookingText,
+        'notes',
+        dateDaysAgo(15),
+        false
+      )
+    ]);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      unsafeLookingText
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text img').count(),
+      0
+    );
+
+    assert.strictEqual(
+      await page.locator('img[src="x"]').count(),
+      0
+    );
+  });
+
+  await check('long resurfaced memories do not cause horizontal overflow on narrow screens', async function (page) {
+    await page.setViewportSize({
+      width: 320,
+      height: 800
+    });
+
+    var longText = 'A resurfaced memory ' + new Array(950).join('x');
+
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'long-resurfaced',
+        longText,
+        'notes',
+        dateDaysAgo(20),
+        false
+      )
+    ]);
+
+    var dimensions = await page.evaluate(function () {
+      var textElement = document.querySelector('#memory-shelf-text');
+      var shelf = document.querySelector('#memory-shelf');
+
+      return {
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        shelf: shelf.scrollWidth,
+        text: textElement.scrollWidth,
+        textClient: textElement.clientWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.page <= dimensions.viewport,
+      'Page has horizontal overflow: ' + JSON.stringify(dimensions)
+    );
+
+    assert.ok(
+      dimensions.text <= dimensions.textClient + 1,
+      'Resurfaced text exceeds its container: ' + JSON.stringify(dimensions)
+    );
+  });
+  
   await check('search ranks an exact phrase above separated word matches', async function (page) {
     await page.evaluate(function () {
       localStorage.setItem('mopapa.v1', JSON.stringify({
