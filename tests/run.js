@@ -8336,6 +8336,61 @@ test('learning: a tapped appointment settles a "which entry" date question', fun
   assert.strictEqual(r.sources[0].id, 'b');
 });
 
+test('learning: a tapped appointment settles same-time appointment ambiguity', function () {
+  const when = new Date(Date.now() + 8 * 86400000);
+  when.setHours(11, 0, 0, 0);
+
+  const iso = when.toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'same-time-checkup',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'same-time-hygiene',
+      text: 'Dentist hygiene appointment',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(1),
+      done: false
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const q = 'When is the dentist?';
+  const initial = w.Mopapa.ask.answer(q);
+
+  assert.ok(
+    /Which appointment do you mean/i.test(initial.answer),
+    initial.answer
+  );
+
+  assert.strictEqual(initial.sources.length, 2);
+
+  assert.strictEqual(
+    w.Mopapa.ask.confirmSource(q, 'same-time-hygiene'),
+    true
+  );
+
+  const resolved = w.Mopapa.ask.answer(q);
+
+  assert.ok(
+    /Dentist hygiene appointment/i.test(resolved.answer),
+    resolved.answer
+  );
+
+  assert.strictEqual(resolved.sources.length, 1);
+  assert.strictEqual(resolved.sources[0].id, 'same-time-hygiene');
+});
+
 test('learning: unanswered questions are logged once, capped, and clearable', function () {
   const w = boot(stored([{ id: 'a', text: 'Call mum', room: 'todo', created: ago(1) }]));
   w.Mopapa.store.load();
