@@ -1802,6 +1802,325 @@ async function run() {
     );
   });
 
+  await check('search ranks an exact phrase above separated word matches', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: [
+          {
+            id: 'separated-match',
+            text: 'Passport is stored in the safe',
+            room: 'notes',
+            created: '2026-10-02T10:00:00.000Z'
+          },
+          {
+            id: 'exact-match',
+            text: 'Passport safe location',
+            room: 'notes',
+            created: '2026-10-01T10:00:00.000Z'
+          }
+        ],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }));
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('#memory-search-input').fill('passport safe');
+    await page.locator('.memory-search-submit').click();
+
+    var results = page.locator('.memory-search-result');
+
+    assert.strictEqual(await results.count(), 2);
+
+    assert.ok(
+      (await results.nth(0).textContent()).includes('Passport safe location'),
+      'The exact phrase match should rank first'
+    );
+
+    assert.ok(
+      (await results.nth(1).textContent()).includes('Passport is stored in the safe')
+    );
+  });
+
+  await check('search displays at most ten results and reports the full total', async function (page) {
+    var entries = [];
+
+    for (var i = 0; i < 12; i++) {
+      entries.push({
+        id: 'search-limit-' + i,
+        text: 'Blue lantern household memory ' + i,
+        room: 'notes',
+        created: new Date(Date.UTC(2026, 0, i + 1)).toISOString()
+      });
+    }
+
+    await page.evaluate(function (savedEntries) {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: savedEntries,
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }));
+    }, entries);
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('#memory-search-input').fill('blue lantern');
+    await page.locator('.memory-search-submit').click();
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      10
+    );
+
+    var status = await page.locator('#memory-search-status').textContent();
+
+    assert.ok(status.includes('Found 12 saved entries.'));
+    assert.ok(status.includes('Showing the best 10.'));
+  });
+
+  await check('clearing search removes results resets status and restores focus', async function (page) {
+    await saveText(page, 'The blue lantern is in the hallway');
+
+    await page.locator('#memory-search-input').fill('blue lantern');
+    await page.locator('.memory-search-submit').click();
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      1
+    );
+
+    await page.locator('#memory-search-clear').click();
+
+    assert.strictEqual(
+      await page.locator('#memory-search-input').inputValue(),
+      ''
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-search-results').isHidden(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      0
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-search-status').textContent(),
+      'Search looks through every room on this device.'
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return document.activeElement.id;
+      }),
+      'memory-search-input'
+    );
+  });
+
+  await check('a no-match search removes previously displayed results', async function (page) {
+    await saveText(page, 'The blue lantern is in the hallway');
+
+    var input = page.locator('#memory-search-input');
+    var submit = page.locator('.memory-search-submit');
+    var results = page.locator('.memory-search-result');
+
+    await input.fill('blue lantern');
+    await submit.click();
+
+    assert.strictEqual(await results.count(), 1);
+
+    await input.fill('unrelated volcano');
+    await submit.click();
+
+    assert.strictEqual(await results.count(), 0);
+
+    assert.strictEqual(
+      await page.locator('#memory-search-results').isHidden(),
+      true
+    );
+
+    assert.ok(
+      (await page.locator('#memory-search-status').textContent())
+        .includes('No saved entries matched.')
+    );
+  });
+
+  await check('opening a search result navigates to the correct saved entry', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: [
+          {
+            id: 'correct-search-target',
+            text: 'The spare passport is inside the blue folder',
+            room: 'notes',
+            created: '2026-10-01T10:00:00.000Z'
+          },
+          {
+            id: 'other-search-entry',
+            text: 'Passport photographs are in the desk drawer',
+            room: 'notes',
+            created: '2026-10-02T10:00:00.000Z'
+          }
+        ],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }));
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('#memory-search-input').fill('spare passport');
+    await page.locator('.memory-search-submit').click();
+
+    await page.locator('.memory-search-result')
+      .filter({ hasText: 'blue folder' })
+      .locator('.memory-search-open')
+      .click();
+
+    assert.strictEqual(
+      await page.locator('#screen-room').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#screen-home').isVisible(),
+      false
+    );
+
+    var target = page.locator('#mopapa-entry-correct-search-target');
+
+    assert.strictEqual(await target.count(), 1);
+    assert.strictEqual(await target.isVisible(), true);
+
+    assert.ok(
+      await target.evaluate(function (element) {
+        return element.classList.contains('entry-opened');
+      })
+    );
+  });
+
+  await check('long search results do not create horizontal overflow on narrow screens', async function (page) {
+    await page.setViewportSize({ width: 320, height: 800 });
+
+    var longText = 'Needle ' + new Array(994).join('x');
+
+    await page.evaluate(function (text) {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: [{
+          id: 'long-search-entry',
+          text: text,
+          room: 'notes',
+          created: '2026-10-01T10:00:00.000Z'
+        }],
+        learned: {},
+        customRooms: [],
+        ask: { aliases: [], boosts: {}, unanswered: [] }
+      }));
+    }, longText);
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('#memory-search-input').fill('needle');
+    await page.locator('.memory-search-submit').click();
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      1
+    );
+
+    var dimensions = await page.evaluate(function () {
+      return {
+        viewport: document.documentElement.clientWidth,
+        page: document.documentElement.scrollWidth,
+        result: document.querySelector('.memory-search-result').scrollWidth,
+        resultBody: document.querySelector('.memory-search-result-body').clientWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.page <= dimensions.viewport,
+      'Page has horizontal overflow: ' + JSON.stringify(dimensions)
+    );
+
+    assert.ok(
+      dimensions.result <= dimensions.resultBody + 1,
+      'Search result content exceeds its body width: ' + JSON.stringify(dimensions)
+    );
+  });
+
+  await check('search controls and results expose accessible labels and status', async function (page) {
+    await saveText(page, 'The blue lantern is in the hallway');
+
+    var input = page.getByLabel('Search saved text');
+
+    assert.strictEqual(await input.count(), 1);
+
+    assert.strictEqual(
+      await page.locator('#memory-search-status').getAttribute('aria-live'),
+      'polite'
+    );
+
+    await input.fill('blue lantern');
+    await page.locator('.memory-search-submit').click();
+
+    assert.strictEqual(
+      await page.locator('#memory-search-results').getAttribute('hidden'),
+      null
+    );
+
+    assert.strictEqual(
+      await page.getByRole('button', { name: 'Open' }).count(),
+      1
+    );
+
+    assert.strictEqual(
+      await page.getByRole('button', { name: 'Clear' }).count(),
+      1
+    );
+  });
+
+  await check('search can be submitted repeatedly with the Enter key', async function (page) {
+    await saveText(page, 'The blue lantern is in the hallway');
+
+    var input = page.locator('#memory-search-input');
+
+    await input.fill('blue lantern');
+    await input.press('Enter');
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      1
+    );
+
+    await input.fill('hallway');
+    await input.press('Enter');
+
+    assert.strictEqual(
+      await page.locator('.memory-search-result').count(),
+      1
+    );
+
+    assert.ok(
+      (await page.locator('.memory-search-result').first().textContent())
+        .includes('blue lantern')
+    );
+
+    assert.ok(
+      (await page.locator('#memory-search-status').textContent())
+        .includes('Found 1 saved entry.')
+    );
+  });
+  
   var lockTest = await openPage();
   var secondPage = null;
   var secondPageErrors = [];
