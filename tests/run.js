@@ -8032,6 +8032,170 @@ test('ask evaluation: typo suggestions are clearly labelled and source-backed', 
   );
 });
 
+test('ask evaluation: two dentist appointments at different times require clarification', function () {
+  const firstWhen = new Date(Date.now() + 7 * 86400000);
+  firstWhen.setHours(10, 0, 0, 0);
+
+  const secondWhen = new Date(firstWhen.getTime());
+  secondWhen.setHours(15, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-dentist-morning',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: firstWhen.toISOString(),
+      hasTime: true,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-dentist-afternoon',
+      text: 'Dentist hygiene visit',
+      room: 'appointments',
+      when: secondWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is the dentist?');
+
+  assert.ok(
+    /different scheduled dates|Which entry do you mean/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    ['eval-dentist-afternoon', 'eval-dentist-morning']
+  );
+});
+
+test('ask evaluation: separate appointments at the same time are not silently collapsed', function () {
+  const when = new Date(Date.now() + 8 * 86400000);
+  when.setHours(11, 0, 0, 0);
+
+  const iso = when.toISOString();
+
+  const entries = [
+    {
+      id: 'eval-dentist-checkup',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-dentist-hygiene',
+      text: 'Dentist hygiene appointment',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is the dentist?');
+
+  assert.ok(
+    /Which appointment do you mean|Which entry do you mean|more than one matching appointment/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    ['eval-dentist-checkup', 'eval-dentist-hygiene']
+  );
+});
+
+test('ask evaluation: completed appointments do not override an upcoming appointment', function () {
+  const past = new Date(Date.now() - 5 * 86400000).toISOString();
+  const future = new Date(Date.now() + 9 * 86400000).toISOString();
+
+  const entries = [
+    {
+      id: 'eval-dentist-completed',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: past,
+      hasTime: false,
+      created: ago(3),
+      done: true
+    },
+    {
+      id: 'eval-dentist-upcoming',
+      text: 'Dentist follow-up',
+      room: 'appointments',
+      when: future,
+      hasTime: false,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is the dentist?');
+
+  assert.ok(
+    /Dentist follow-up/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-dentist-upcoming']
+  );
+});
+
+test('ask evaluation: a newer location replaces the old location for the same item', function () {
+  const entries = [
+    {
+      id: 'eval-keys-new-location',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-keys-old-location',
+      text: 'Spare keys are in the kitchen drawer',
+      room: 'notes',
+      created: ago(5)
+    }
+  ];
+
+  const result = askWith(entries, 'Where are my spare keys?');
+
+  assert.ok(
+    /blue tin/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/kitchen drawer/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-keys-new-location']
+  );
+});
 
 function reboot(w) {
   const copy = Object.assign({}, w.localStorage._);
