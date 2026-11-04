@@ -2078,14 +2078,21 @@ async function run() {
       null
     );
 
+    var searchResults = page.locator('#memory-search-results');
+
     assert.strictEqual(
-      await page.getByRole('button', { name: 'Open' }).count(),
+      await searchResults.getByRole('button', { name: 'Open' }).count(),
       1
     );
 
     assert.strictEqual(
-      await page.getByRole('button', { name: 'Clear' }).count(),
+      await page.locator('#memory-search-clear').count(),
       1
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-search-clear').getAttribute('type'),
+      'button'
     );
   });
 
