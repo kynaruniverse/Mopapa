@@ -30,7 +30,12 @@ Mopapa.search = (function () {
 
   function wordMatches(searchWord, entryWord) {
     // Prefix matching makes a partial word such as "headphon" useful.
-    return entryWord.indexOf(searchWord) === 0;
+    if (entryWord.indexOf(searchWord) === 0) return true;
+
+    // A number-only query can also match an amount prefixed with £.
+    return /^\d/.test(searchWord) &&
+      entryWord.charAt(0) === '£' &&
+      entryWord.indexOf(searchWord, 1) === 1;
   }
 
   function find(query) {
