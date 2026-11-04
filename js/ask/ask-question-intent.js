@@ -48,9 +48,23 @@ Mopapa.askParts.questionIntent = (function () {
       /\b(in|inside|on|under|behind|beside|within)\b/.test(n);
   }
 
+  function isHistoricalQuestion(q) {
+    var n = norm(q);
+
+    return /\b(before|previously|previous|earlier|original|originally|initial|initially)\b/.test(n);
+  }
+
+  function isOriginalQuestion(q) {
+    var n = norm(q);
+
+    return /\b(original|originally|initial|initially)\b/.test(n);
+  }
+  
   return {
     isLocationQuestion: isLocationQuestion,
     isDirectQuestion: isDirectQuestion,
-    isItemsQuestion: isItemsQuestion
+    isItemsQuestion: isItemsQuestion,
+    isHistoricalQuestion: isHistoricalQuestion,
+    isOriginalQuestion: isOriginalQuestion
   };
 })();

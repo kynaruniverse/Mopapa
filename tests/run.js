@@ -8650,9 +8650,91 @@ test('ask evaluation: original appointment questions retrieve the earlier schedu
   );
 
   assert.strictEqual(result.sources.length, 1);
+  assert.ok(
+    /original scheduled date/i.test(result.answer),
+    result.answer
+  );
   assert.strictEqual(
     result.sources[0].id,
     'eval-history-dentist-old'
+  );
+});
+
+test('ask evaluation: previous location selects the second-newest saved version', function () {
+  const entries = [
+    {
+      id: 'eval-history-keys-current',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-history-keys-previous',
+      text: 'Spare keys are in the kitchen drawer',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'eval-history-keys-original',
+      text: 'Spare keys are in the hallway cupboard',
+      room: 'notes',
+      created: ago(10)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'Where were my spare keys before?'
+  );
+
+  assert.ok(/kitchen drawer/i.test(result.answer), result.answer);
+  assert.ok(!/blue tin/i.test(result.answer), result.answer);
+  assert.ok(!/hallway cupboard/i.test(result.answer), result.answer);
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-history-keys-previous']
+  );
+});
+
+test('ask evaluation: original cost selects the oldest saved version', function () {
+  const entries = [
+    {
+      id: 'eval-history-cost-current',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-history-cost-middle',
+      text: 'Car service £150',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'eval-history-cost-original',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(10)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'What was the original car service cost?'
+  );
+
+  assert.ok(/£125/.test(result.answer), result.answer);
+  assert.ok(!/£175/.test(result.answer), result.answer);
+  assert.ok(!/£150/.test(result.answer), result.answer);
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-history-cost-original']
   );
 });
 

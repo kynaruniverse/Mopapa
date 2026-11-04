@@ -16,6 +16,8 @@ Mopapa.ask = (function () {
   var words = Mopapa.askParts.text.words;
   var stem = Mopapa.askParts.text.stem;
   var questionIntent = Mopapa.askParts.questionIntent;
+  var isHistoricalQuestion = questionIntent.isHistoricalQuestion;
+  var isOriginalQuestion = questionIntent.isOriginalQuestion;  
   var roomForQuestion = Mopapa.askParts.roomIntent.roomForQuestion;
   var queryTerms = Mopapa.askParts.query.queryTerms;
 
@@ -89,7 +91,8 @@ Mopapa.ask = (function () {
         stem: stem,
         formatMoney: formatMoney,
         confirmedBySig: learning.confirmedBySig,
-        signatureOf: learning.signatureOf
+          signatureOf: learning.signatureOf,
+          isOriginalQuestion: isOriginalQuestion
       }
     );
   }
@@ -180,7 +183,8 @@ Mopapa.ask = (function () {
               words: words,
               stem: stem,
               aliases: aliasModule.map,
-              confirmedBySig: learning.confirmedBySig
+                confirmedBySig: learning.confirmedBySig,
+                isHistoricalQuestion: isHistoricalQuestion
             }
           );
         },
@@ -210,7 +214,8 @@ Mopapa.ask = (function () {
               isWhenQuestion: isWhenQuestion,
               sortByWhen: sortByWhen,
               confirmedBySig: learning.confirmedBySig,
-              extractTextDate: extractTextDate
+                extractTextDate: extractTextDate,
+                isHistoricalQuestion: isHistoricalQuestion
             }
           );
         },
@@ -227,7 +232,8 @@ Mopapa.ask = (function () {
             q,
             matches,
             isLocationQuestion,
-            norm
+            norm,
+            isHistoricalQuestion(q)
           );
         },
 

@@ -3,13 +3,29 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.askParts = Mopapa.askParts || {};
 
 Mopapa.askParts.locationAnswer = (function () {
-  function answerLocation(q, matches, isLocationQuestion, norm) {
+  function answerLocation(q, matches, isLocationQuestion, norm, historical) {
     if (!isLocationQuestion || !matches.length) return null;
 
     var locationMatches = matches.filter(function (entry) {
       return /\b(in|inside|on|under|behind|beside|next to|within)\b/i
         .test(String(entry.text || ''));
     });
+
+    if (historical) {
+      if (locationMatches.length < 2) {
+        return {
+          answer: 'I found a saved location, but no earlier location to compare it with.',
+          sources: locationMatches.slice(0, 1)
+        };
+      }
+
+      locationMatches.sort(function (a, b) {
+        return new Date(b.created).getTime() -
+          new Date(a.created).getTime();
+      });
+
+      locationMatches = [locationMatches[1]];
+    }
 
     if (locationMatches.length !== 1) return null;
 

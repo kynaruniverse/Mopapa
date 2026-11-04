@@ -19,6 +19,7 @@ Mopapa.askParts.moneyAnswer = (function () {
   function answerCost(q, all, room, date, helpers) {
     var n = helpers.norm(q);
     var wantsLatest = /\b(latest|newest|most recent)\b/.test(n);
+    var wantsOriginal = helpers.isOriginalQuestion(q);
     var wantsSpendingTotal = /\b(total|altogether|spend|spent|spending)\b/.test(n);
 
     var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|yesterday|today|tomorrow)\b/g;
@@ -110,6 +111,19 @@ Mopapa.askParts.moneyAnswer = (function () {
       };
     }
 
+    if (wantsOriginal) {
+      priced.sort(function (a, b) {
+        return new Date(a.created).getTime() -
+          new Date(b.created).getTime();
+      });
+
+      return {
+        answer: 'The original recorded cost was ' +
+          Mopapa.rules.money(priced[0].text) + '.',
+        sources: [priced[0]]
+      };
+    }
+    
     if (wantsLatest) {
       return {
         answer: 'The most recent cost was ' +

@@ -6,6 +6,50 @@ Mopapa.askParts.dateAnswer = (function () {
   function answerWhen(q, matches, sig, helpers) {
     if (!helpers.isWhenQuestion(q) || !matches.length) return null;
 
+    if (helpers.isHistoricalQuestion(q)) {
+      var historicalDated = matches.filter(function (e) {
+        return !e.done &&
+          e.when &&
+          !isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime());
+      }).sort(helpers.sortByWhen);
+
+      if (historicalDated.length) {
+        var historicalSubjects = [];
+
+        historicalDated.forEach(function (entry) {
+          var subject = String(entry.text || '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (historicalSubjects.indexOf(subject) === -1) {
+            historicalSubjects.push(subject);
+          }
+        });
+
+        if (historicalSubjects.length > 1) {
+          return {
+            answer: 'I found different appointments in your saved history. Which appointment do you mean?',
+            sources: historicalDated.slice(0, 5)
+          };
+        }
+
+        var originalEntry = historicalDated[0];
+        var originalLabel = Mopapa.rules.describe(
+          Mopapa.rules.dateForEntry(
+            originalEntry.when,
+            originalEntry.hasTime
+          ),
+          originalEntry.hasTime
+        );
+
+        return {
+          answer: 'The original scheduled date was ' + originalLabel + '.',
+          sources: [originalEntry]
+        };
+      }
+    }
+
     var dated = matches.filter(function (e) {
       return !e.done &&
         e.when &&

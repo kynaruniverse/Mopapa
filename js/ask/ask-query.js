@@ -24,7 +24,7 @@ Mopapa.askParts.query = (function () {
     'add added adding create created creating get got retrieve retrieving ' +
     'leave leaving leaves park parked parking store stored storing ' +
     'hide hid hidden place placed thing things object objects stuff ' +
-    'week weeks weekend weekends month months previous current'
+    'week weeks weekend weekends month months previous current before earlier original originally initial initially'
   ).split(' ').reduce(function (o, w) {
     o[w] = true;
     return o;
