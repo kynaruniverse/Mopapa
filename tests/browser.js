@@ -1280,6 +1280,155 @@ async function run() {
     assert.strictEqual(await page.locator('#confirm').isVisible(), false);
   });
 
+  await check('layout fits a 360px mobile viewport', async function (page) {
+    await page.setViewportSize({ width: 360, height: 640 });
+
+    var dimensions = await page.evaluate(function () {
+      return {
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.scrollWidth <= dimensions.width,
+      'Page overflows at 360px'
+    );
+  });
+
+  await check('layout fits a 390px mobile viewport', async function (page) {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    var dimensions = await page.evaluate(function () {
+      return {
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.scrollWidth <= dimensions.width,
+      'Page overflows at 390px'
+    );
+  });
+
+  await check('layout remains usable with enlarged root text', async function (page) {
+    await page.setViewportSize({ width: 360, height: 640 });
+
+    await page.evaluate(function () {
+      document.documentElement.style.fontSize = '200%';
+    });
+
+    var dimensions = await page.evaluate(function () {
+      return {
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.scrollWidth <= dimensions.width,
+      'Enlarged text causes horizontal page overflow'
+    );
+  });
+
+  await check('keyboard navigation exposes a visible focus indicator', async function (page) {
+    await page.keyboard.press('Tab');
+
+    var focus = await page.evaluate(function () {
+      var style = getComputedStyle(document.activeElement);
+
+      return {
+        element: document.activeElement.id,
+        outlineWidth: parseFloat(style.outlineWidth),
+        outlineStyle: style.outlineStyle
+      };
+    });
+
+    assert.ok(focus.element, 'Keyboard focus did not reach a control');
+    assert.ok(focus.outlineWidth > 0, 'Focused control has no visible outline');
+    assert.notStrictEqual(focus.outlineStyle, 'none');
+  });
+
+  await check('search controls retain minimum mobile touch heights', async function (page) {
+    var heights = await page.locator(
+      '#memory-search-input, #memory-search-form button'
+    ).evaluateAll(function (elements) {
+      return elements.map(function (element) {
+        return element.getBoundingClientRect().height;
+      });
+    });
+
+    assert.ok(heights.length >= 3);
+
+    heights.forEach(function (height) {
+      assert.ok(height >= 44, 'Search control is shorter than 44px');
+    });
+  });
+
+  await check('long saved memories wrap without horizontal overflow', async function (page) {
+    await page.setViewportSize({ width: 320, height: 640 });
+
+    await saveText(page, 'Memory '.repeat(120));
+
+    var dimensions = await page.evaluate(function () {
+      return {
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      };
+    });
+
+    assert.ok(
+      dimensions.scrollWidth <= dimensions.width,
+      'Long saved memory creates horizontal overflow'
+    );
+  });
+
+  await check('Ask source cards remain inside a narrow mobile viewport', async function (page) {
+    await page.setViewportSize({ width: 320, height: 640 });
+
+    await saveText(page, 'My spare house key is inside the small wooden kitchen drawer.');
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill('Where is my spare house key?');
+    await page.locator('#send').click();
+
+    await page.waitForFunction(function () {
+      return document.querySelectorAll('#answer-sources .source-entry').length > 0;
+    });
+
+    var bounds = await page.locator(
+      '#answer-sources .source-entry'
+    ).first().boundingBox();
+
+    assert.ok(bounds);
+    assert.ok(bounds.x >= 0);
+    assert.ok(bounds.x + bounds.width <= 320);
+  });
+
+  await check('search result buttons retain minimum touch height', async function (page) {
+    await saveText(page, 'The spare charger is in the office drawer.');
+
+    await page.locator('#memory-search-input').fill('spare charger');
+    await page.locator('#memory-search-form button[type="submit"]').click();
+
+    var height = await page.locator(
+      '#memory-search-results button'
+    ).first().evaluate(function (button) {
+      return button.getBoundingClientRect().height;
+    });
+
+    assert.ok(height >= 44, 'Search result Open button is too short');
+  });
+
+  await check('room navigation remains wide enough to use on mobile', async function (page) {
+    var height = await page.locator('.room-card').first().evaluate(function (element) {
+      return element.getBoundingClientRect().height;
+    });
+
+    assert.ok(height >= 44, 'Room navigation target is too short');
+  });
+  
   await check('mobile layouts have no horizontal page overflow', async function (page) {
     var widths = [320, 360, 375, 390, 430];
 
