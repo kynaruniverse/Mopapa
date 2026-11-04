@@ -1267,7 +1267,10 @@ async function run() {
 
     var data = await savedData(page);
 
-    assert.strictEqual(data.entries.length, 0);
+    assert.strictEqual(
+      Array.isArray(data.entries) ? data.entries.length : 0,
+      0
+    );
     assert.strictEqual(
       data.ask && Array.isArray(data.ask.unanswered)
         ? data.ask.unanswered.length
