@@ -2479,6 +2479,14 @@ test('date-only ISO creation dates remain eligible when old enough', function ()
 
 test('creation timestamps with timezone offsets use their local calendar date', function () {
   const w = boot({});
+  const created = new Date('2024-11-04T23:30:00-02:00');
+  const now = new Date(
+    2026,
+    created.getMonth(),
+    created.getDate(),
+    12,
+    0
+  );
 
   w.Mopapa.store.data().entries = [{
     id: 'offset-anniversary',
@@ -2489,7 +2497,7 @@ test('creation timestamps with timezone offsets use their local calendar date', 
   }];
 
   const items = Array.from(
-    w.Mopapa.resurface.getToday(new Date(2026, 10, 5, 12, 0))
+    w.Mopapa.resurface.getToday(now)
   );
 
   assert.strictEqual(items.length, 1);
