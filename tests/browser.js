@@ -2507,6 +2507,255 @@ async function run() {
       selectedText
     );
   });
+  
+  await check('memory shelf selects another valid memory when the current selection disappears', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'lifecycle-first',
+        'First lifecycle memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'lifecycle-second',
+        'Second lifecycle memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    await page.locator('#memory-shelf-next').click();
+
+    var selected = await page.locator('#memory-shelf-text').textContent();
+
+    await page.evaluate(function (selectedText) {
+      var entries = window.Mopapa.store.data().entries;
+      window.Mopapa.store.data().entries = entries.filter(function (entry) {
+        return entry.text !== selectedText;
+      });
+      window.Mopapa.resurfaceUI.refresh();
+    }, selected);
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+
+    assert.notStrictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      selected
+    );
+  });
+
+  await check('memory shelf hides when its last eligible memory is completed', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'lifecycle-complete',
+        'Complete this resurfaced memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.store.data().entries[0].done = true;
+      window.Mopapa.resurfaceUI.refresh();
+    });
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+  });
+
+  await check('memory shelf hides when its last eligible memory is removed', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'lifecycle-remove',
+        'Remove this resurfaced memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.store.data().entries = [];
+      window.Mopapa.resurfaceUI.refresh();
+    });
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+  });
+
+  await check('memory shelf displays a newly eligible memory after refresh', async function (page) {
+    await seedResurfaceEntries(page, []);
+
+    await page.evaluate(function (entry) {
+      window.Mopapa.store.data().entries.push(entry);
+      window.Mopapa.resurfaceUI.refresh();
+    }, resurfaceEntry(
+      'lifecycle-new',
+      'A newly added eligible memory',
+      'wishlist',
+      dateDaysAgo(14),
+      false
+    ));
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'A newly added eligible memory'
+    );
+  });
+
+  await check('memory shelf Open button is keyboard accessible', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'keyboard-open',
+        'Open this memory using the keyboard',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    var openButton = page.locator('#memory-shelf-open');
+
+    await openButton.focus();
+
+    assert.strictEqual(
+      await openButton.evaluate(function (element) {
+        return document.activeElement === element;
+      }),
+      true
+    );
+
+    await page.keyboard.press('Enter');
+
+    assert.strictEqual(
+      await page.locator('#screen-room').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#mopapa-entry-keyboard-open').count(),
+      1
+    );
+  });
+
+  await check('memory shelf next button is keyboard accessible', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'keyboard-next-one',
+        'Keyboard first memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'keyboard-next-two',
+        'Keyboard second memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    var nextButton = page.locator('#memory-shelf-next');
+
+    var before = await page.locator('#memory-shelf-text').textContent();
+
+    await nextButton.focus();
+    await page.keyboard.press('Enter');
+
+    var after = await page.locator('#memory-shelf-text').textContent();
+
+    assert.notStrictEqual(after, before);
+  });
+
+  await check('memory shelf controls retain minimum touch target heights', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'touch-controls-one',
+        'First touch target memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'touch-controls-two',
+        'Second touch target memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    var dimensions = await page.evaluate(function () {
+      return [
+        document.getElementById('memory-shelf-open'),
+        document.getElementById('memory-shelf-next')
+      ].map(function (element) {
+        return {
+          height: element.getBoundingClientRect().height,
+          width: element.getBoundingClientRect().width
+        };
+      });
+    });
+
+    dimensions.forEach(function (item) {
+      assert.ok(item.height >= 44, 'Memory shelf button is shorter than 44px');
+      assert.ok(item.width >= 44, 'Memory shelf button is narrower than 44px');
+    });
+  });
+
+  await check('memory shelf updates its live region when another memory is selected', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'live-one',
+        'First announced memory',
+        'notes',
+        dateDaysAgo(12),
+        false
+      ),
+      resurfaceEntry(
+        'live-two',
+        'Second announced memory',
+        'ideas',
+        dateDaysAgo(13),
+        false
+      )
+    ]);
+
+    var article = page.locator('.memory-card');
+
+    assert.strictEqual(
+      await article.getAttribute('aria-live'),
+      'polite'
+    );
+
+    var before = await page.locator('#memory-shelf-text').textContent();
+
+    await page.locator('#memory-shelf-next').click();
+
+    var after = await page.locator('#memory-shelf-text').textContent();
+
+    assert.notStrictEqual(after, before);
+    assert.strictEqual(
+      await article.getAttribute('aria-live'),
+      'polite'
+    );
+  });  
 
   await check('memory shelf displays saved text literally without creating HTML elements', async function (page) {
     var unsafeLookingText = '<img src=x onerror=alert(1)> Keep this text literally';
