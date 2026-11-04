@@ -36,4 +36,3 @@ node tests/run.js
 ```
 
 The repository's CI workflow is intended to run tests on pushes. A successful local test run does not, by itself, establish that a deployment is working.
-
