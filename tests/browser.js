@@ -2757,6 +2757,152 @@ async function run() {
     );
   });  
 
+  await check('editing a resurfaced memory updates the shelf automatically', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'integration-edit',
+        'Original resurfaced text',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.room.open('notes', 'integration-edit');
+    });
+
+    await page.locator('#mopapa-entry-integration-edit .edit-entry').click();
+
+    await page.locator('#edit-text-integration-edit').fill(
+      'Updated resurfaced text'
+    );
+
+    await page.locator('#mopapa-entry-integration-edit .edit-save').click();
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'Updated resurfaced text'
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+  });
+  
+  await check('deleting the last resurfaced memory hides the shelf automatically', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'integration-delete',
+        'Memory to delete',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.room.open('notes', 'integration-delete');
+    });
+
+    await page.locator('#mopapa-entry-integration-delete .del').click();
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(
+      data.entries.some(function (entry) {
+        return entry.id === 'integration-delete';
+      }),
+      false
+    );
+  });
+  
+  await check('moving a resurfaced memory to an excluded room removes it from the shelf', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'integration-move',
+        'Memory to move',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.room.open('notes', 'integration-move');
+    });
+
+    await page.locator(
+      '#mopapa-entry-integration-move select[aria-label="Move to another room"]'
+    ).selectOption('feelings');
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      false
+    );
+
+    var data = await savedData(page);
+
+    var moved = data.entries.filter(function (entry) {
+      return entry.id === 'integration-move';
+    })[0];
+
+    assert.ok(moved);
+    assert.strictEqual(moved.room, 'feelings');
+  });
+  
+  await check('moving a resurfaced memory between eligible rooms keeps it visible', async function (page) {
+    await seedResurfaceEntries(page, [
+      resurfaceEntry(
+        'integration-eligible-move',
+        'Memory moved between eligible rooms',
+        'notes',
+        dateDaysAgo(12),
+        false
+      )
+    ]);
+
+    await page.evaluate(function () {
+      window.Mopapa.room.open('notes', 'integration-eligible-move');
+    });
+
+    await page.locator(
+      '#mopapa-entry-integration-eligible-move select[aria-label="Move to another room"]'
+    ).selectOption('ideas');
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#memory-shelf-text').textContent(),
+      'Memory moved between eligible rooms'
+    );
+
+    var data = await savedData(page);
+
+    var moved = data.entries.filter(function (entry) {
+      return entry.id === 'integration-eligible-move';
+    })[0];
+
+    assert.ok(moved);
+    assert.strictEqual(moved.room, 'ideas');
+  });
+  
   await check('memory shelf displays saved text literally without creating HTML elements', async function (page) {
     var unsafeLookingText = '<img src=x onerror=alert(1)> Keep this text literally';
 
