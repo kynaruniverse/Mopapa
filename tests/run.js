@@ -7774,6 +7774,265 @@ test('ask: location verbs and generic words do not block a match', function () {
   assert.ok(/kitchen drawer/.test(r.answer), r.answer);
 });
 
+
+test('ask evaluation: realistic answers are grounded in their supporting memories', function () {
+  const dentistWhen = new Date(Date.now() + 5 * 86400000).toISOString();
+
+  const cases = [
+    {
+      name: 'location',
+      entries: [{
+        id: 'eval-location',
+        text: 'Spare keys are in the blue tin',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'Where are my spare keys?',
+      expectedAnswer: /blue tin/i,
+      expectedSources: ['eval-location'],
+      supports: function (entry) {
+        return /Spare keys are in the blue tin/i.test(entry.text);
+      }
+    },
+    {
+      name: 'recipient',
+      entries: [{
+        id: 'eval-recipient',
+        text: 'The parcel is for Morgan',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'Who is the parcel for?',
+      expectedAnswer: /for Morgan/i,
+      expectedSources: ['eval-recipient'],
+      supports: function (entry) {
+        return /parcel is for Morgan/i.test(entry.text);
+      }
+    },
+    {
+      name: 'scheduled date',
+      entries: [{
+        id: 'eval-date',
+        text: 'Dentist appointment',
+        room: 'appointments',
+        when: dentistWhen,
+        hasTime: false,
+        created: ago(1),
+        done: false
+      }],
+      question: 'When is the dentist?',
+      expectedAnswer: /Dentist appointment/i,
+      expectedSources: ['eval-date'],
+      supports: function (entry) {
+        return entry.when === dentistWhen;
+      }
+    },
+    {
+      name: 'cost',
+      entries: [{
+        id: 'eval-cost',
+        text: 'Boiler service £120',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'How much did the boiler service cost?',
+      expectedAnswer: /£120/,
+      expectedSources: ['eval-cost'],
+      supports: function (entry) {
+        return /Boiler service £120/.test(entry.text);
+      }
+    }
+  ];
+
+  cases.forEach(function (item) {
+    const result = askWith(item.entries, item.question);
+
+    assert.ok(
+      item.expectedAnswer.test(result.answer),
+      item.name + ' answer was unexpected: ' + result.answer
+    );
+
+    const sourceIds = Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    });
+
+    assert.deepStrictEqual(
+      sourceIds,
+      item.expectedSources,
+      item.name + ' returned incorrect supporting sources'
+    );
+
+    result.sources.forEach(function (entry) {
+      assert.ok(
+        item.supports(entry),
+        item.name + ' returned a source that does not support its answer'
+      );
+    });
+  });
+});
+
+test('ask evaluation: conflicting dates, recipients and costs require clarification', function () {
+  const soon = new Date(Date.now() + 4 * 86400000).toISOString();
+  const later = new Date(Date.now() + 12 * 86400000).toISOString();
+
+  const cases = [
+    {
+      name: 'different appointment dates',
+      entries: [
+        {
+          id: 'eval-dentist-one',
+          text: 'Dentist check-up',
+          room: 'appointments',
+          when: soon,
+          hasTime: false,
+          created: ago(2),
+          done: false
+        },
+        {
+          id: 'eval-dentist-two',
+          text: 'Dentist hygiene visit',
+          room: 'appointments',
+          when: later,
+          hasTime: false,
+          created: ago(1),
+          done: false
+        }
+      ],
+      question: 'When is the dentist?',
+      expectedAnswer: /different scheduled dates|Which entry do you mean/i,
+      expectedSources: ['eval-dentist-one', 'eval-dentist-two']
+    },
+    {
+      name: 'different recipients',
+      entries: [
+        {
+          id: 'eval-parcel-one',
+          text: 'The parcel is for Morgan',
+          room: 'notes',
+          created: ago(1)
+        },
+        {
+          id: 'eval-parcel-two',
+          text: 'The parcel is for Jasmine',
+          room: 'notes',
+          created: ago(2)
+        }
+      ],
+      question: 'Who is the parcel for?',
+      expectedAnswer: /more than one possible recipient/i,
+      expectedSources: ['eval-parcel-one', 'eval-parcel-two']
+    },
+    {
+      name: 'different prices',
+      entries: [
+        {
+          id: 'eval-car-one',
+          text: 'Car service £100',
+          room: 'notes',
+          created: ago(2)
+        },
+        {
+          id: 'eval-car-two',
+          text: 'Car service £150',
+          room: 'notes',
+          created: ago(1)
+        }
+      ],
+      question: 'How much did the car service cost?',
+      expectedAnswer: /Which job or purchase do you mean/i,
+      expectedSources: ['eval-car-one', 'eval-car-two']
+    }
+  ];
+
+  cases.forEach(function (item) {
+    const result = askWith(item.entries, item.question);
+
+    assert.ok(
+      item.expectedAnswer.test(result.answer),
+      item.name + ' did not request clarification: ' + result.answer
+    );
+
+    const sourceIds = Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }).sort();
+
+    assert.deepStrictEqual(
+      sourceIds,
+      item.expectedSources.slice().sort(),
+      item.name + ' did not provide the competing source entries'
+    );
+  });
+});
+
+test('ask evaluation: unsupported answers are not invented', function () {
+  const unknownLocation = askWith([
+    {
+      id: 'eval-passport',
+      text: 'Passport is in the top drawer',
+      room: 'notes',
+      created: ago(1)
+    }
+  ], 'Where is my umbrella?');
+
+  assert.ok(
+    /could not find/i.test(unknownLocation.answer),
+    unknownLocation.answer
+  );
+  assert.strictEqual(unknownLocation.sources.length, 0);
+  assert.strictEqual(unknownLocation.missed, true);
+
+  const unknownCost = askWith([
+    {
+      id: 'eval-no-price',
+      text: 'Boiler service booked for Friday',
+      room: 'notes',
+      created: ago(1)
+    }
+  ], 'How much did the boiler service cost?');
+
+  assert.ok(
+    /will not guess an amount/i.test(unknownCost.answer),
+    unknownCost.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(unknownCost.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-no-price']
+  );
+});
+
+test('ask evaluation: typo suggestions are clearly labelled and source-backed', function () {
+  const result = askWith([
+    {
+      id: 'eval-typo-passport',
+      text: 'Passport is in the top drawer',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-typo-bin',
+      text: 'Bin day is Thursday',
+      room: 'notes',
+      created: ago(2)
+    }
+  ], 'Where is my pasport?');
+
+  assert.ok(
+    /could not find an exact match|closest saved entries/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    Array.from(result.sources).some(function (entry) {
+      return entry.id === 'eval-typo-passport';
+    }),
+    'The typo suggestion did not include its supporting memory'
+  );
+});
+
+
 function reboot(w) {
   const copy = Object.assign({}, w.localStorage._);
   const next = boot(copy);
