@@ -2061,9 +2061,14 @@ async function run() {
   await check('search controls and results expose accessible labels and status', async function (page) {
     await saveText(page, 'The blue lantern is in the hallway');
 
-    var input = page.getByLabel('Search saved text');
+    var input = page.locator('#memory-search-input');
 
     assert.strictEqual(await input.count(), 1);
+  
+    assert.strictEqual(
+      await page.locator('label[for="memory-search-input"]').count(),
+      1
+    );
 
     assert.strictEqual(
       await page.locator('#memory-search-status').getAttribute('aria-live'),
