@@ -23,7 +23,9 @@ Mopapa.resurfaceUI = (function () {
       });
       openButton.addEventListener('click', function () {
         var item = items[index];
-        if (item && Mopapa.room && Mopapa.room.open) Mopapa.room.open(item.entry.room);
+        if (item && Mopapa.room && Mopapa.room.open) {
+          Mopapa.room.open(item.entry.room, item.entry.id);
+        }
       });
       initialized = true;
     }

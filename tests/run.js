@@ -56,7 +56,8 @@ function boot(storage, storageApi) {
     'ask/ask-learning',
     'ask/ask-answer-flow',
     'ask/ask',
-    'memory/agenda'
+    'memory/agenda',
+    'memory/resurface'
   ].forEach(function (f) {
     vm.runInContext(fs.readFileSync(__dirname + '/../js/' + f + '.js', 'utf8'), win, { filename: f });
   });
@@ -1918,6 +1919,308 @@ test('date-only agenda entries retain their intended calendar day', function () 
   assert.strictEqual(items[0].date.getMonth(), 10);
   assert.strictEqual(items[0].date.getDate(), 3);
   assert.strictEqual(items[0].label, 'Tomorrow');
+});
+
+test('resurfacing returns no memories when storage is empty', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.resurface.getToday(now)),
+    []
+  );
+});
+
+test('resurfacing includes only its selected memory rooms', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+  const created = new Date(2026, 9, 1, 12, 0).toISOString();
+
+  const rooms = [
+    'wishlist',
+    'ideas',
+    'notes',
+    'feelings',
+    'todo',
+    'appointments',
+    'custom_test'
+  ];
+
+  w.Mopapa.store.data().entries = rooms.map(function (room) {
+    return {
+      id: room,
+      text: 'Memory in ' + room,
+      room: room,
+      created: created,
+      done: false
+    };
+  });
+
+  const ids = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.deepStrictEqual(
+    ids.slice().sort(),
+    ['ideas', 'notes', 'wishlist']
+  );
+});
+
+test('resurfacing excludes memories younger than seven calendar days', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  function daysAgo(days) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - days);
+    return date.toISOString();
+  }
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'six-days',
+      text: 'Too recent',
+      room: 'notes',
+      created: daysAgo(6),
+      done: false
+    },
+    {
+      id: 'seven-days',
+      text: 'Old enough',
+      room: 'notes',
+      created: daysAgo(7),
+      done: false
+    }
+  ];
+
+  const ids = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.deepStrictEqual(ids, ['seven-days']);
+});
+
+test('resurfacing excludes completed memories', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'completed',
+      text: 'Already completed',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: true
+    },
+    {
+      id: 'unfinished',
+      text: 'Still relevant',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  const ids = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.deepStrictEqual(ids, ['unfinished']);
+});
+
+test('resurfacing safely ignores invalid creation dates', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'invalid-date',
+      text: 'Invalid date',
+      room: 'notes',
+      created: 'not-a-date',
+      done: false
+    },
+    {
+      id: 'valid-date',
+      text: 'Valid date',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  const ids = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.deepStrictEqual(ids, ['valid-date']);
+});
+
+test('anniversary memories appear before ordinary resurfaced memories', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'ordinary',
+      text: 'An older idea',
+      room: 'ideas',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'anniversary',
+      text: 'A memory from this date',
+      room: 'notes',
+      created: '2024-11-04T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  );
+
+  assert.strictEqual(items[0].entry.id, 'anniversary');
+  assert.strictEqual(items[0].kind, 'anniversary');
+  assert.strictEqual(items[1].entry.id, 'ordinary');
+});
+
+test('anniversary resurfacing identifies the original year', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'anniversary',
+    text: 'A memory from two years ago',
+    room: 'notes',
+    created: '2024-11-04T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  );
+
+  assert.strictEqual(
+    items[0].label,
+    'On this day in 2024'
+  );
+});
+
+test('ordinary resurfaced memories use the memory shelf label', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'ordinary',
+    text: 'An older note',
+    room: 'notes',
+    created: '2026-10-01T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  );
+
+  assert.strictEqual(
+    items[0].label,
+    'From your memory shelf'
+  );
+});
+
+test('resurfacing order is stable for repeated calls on the same day', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'one',
+      text: 'First memory',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'two',
+      text: 'Second memory',
+      room: 'ideas',
+      created: '2026-10-02T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'three',
+      text: 'Third memory',
+      room: 'wishlist',
+      created: '2026-10-03T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  function order() {
+    return Array.from(
+      w.Mopapa.resurface.getToday(now)
+    ).map(function (item) {
+      return item.entry.id;
+    });
+  }
+
+  assert.deepStrictEqual(order(), order());
+});
+
+test('resurfacing does not modify saved memory records', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  const entry = {
+    id: 'unchanged',
+    text: 'Keep this original memory',
+    room: 'notes',
+    created: '2026-10-01T12:00:00.000Z',
+    done: false
+  };
+
+  w.Mopapa.store.data().entries = [entry];
+
+  const before = JSON.stringify(entry);
+
+  w.Mopapa.resurface.getToday(now);
+
+  assert.strictEqual(
+    JSON.stringify(entry),
+    before
+  );
+});
+
+test('resurfacing returns the original saved entry reference', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  const entry = {
+    id: 'original-reference',
+    text: 'Original saved memory',
+    room: 'notes',
+    created: '2026-10-01T12:00:00.000Z',
+    done: false
+  };
+
+  w.Mopapa.store.data().entries = [entry];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  );
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].entry, entry);
 });
 
 test('direct task instructions are classified as to-dos', function () {
@@ -7994,11 +8297,12 @@ test('opening a saved entry targets and focuses that exact entry', function () {
 });
 
 
-test('search, agenda and pinned Open buttons target the selected entry', function () {
+test('search, agenda, pinned and resurfaced Open buttons target the selected entry', function () {
   const files = [
     '../js/ui/search.js',
     '../js/ui/agenda.js',
-    '../js/ui/keepsakes.js'
+    '../js/ui/keepsakes.js',
+    '../js/ui/resurface.js'
   ];
 
   files.forEach(function (path) {
