@@ -21,6 +21,37 @@ Mopapa.resurface = (function () {
     return hash >>> 0;
   }
 
+  function parseCreated(value) {
+    if (value === null || value === undefined || value === '') return null;
+
+    if (typeof value === 'string') {
+      var dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+      if (dateOnly) {
+        var year = Number(dateOnly[1]);
+        var month = Number(dateOnly[2]);
+        var day = Number(dateOnly[3]);
+        var localDate = new Date(0);
+
+        localDate.setHours(0, 0, 0, 0);
+        localDate.setFullYear(year, month - 1, day);
+
+        if (
+          localDate.getFullYear() !== year ||
+          localDate.getMonth() !== month - 1 ||
+          localDate.getDate() !== day
+        ) {
+          return null;
+        }
+
+        return localDate;
+      }
+    }
+
+    var created = new Date(value);
+    return isNaN(created.getTime()) ? null : created;
+  }
+
   function getToday(now) {
     now = now || new Date();
     var todayNumber = localDayNumber(now);
@@ -30,8 +61,8 @@ Mopapa.resurface = (function () {
     entries.forEach(function (entry) {
       if (!entry || INCLUDED_ROOMS.indexOf(entry.room) === -1) return;
       if (entry.done) return;
-      var created = new Date(entry.created);
-      if (isNaN(created.getTime())) return;
+      var created = parseCreated(entry.created);
+      if (!created) return;
       var age = todayNumber - localDayNumber(created);
       if (age < MIN_AGE_DAYS) return;
 

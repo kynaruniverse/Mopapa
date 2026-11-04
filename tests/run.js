@@ -2458,6 +2458,71 @@ test('legacy memories without a creation date are not resurfaced', function () {
   assert.strictEqual(items.length, 0);
 });
 
+test('memories with null or empty creation dates are not resurfaced', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [
+    {
+      id: 'null-date',
+      text: 'A memory with a null date',
+      room: 'notes',
+      created: null,
+      done: false
+    },
+    {
+      id: 'empty-date',
+      text: 'A memory with an empty date',
+      room: 'notes',
+      created: '',
+      done: false
+    }
+  ];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 0);
+});
+
+test('date-only ISO dates use their written local calendar date', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'local-date-only',
+    text: 'A date-only memory',
+    room: 'notes',
+    created: '2024-10-01',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 9, 1, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'anniversary');
+  assert.strictEqual(items[0].label, 'On this day in 2024');
+});
+
+test('invalid date-only calendar dates are not resurfaced', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'invalid-date-only',
+    text: 'An impossible calendar date',
+    room: 'notes',
+    created: '2026-02-31',
+    done: false
+  }];
+
+  const items = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  assert.strictEqual(items.length, 0);
+});
+
 test('date-only ISO creation dates remain eligible when old enough', function () {
   const w = boot({});
 
