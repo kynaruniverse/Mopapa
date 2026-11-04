@@ -24,24 +24,6 @@ Mopapa.askParts.dateAnswer = (function () {
         }
       });
 
-      if (distinctWhen.length > 1) {
-        var tappedWhen = helpers.confirmedBySig(dated, sig);
-
-        if (tappedWhen) {
-          dated = [tappedWhen];
-          distinctWhen = [
-            Mopapa.rules.dateForEntry(tappedWhen.when, tappedWhen.hasTime).getTime()
-          ];
-        }
-      }
-
-      if (distinctWhen.length > 1) {
-        return {
-          answer: 'I found different scheduled dates in your saved entries. Which entry do you mean?',
-          sources: dated.slice(0, 5)
-        };
-      }
-
       var distinctSubjects = [];
 
       dated.forEach(function (entry) {
@@ -54,6 +36,35 @@ Mopapa.askParts.dateAnswer = (function () {
           distinctSubjects.push(subject);
         }
       });
+
+      if (distinctWhen.length > 1 || distinctSubjects.length > 1) {
+        var tappedWhen = helpers.confirmedBySig(dated, sig);
+
+        if (tappedWhen) {
+          dated = [tappedWhen];
+
+          distinctWhen = [
+            Mopapa.rules.dateForEntry(
+              tappedWhen.when,
+              tappedWhen.hasTime
+            ).getTime()
+          ];
+
+          distinctSubjects = [
+            String(tappedWhen.text || '')
+              .toLowerCase()
+              .replace(/\s+/g, ' ')
+              .trim()
+          ];
+        }
+      }
+
+      if (distinctWhen.length > 1) {
+        return {
+          answer: 'I found different scheduled dates in your saved entries. Which entry do you mean?',
+          sources: dated.slice(0, 5)
+        };
+      }
 
       if (distinctSubjects.length > 1) {
         return {
