@@ -2223,6 +2223,224 @@ test('resurfacing returns the original saved entry reference', function () {
   assert.strictEqual(items[0].entry, entry);
 });
 
+test('seven calendar days qualifies even when less than 168 hours have elapsed', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 0, 1);
+  const created = new Date(2026, 9, 28, 23, 59);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'calendar-seven',
+    text: 'Seven calendar days old',
+    room: 'notes',
+    created: created.toISOString(),
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].entry.id, 'calendar-seven');
+});
+
+test('six calendar days does not qualify even when nearly 168 hours have elapsed', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 23, 59);
+  const created = new Date(2026, 9, 29, 0, 1);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'calendar-six',
+    text: 'Six calendar days old',
+    room: 'notes',
+    created: created.toISOString(),
+    done: false
+  }];
+
+  assert.strictEqual(
+    Array.from(w.Mopapa.resurface.getToday(now)).length,
+    0
+  );
+});
+
+test('future-dated memories are excluded', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'future',
+    text: 'A future memory',
+    room: 'notes',
+    created: '2026-11-12T12:00:00.000Z',
+    done: false
+  }];
+
+  assert.strictEqual(
+    Array.from(w.Mopapa.resurface.getToday(now)).length,
+    0
+  );
+});
+
+test('anniversary does not activate one day before the original date', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 3, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'anniversary-before',
+    text: 'Original date is November fourth',
+    room: 'notes',
+    created: '2024-11-04T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'shelf');
+});
+
+test('anniversary does not activate one day after the original date', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 5, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'anniversary-after',
+    text: 'Original date was November fourth',
+    room: 'notes',
+    created: '2024-11-04T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'shelf');
+});
+
+test('February twenty ninth anniversary is recognised on a leap day', function () {
+  const w = boot({});
+  const now = new Date(2024, 1, 29, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'leap-anniversary',
+    text: 'A leap day memory',
+    room: 'notes',
+    created: '2020-02-29T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'anniversary');
+  assert.strictEqual(items[0].label, 'On this day in 2020');
+});
+
+test('February twenty ninth anniversary is not shifted to February twenty eighth', function () {
+  const w = boot({});
+  const now = new Date(2025, 1, 28, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'leap-anniversary',
+    text: 'A leap day memory',
+    room: 'notes',
+    created: '2020-02-29T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'shelf');
+});
+
+test('February twenty ninth anniversary is not shifted to March first', function () {
+  const w = boot({});
+  const now = new Date(2025, 2, 1, 12, 0);
+
+  w.Mopapa.store.data().entries = [{
+    id: 'leap-anniversary',
+    text: 'A leap day memory',
+    room: 'notes',
+    created: '2020-02-29T12:00:00.000Z',
+    done: false
+  }];
+
+  const items = Array.from(w.Mopapa.resurface.getToday(now));
+
+  assert.strictEqual(items.length, 1);
+  assert.strictEqual(items[0].kind, 'shelf');
+});
+
+test('resurfacing order does not depend on storage entry order', function () {
+  const w = boot({});
+  const now = new Date(2026, 10, 4, 12, 0);
+
+  const entries = [
+    {
+      id: 'order-one',
+      text: 'First',
+      room: 'notes',
+      created: '2026-10-01T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'order-two',
+      text: 'Second',
+      room: 'ideas',
+      created: '2026-10-02T12:00:00.000Z',
+      done: false
+    },
+    {
+      id: 'order-three',
+      text: 'Third',
+      room: 'wishlist',
+      created: '2026-10-03T12:00:00.000Z',
+      done: false
+    }
+  ];
+
+  w.Mopapa.store.data().entries = entries.slice();
+
+  const firstOrder = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  w.Mopapa.store.data().entries = entries.slice().reverse();
+
+  const secondOrder = Array.from(
+    w.Mopapa.resurface.getToday(now)
+  ).map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.deepStrictEqual(firstOrder, secondOrder);
+});
+
+test('an eligible memory can resurface again on the following day', function () {
+  const w = boot({});
+
+  w.Mopapa.store.data().entries = [{
+    id: 'repeat-memory',
+    text: 'A memory that remains eligible',
+    room: 'notes',
+    created: '2026-10-01T12:00:00.000Z',
+    done: false
+  }];
+
+  const firstDay = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 4, 12, 0))
+  );
+
+  const followingDay = Array.from(
+    w.Mopapa.resurface.getToday(new Date(2026, 10, 5, 12, 0))
+  );
+
+  assert.strictEqual(firstDay.length, 1);
+  assert.strictEqual(followingDay.length, 1);
+  assert.strictEqual(followingDay[0].entry.id, 'repeat-memory');
+});
+
 test('direct task instructions are classified as to-dos', function () {
   const w = boot({});
   const now = new Date(2026, 9, 21, 10, 0);
