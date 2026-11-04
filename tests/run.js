@@ -8543,6 +8543,119 @@ test('ask evaluation: a newer location replaces the old location for the same it
   );
 });
 
+test('ask evaluation: explicit previous-location questions retrieve the older location', function () {
+  const entries = [
+    {
+      id: 'eval-history-keys-new',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-history-keys-old',
+      text: 'Spare keys are in the kitchen drawer',
+      room: 'notes',
+      created: ago(8)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'Where were my spare keys before?'
+  );
+
+  assert.ok(
+    /kitchen drawer/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-history-keys-old']
+  );
+});
+
+test('ask evaluation: original-cost questions retrieve the earlier amount', function () {
+  const entries = [
+    {
+      id: 'eval-history-cost-new',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-history-cost-old',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(8)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'What was the original car service cost?'
+  );
+
+  assert.ok(
+    /£125/.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/£175/.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-history-cost-old']
+  );
+});
+
+test('ask evaluation: original appointment questions retrieve the earlier scheduled date', function () {
+  const originalWhen = new Date(Date.now() + 3 * 86400000);
+  originalWhen.setHours(10, 0, 0, 0);
+
+  const revisedWhen = new Date(Date.now() + 12 * 86400000);
+  revisedWhen.setHours(11, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-history-dentist-new',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: revisedWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    },
+    {
+      id: 'eval-history-dentist-old',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: originalWhen.toISOString(),
+      hasTime: true,
+      created: ago(8),
+      done: false
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When was my dentist check-up originally scheduled?'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(
+    result.sources[0].id,
+    'eval-history-dentist-old'
+  );
+});
+
 function reboot(w) {
   const copy = Object.assign({}, w.localStorage._);
   const next = boot(copy);
