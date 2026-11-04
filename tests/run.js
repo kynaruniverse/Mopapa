@@ -8077,6 +8077,142 @@ test('ask evaluation: two dentist appointments at different times require clarif
   );
 });
 
+test('ask evaluation: specific appointment questions select the correct overlapping subject', function () {
+  const checkupWhen = new Date(Date.now() + 5 * 86400000);
+  checkupWhen.setHours(10, 0, 0, 0);
+
+  const hygieneWhen = new Date(Date.now() + 8 * 86400000);
+  hygieneWhen.setHours(11, 0, 0, 0);
+
+  const followupWhen = new Date(Date.now() + 12 * 86400000);
+  followupWhen.setHours(14, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-overlap-checkup',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: checkupWhen.toISOString(),
+      hasTime: true,
+      created: ago(3),
+      done: false
+    },
+    {
+      id: 'eval-overlap-hygiene',
+      text: 'Dentist hygiene appointment',
+      room: 'appointments',
+      when: hygieneWhen.toISOString(),
+      hasTime: true,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-overlap-followup',
+      text: 'Dentist follow-up appointment',
+      room: 'appointments',
+      when: followupWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const cases = [
+    {
+      question: 'When is my dentist check-up?',
+      expectedText: /Dentist check-up/i,
+      expectedId: 'eval-overlap-checkup'
+    },
+    {
+      question: 'When is my dentist hygiene appointment?',
+      expectedText: /Dentist hygiene appointment/i,
+      expectedId: 'eval-overlap-hygiene'
+    },
+    {
+      question: 'When is my dentist follow-up?',
+      expectedText: /Dentist follow-up appointment/i,
+      expectedId: 'eval-overlap-followup'
+    }
+  ];
+
+  cases.forEach(function (item) {
+    const result = askWith(entries, item.question);
+
+    assert.ok(
+      item.expectedText.test(result.answer),
+      item.question + ' returned the wrong answer: ' + result.answer
+    );
+
+    assert.strictEqual(
+      result.sources.length,
+      1,
+      item.question + ' should return exactly one supporting memory'
+    );
+
+    assert.strictEqual(
+      result.sources[0].id,
+      item.expectedId,
+      item.question + ' returned the wrong supporting memory'
+    );
+  });
+});
+
+test('ask evaluation: a broad dentist question clarifies across three overlapping appointments', function () {
+  const firstWhen = new Date(Date.now() + 5 * 86400000);
+  const secondWhen = new Date(Date.now() + 8 * 86400000);
+  const thirdWhen = new Date(Date.now() + 12 * 86400000);
+
+  const entries = [
+    {
+      id: 'eval-broad-checkup',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: firstWhen.toISOString(),
+      hasTime: false,
+      created: ago(3),
+      done: false
+    },
+    {
+      id: 'eval-broad-hygiene',
+      text: 'Dentist hygiene appointment',
+      room: 'appointments',
+      when: secondWhen.toISOString(),
+      hasTime: false,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-broad-followup',
+      text: 'Dentist follow-up appointment',
+      room: 'appointments',
+      when: thirdWhen.toISOString(),
+      hasTime: false,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is the dentist?');
+
+  assert.ok(
+    /different scheduled dates|Which entry do you mean/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    [
+      'eval-broad-checkup',
+      'eval-broad-followup',
+      'eval-broad-hygiene'
+    ]
+  );
+});
+
 test('ask evaluation: separate appointments at the same time are not silently collapsed', function () {
   const when = new Date(Date.now() + 8 * 86400000);
   when.setHours(11, 0, 0, 0);
