@@ -1340,6 +1340,202 @@ test('search reports a single-character-only query as too short', function () {
   assert.deepStrictEqual(Array.from(result.results), []);
 });
 
+test('search normalises repeated whitespace in queries', function () {
+  const w = boot(stored([
+    {
+      id: 'whitespace',
+      text: 'Passport drawer information',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('  passport    drawer  ');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'whitespace');
+});
+
+test('search treats repeated punctuation as word separators', function () {
+  const w = boot(stored([
+    {
+      id: 'punctuation',
+      text: 'Passport...drawer!!! information',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport!!!drawer...');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'punctuation');
+});
+
+test('search matches decimal currency amounts', function () {
+  const w = boot(stored([
+    {
+      id: 'decimal-payment',
+      text: 'Paid £12.50 for parking',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('12.50');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'decimal-payment');
+});
+
+test('search matches partial numeric prefixes in currency amounts', function () {
+  const w = boot(stored([
+    {
+      id: 'large-payment',
+      text: 'The repair cost £1250',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('125');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'large-payment');
+});
+
+test('search does not match numeric suffixes inside larger amounts', function () {
+  const w = boot(stored([
+    {
+      id: 'payment',
+      text: 'The repair cost £1250',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('250');
+
+  assert.strictEqual(result.total, 0);
+});
+
+test('search matches multiple tags without duplicating an entry', function () {
+  const w = boot(stored([
+    {
+      id: 'tagged',
+      text: 'Important household information',
+      room: 'notes',
+      tags: ['passport', 'passport', 'travel'],
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport travel');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results.length, 1);
+  assert.strictEqual(result.results[0].entry.id, 'tagged');
+});
+
+test('search does not duplicate an entry matching in several fields', function () {
+  const w = boot(stored([
+    {
+      id: 'multi-field',
+      text: 'Passport information',
+      room: 'notes',
+      tags: ['passport'],
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('passport');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results.length, 1);
+});
+
+test('search safely handles entries with no matching room definition', function () {
+  const w = boot(stored([
+    {
+      id: 'unknown-room',
+      text: 'Passport information',
+      room: 'removed-room',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.roomById = function () { return null; };
+
+  const result = w.Mopapa.search.find('passport');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'unknown-room');
+  assert.strictEqual(result.results[0].room, null);
+});
+
+test('search safely skips malformed live entries', function () {
+  const w = boot(stored([
+    {
+      id: 'valid',
+      text: 'Passport information',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.data().entries.unshift(
+    null,
+    'not an entry',
+    { id: 'missing-text', room: 'notes' },
+    { id: 'array-text', text: ['not', 'text'], room: 'notes' }
+  );
+
+  const result = w.Mopapa.search.find('passport');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'valid');
+});
+
+test('search does not modify saved entry data', function () {
+  const w = boot(stored([
+    {
+      id: 'unchanged',
+      text: 'Passport information',
+      room: 'notes',
+      tags: ['travel'],
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = JSON.stringify(w.Mopapa.store.data().entries);
+
+  w.Mopapa.search.find('passport travel');
+  w.Mopapa.search.find('PASS');
+  w.Mopapa.search.find('!?.');
+
+  const after = JSON.stringify(w.Mopapa.store.data().entries);
+
+  assert.strictEqual(after, before);
+});
+
 test('search finds entries containing prototype-like words', function () {
   const w = boot(stored([
     {
