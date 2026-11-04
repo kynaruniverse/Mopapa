@@ -6,7 +6,10 @@ Mopapa.askParts.dateAnswer = (function () {
   function answerWhen(q, matches, sig, helpers) {
     if (!helpers.isWhenQuestion(q) || !matches.length) return null;
 
-    if (helpers.isHistoricalQuestion(q)) {
+    if (
+      helpers.isHistoricalQuestion &&
+      helpers.isHistoricalQuestion(q)
+    ) {
       var historicalDated = matches.filter(function (e) {
         return !e.done &&
           e.when &&

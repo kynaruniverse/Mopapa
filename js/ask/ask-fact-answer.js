@@ -4,7 +4,11 @@ Mopapa.askParts = Mopapa.askParts || {};
 
 Mopapa.askParts.factAnswer = (function () {
   function answerStructured(q, terms, all, date, isLocationQuestion, helpers) {
-    if (date || helpers.isHistoricalQuestion(q)) return null;
+    if (
+      date ||
+      (helpers.isHistoricalQuestion &&
+        helpers.isHistoricalQuestion(q))
+    ) return null;
 
     var facts = Mopapa.askParts.facts;
 
