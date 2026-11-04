@@ -1269,7 +1269,9 @@ async function run() {
 
     assert.strictEqual(data.entries.length, 0);
     assert.strictEqual(
-      data.ask ? data.ask.unanswered.length : 0,
+      data.ask && Array.isArray(data.ask.unanswered)
+        ? data.ask.unanswered.length
+        : 0,
       0
     );
     assert.strictEqual(await page.locator('#confirm').isVisible(), false);
