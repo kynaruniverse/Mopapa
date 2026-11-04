@@ -2785,6 +2785,10 @@ async function run() {
       'Updated resurfaced text'
     );
 
+    await page.evaluate(function () {
+      window.Mopapa.room.close();
+    });
+    
     assert.strictEqual(
       await page.locator('#memory-shelf').isVisible(),
       true
@@ -2815,6 +2819,10 @@ async function run() {
 
     await page.locator('.app-dialog-ok').click();
 
+    await page.evaluate(function() {
+      window.Mopapa.room.close();
+    });
+    
     assert.strictEqual(
       await page.locator('#memory-shelf').isVisible(),
       false
@@ -2849,6 +2857,10 @@ async function run() {
       '#mopapa-entry-integration-move select[aria-label="Move to another room"]'
     ).selectOption('feelings');
 
+    await page.evaluate(function() {
+      window.Mopapa.room.close();
+    });
+    
     assert.strictEqual(
       await page.locator('#memory-shelf').isVisible(),
       false
@@ -2883,6 +2895,10 @@ async function run() {
       '#mopapa-entry-integration-eligible-move select[aria-label="Move to another room"]'
     ).selectOption('ideas');
 
+    await page.evaluate(function() {
+      window.Mopapa.room.close();
+    });
+    
     assert.strictEqual(
       await page.locator('#memory-shelf').isVisible(),
       true
