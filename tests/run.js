@@ -8349,6 +8349,164 @@ test('ask evaluation: completed appointments do not override an upcoming appoint
   );
 });
 
+test('ask evaluation: a rescheduled appointment uses its upcoming date', function () {
+  const oldWhen = new Date(Date.now() - 5 * 86400000);
+  oldWhen.setHours(10, 0, 0, 0);
+
+  const newWhen = new Date(Date.now() + 7 * 86400000);
+  newWhen.setHours(11, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-rescheduled-new',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: newWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    },
+    {
+      id: 'eval-rescheduled-old',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: oldWhen.toISOString(),
+      hasTime: true,
+      created: ago(5),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is my dentist check-up?');
+
+  assert.ok(
+    /Dentist check-up/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/already passed/i.test(result.answer),
+    result.answer
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'eval-rescheduled-new');
+});
+
+test('ask evaluation: latest cost questions use the newest corrected amount', function () {
+  const entries = [
+    {
+      id: 'eval-cost-corrected',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-cost-original',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(5)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'What was the latest car service cost?'
+  );
+
+  assert.ok(
+    /£175/.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/£125/.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-cost-corrected']
+  );
+});
+
+test('ask evaluation: unqualified questions do not silently choose between changed costs', function () {
+  const entries = [
+    {
+      id: 'eval-cost-new',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-cost-old',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(5)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'How much did the car service cost?'
+  );
+
+  assert.ok(
+    /multiple matching entries with costs|Which job or purchase/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    ['eval-cost-new', 'eval-cost-old']
+  );
+});
+
+test('ask evaluation: newest location is determined by saved timestamp, not storage order', function () {
+  const entries = [
+    {
+      id: 'eval-location-oldest-first',
+      text: 'Spare keys are in the kitchen drawer',
+      room: 'notes',
+      created: ago(8)
+    },
+    {
+      id: 'eval-location-newest-second',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(1)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'Where are my spare keys?'
+  );
+
+  assert.ok(
+    /blue tin/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/kitchen drawer/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-location-newest-second']
+  );
+});
+
 test('ask evaluation: a newer location replaces the old location for the same item', function () {
   const entries = [
     {
