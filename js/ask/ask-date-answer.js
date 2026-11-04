@@ -42,6 +42,26 @@ Mopapa.askParts.dateAnswer = (function () {
         };
       }
 
+      var distinctSubjects = [];
+
+      dated.forEach(function (entry) {
+        var subject = String(entry.text || '')
+          .toLowerCase()
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (distinctSubjects.indexOf(subject) === -1) {
+          distinctSubjects.push(subject);
+        }
+      });
+
+      if (distinctSubjects.length > 1) {
+        return {
+          answer: 'I found more than one appointment at that time. Which appointment do you mean?',
+          sources: dated.slice(0, 5)
+        };
+      }
+
       var first = dated[0];
       var label = Mopapa.rules.describe(
         Mopapa.rules.dateForEntry(first.when, first.hasTime),

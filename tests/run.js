@@ -8121,6 +8121,58 @@ test('ask evaluation: separate appointments at the same time are not silently co
   );
 });
 
+test('ask evaluation: duplicate entries for the same appointment do not create false ambiguity', function () {
+  const when = new Date(Date.now() + 8 * 86400000);
+  when.setHours(11, 0, 0, 0);
+
+  const iso = when.toISOString();
+
+  const entries = [
+    {
+      id: 'eval-dentist-duplicate-one',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-dentist-duplicate-two',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: iso,
+      hasTime: true,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(entries, 'When is the dentist?');
+
+  assert.ok(
+    /Dentist check-up/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/Which appointment do you mean/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    [
+      'eval-dentist-duplicate-one',
+      'eval-dentist-duplicate-two'
+    ]
+  );
+});
+
 test('ask evaluation: completed appointments do not override an upcoming appointment', function () {
   const past = new Date(Date.now() - 5 * 86400000).toISOString();
   const future = new Date(Date.now() + 9 * 86400000).toISOString();
