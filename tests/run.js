@@ -8660,6 +8660,137 @@ test('ask evaluation: original appointment questions retrieve the earlier schedu
   );
 });
 
+test('ask evaluation: original appointment follows saved revision chronology when rescheduled earlier', function () {
+  const originalWhen = new Date(Date.now() + 20 * 86400000);
+  originalWhen.setHours(10, 0, 0, 0);
+
+  const revisedWhen = new Date(Date.now() + 5 * 86400000);
+  revisedWhen.setHours(11, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-history-reversed-new',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: revisedWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    },
+    {
+      id: 'eval-history-reversed-old',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: originalWhen.toISOString(),
+      hasTime: true,
+      created: ago(8),
+      done: false
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When was my dentist check-up originally scheduled?'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(
+    result.sources[0].id,
+    'eval-history-reversed-old'
+  );
+});
+
+test('ask evaluation: previous cost retrieves the immediately preceding amount', function () {
+  const entries = [
+    {
+      id: 'eval-history-cost-latest',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'eval-history-cost-previous',
+      text: 'Car service £150',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'eval-history-cost-original',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(10)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'What was the previous car service cost?'
+  );
+
+  assert.ok(/£150/.test(result.answer), result.answer);
+  assert.ok(!/£175/.test(result.answer), result.answer);
+  assert.ok(!/£125/.test(result.answer), result.answer);
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-history-cost-previous']
+  );
+});
+
+test('ask evaluation: previous appointment retrieves the immediately preceding schedule', function () {
+  const latestWhen = new Date(Date.now() + 5 * 86400000);
+  latestWhen.setHours(11, 0, 0, 0);
+
+  const previousWhen = new Date(Date.now() + 12 * 86400000);
+  previousWhen.setHours(10, 0, 0, 0);
+
+  const originalWhen = new Date(Date.now() + 20 * 86400000);
+  originalWhen.setHours(9, 0, 0, 0);
+
+  const entries = [
+    {
+      id: 'eval-history-appointment-latest',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: latestWhen.toISOString(),
+      hasTime: true,
+      created: ago(1),
+      done: false
+    },
+    {
+      id: 'eval-history-appointment-previous',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: previousWhen.toISOString(),
+      hasTime: true,
+      created: ago(5),
+      done: false
+    },
+    {
+      id: 'eval-history-appointment-original',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: originalWhen.toISOString(),
+      hasTime: true,
+      created: ago(10),
+      done: false
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When was my dentist check-up previously scheduled?'
+  );
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(
+    result.sources[0].id,
+    'eval-history-appointment-previous'
+  );
+});
+
 test('ask evaluation: previous location selects the second-newest saved version', function () {
   const entries = [
     {
