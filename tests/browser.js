@@ -1046,6 +1046,229 @@ async function run() {
     assert.strictEqual(data.entries.length, 0);
   });
 
+
+  await check('Ask displays recovery choices and temporarily disables the composer', async function (page) {
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill('A question Mopapa cannot answer');
+    await page.locator('#send').click();
+
+    var choices = page.locator('#confirm');
+
+    assert.strictEqual(await choices.isVisible(), true);
+    assert.strictEqual(
+      await choices.getByRole('button', { name: 'Keep this instead' }).count(),
+      1
+    );
+    assert.strictEqual(
+      await choices.getByRole('button', { name: 'Not now' }).count(),
+      1
+    );
+
+    assert.strictEqual(await page.locator('#talk-input').isDisabled(), true);
+    assert.strictEqual(await page.locator('#send').isDisabled(), true);
+    assert.strictEqual(await page.locator('#talk-mode-keep').isDisabled(), true);
+    assert.strictEqual(await page.locator('#talk-mode-ask').isDisabled(), true);
+  });
+
+  await check('Not now preserves the question and restores the composer', async function (page) {
+    var question = 'A question with no matching saved memory';
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill(question);
+    await page.locator('#send').click();
+
+    await page.locator('#confirm')
+      .getByRole('button', { name: 'Not now' })
+      .click();
+
+    assert.strictEqual(
+      await page.locator('#talk-input').inputValue(),
+      question
+    );
+
+    assert.strictEqual(await page.locator('#talk-input').isDisabled(), false);
+    assert.strictEqual(await page.locator('#send').isDisabled(), false);
+    assert.strictEqual(await page.locator('#confirm').isVisible(), false);
+
+    var data = await savedData(page);
+    assert.strictEqual(data.entries.length, 0);
+  });
+
+  await check('Keep this instead files the original unanswered question', async function (page) {
+    var question = 'A question I want to keep as a memory';
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill(question);
+    await page.locator('#send').click();
+
+    await page.locator('#confirm')
+      .getByRole('button', { name: 'Keep this instead' })
+      .click();
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, question);
+    assert.strictEqual(data.entries[0].room, 'notes');
+    assert.strictEqual(await page.locator('#talk-input').inputValue(), '');
+    assert.strictEqual(await page.locator('#confirm').isVisible(), false);
+  });
+
+  await check('unanswered questions appear in Ask learning and can be cleared', async function (page) {
+    var question = 'Something Mopapa has never been told';
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill(question);
+    await page.locator('#send').click();
+
+    await page.locator('#confirm')
+      .getByRole('button', { name: 'Not now' })
+      .click();
+
+    await page.locator('#ask-learning summary').click();
+
+    assert.ok(
+      (await page.locator('#ask-learning-misses').textContent())
+        .includes(question)
+    );
+
+    assert.strictEqual(
+      await page.locator('#ask-learning-clear-misses').isVisible(),
+      true
+    );
+
+    await page.locator('#ask-learning-clear-misses').click();
+
+    assert.ok(
+      (await page.locator('#ask-learning-misses').textContent())
+        .includes('None.')
+    );
+
+    assert.strictEqual(
+      await page.locator('#ask-learning-clear-misses').isVisible(),
+      false
+    );
+  });
+
+  await check('repeating an unanswered question does not create duplicate learning records', async function (page) {
+    var question = 'A repeated question with no answer';
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill(question);
+    await page.locator('#send').click();
+
+    await page.locator('#confirm')
+      .getByRole('button', { name: 'Not now' })
+      .click();
+
+    await page.locator('#send').click();
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.ask.unanswered.length, 1);
+    assert.strictEqual(data.ask.unanswered[0].q, question);
+  });
+
+  await check('taught word aliases persist after reloading Mopapa', async function (page) {
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill('by GP I mean doctor');
+    await page.locator('#send').click();
+
+    assert.strictEqual(await page.locator('#talk-input').inputValue(), '');
+
+    await page.locator('#ask-learning summary').click();
+
+    assert.ok(
+      (await page.locator('#ask-learning-aliases').textContent())
+        .includes('GP')
+    );
+
+    await page.reload({ waitUntil: 'load' });
+    await page.locator('#ask-learning summary').click();
+
+    var aliases = await page.locator('#ask-learning-aliases').textContent();
+
+    assert.ok(aliases.includes('GP'));
+    assert.ok(aliases.includes('doctor'));
+
+    var data = await savedData(page);
+    assert.strictEqual(data.entries.length, 0);
+  });
+
+  await check('a taught word alias can be removed from Ask learning', async function (page) {
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill('by GP I mean doctor');
+    await page.locator('#send').click();
+
+    await page.locator('#ask-learning summary').click();
+
+    var aliases = page.locator('#ask-learning-aliases');
+
+    assert.ok((await aliases.textContent()).includes('GP'));
+
+    await aliases.getByRole('button', { name: 'Remove' }).click();
+
+    assert.ok(
+      !(await aliases.textContent()).includes('GP')
+    );
+
+    var data = await savedData(page);
+    assert.strictEqual(data.ask.aliases.length, 0);
+  });
+
+  await check('saved Ask sources can be selected using the keyboard', async function (page) {
+    await saveText(page, 'My spare key is in the kitchen drawer.');
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill('Where is my spare key?');
+    await page.locator('#send').click();
+
+    var source = page.locator('#answer-sources .source-entry');
+
+    assert.strictEqual(await source.count(), 1);
+    assert.strictEqual(await source.getAttribute('role'), 'button');
+
+    await source.focus();
+    await source.press('Space');
+
+    assert.ok(
+      await source.evaluate(function (element) {
+        return element.classList.contains('chosen');
+      })
+    );
+  });
+
+  await check('changing composer mode preserves an unfinished draft', async function (page) {
+    var draft = 'Where did I put the spare key?';
+
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#talk-input').fill(draft);
+    await page.locator('#talk-mode-keep').click();
+
+    assert.strictEqual(
+      await page.locator('#talk-input').inputValue(),
+      draft
+    );
+
+    await page.locator('#send').click();
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, draft);
+  });
+
+  await check('submitting an empty Ask request does not create a missed question', async function (page) {
+    await page.locator('#talk-mode-ask').click();
+    await page.locator('#send').click();
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 0);
+    assert.strictEqual(data.ask.unanswered.length, 0);
+    assert.strictEqual(await page.locator('#confirm').isVisible(), false);
+  });
+
   await check('mobile layouts have no horizontal page overflow', async function (page) {
     var widths = [320, 360, 375, 390, 430];
 
