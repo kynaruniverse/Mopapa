@@ -684,7 +684,7 @@ async function run() {
     );
   });
   
-  await check('recovery inventory handles storage enumeration failure without crashing', async function (page) {
+  await check('recovery inventory remains visible when storage enumeration fails', async function (page) {
     await page.evaluate(function () {
       localStorage.setItem(
         'mopapa.v1.recovery.4000',
@@ -712,10 +712,84 @@ async function run() {
 
     assert.strictEqual(
       await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#recovery-inventory-status').isVisible(),
+      true
+    );
+
+    assert.ok(
+      (await page.locator('#recovery-inventory-status').textContent())
+        .includes('Existing copies may still be stored')
+    );
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      0
+    );
+
+    assert.strictEqual(
+      await page.locator('#btn-recovery-export').isVisible(),
       false
     );
-  });  
 
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1.recovery.4000');
+      }),
+      'temporary-copy'
+    );
+  });
+
+  await check('startup displays an honest warning when recovery inventory cannot be inspected', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem(
+        'mopapa.v1.recovery.5000',
+        'startup-preserved-copy'
+      );
+    });
+
+    await page.addInitScript(function () {
+      Object.defineProperty(Storage.prototype, 'key', {
+        configurable: true,
+        value: function () {
+          throw new Error('simulated startup inventory failure');
+        }
+      });
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('#recovery-inventory-status').isVisible(),
+      true
+    );
+
+    assert.ok(
+      (await page.locator('#recovery-inventory-status').textContent())
+        .includes('No copies have been deleted')
+    );
+
+    assert.strictEqual(
+      await page.locator('#btn-recovery-export').isVisible(),
+      false
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1.recovery.5000');
+      }),
+      'startup-preserved-copy'
+    );
+  });
+  
   await check('browser storage protection explains its status and backup limitation', async function (page) {
     var status = page.locator('#storage-protection-status');
     var button = page.locator('#storage-protection-request');

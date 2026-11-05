@@ -167,6 +167,9 @@
   var recoveryButton = document.getElementById('btn-recovery-export');
   var originalRecoveryButton = document.getElementById('btn-original-recovery-export');
   var recoveryPanel = document.getElementById('recovery-panel');
+  var recoveryInventoryStatus = document.getElementById(
+    'recovery-inventory-status'
+  );
 
   originalRecoveryButton.hidden = !M.store.data().recoveryBlocked;
   var recoveryList = document.getElementById('recovery-copy-list');
@@ -174,9 +177,22 @@
   function renderRecoveryCopies() {
     var copies = M.store.recoveryCopies();
 
+    recoveryList.innerHTML = '';
+
+    if (copies === null) {
+      recoveryButton.hidden = true;
+      recoveryPanel.hidden = false;
+      recoveryInventoryStatus.hidden = false;
+      recoveryInventoryStatus.textContent =
+        'Mopapa could not inspect the recovery-copy inventory. Existing copies may still be stored in this browser. No copies have been deleted. Keep browser storage intact and try again later.';
+      return;
+    }
+
+    recoveryInventoryStatus.hidden = true;
+    recoveryInventoryStatus.textContent = '';
+
     recoveryButton.hidden = copies.length === 0;
     recoveryPanel.hidden = copies.length === 0;
-    recoveryList.innerHTML = '';
 
     copies.forEach(function (copy) {
       var item = document.createElement('li');

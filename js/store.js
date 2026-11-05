@@ -903,7 +903,7 @@ function load() {
         });
       }
     } catch (e) {
-      return [];
+      return null;
     }
 
     copies.sort(function (a, b) {
@@ -926,6 +926,8 @@ function load() {
 
   function exportRecoveryCopy(key) {
     var copies = recoveryCopies();
+
+    if (copies === null) return false;
 
     if (
       key !== undefined &&

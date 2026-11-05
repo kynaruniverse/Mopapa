@@ -187,6 +187,11 @@ button:disabled{cursor:not-allowed;opacity:.55}
   color:var(--dim);
   font-size:.9rem
 }
+.recovery-inventory-status{
+  margin:8px 0 12px;
+  color:var(--dim);
+  font-size:.9rem
+}
 .recovery-copy-list{
   list-style:none;
   margin:0;

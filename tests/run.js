@@ -1084,8 +1084,10 @@ test('recovery inventory retains malformed legacy keys without misdating them', 
   assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.not-a-date');
 });
 
-test('recovery discovery returns an empty list when storage enumeration fails', function () {
-  const w = boot({});
+test('recovery discovery reports an unavailable inventory when storage enumeration fails', function () {
+  const w = boot({
+    'mopapa.v1.recovery.100': 'preserved data'
+  });
 
   Object.defineProperty(w.localStorage, 'length', {
     get: function () {
@@ -1093,9 +1095,19 @@ test('recovery discovery returns an empty list when storage enumeration fails', 
     }
   });
 
-  assert.deepStrictEqual(
-    JSON.parse(JSON.stringify(w.Mopapa.store.recoveryCopies())),
-    []
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies(),
+    null
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.exportRecoveryCopy(),
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.recovery.100'],
+    'preserved data'
   );
 });
 
