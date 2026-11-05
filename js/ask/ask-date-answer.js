@@ -14,7 +14,10 @@ Mopapa.askParts.dateAnswer = (function () {
         return !e.done &&
           e.when &&
           !isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime());
-      }).sort(helpers.sortByWhen);
+      }).sort(function (a, b) {
+        return new Date(b.created).getTime() -
+          new Date(a.created).getTime();
+      });
 
       if (historicalDated.length) {
         var historicalSubjects = [];
@@ -37,7 +40,30 @@ Mopapa.askParts.dateAnswer = (function () {
           };
         }
 
-        var originalEntry = historicalDated[0];
+        var historicalIndex = 0;
+        var historicalAnswer = 'The original scheduled date was ';
+
+        if (
+          helpers.isPreviousQuestion &&
+          helpers.isPreviousQuestion(q)
+        ) {
+          historicalIndex = 1;
+          historicalAnswer = 'The previous scheduled date was ';
+
+          if (historicalDated.length < 2) {
+            return {
+              answer: 'I found only one saved version of this appointment, so I cannot identify an earlier schedule.',
+              sources: historicalDated.slice(0, 1)
+            };
+          }
+        } else if (
+          helpers.isOriginalQuestion &&
+          helpers.isOriginalQuestion(q)
+        ) {
+          historicalIndex = historicalDated.length - 1;
+        }
+
+        var originalEntry = historicalDated[historicalIndex];
         var originalLabel = Mopapa.rules.describe(
           Mopapa.rules.dateForEntry(
             originalEntry.when,
@@ -47,7 +73,7 @@ Mopapa.askParts.dateAnswer = (function () {
         );
 
         return {
-          answer: 'The original scheduled date was ' + originalLabel + '.',
+          answer: historicalAnswer + originalLabel + '.',
           sources: [originalEntry]
         };
       }

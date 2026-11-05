@@ -59,12 +59,19 @@ Mopapa.askParts.questionIntent = (function () {
 
     return /\b(original|originally|initial|initially)\b/.test(n);
   }
+
+  function isPreviousQuestion(q) {
+    var n = norm(q);
+
+    return /\b(previous|previously|before|earlier)\b/.test(n);
+  }
   
   return {
     isLocationQuestion: isLocationQuestion,
     isDirectQuestion: isDirectQuestion,
     isItemsQuestion: isItemsQuestion,
     isHistoricalQuestion: isHistoricalQuestion,
-    isOriginalQuestion: isOriginalQuestion
+    isOriginalQuestion: isOriginalQuestion,
+    isPreviousQuestion: isPreviousQuestion
   };
 })();

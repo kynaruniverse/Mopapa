@@ -20,9 +20,11 @@ Mopapa.askParts.moneyAnswer = (function () {
     var n = helpers.norm(q);
     var wantsLatest = /\b(latest|newest|most recent)\b/.test(n);
     var wantsOriginal = helpers.isOriginalQuestion(q);
+    var wantsPrevious = helpers.isPreviousQuestion &&
+      helpers.isPreviousQuestion(q);
     var wantsSpendingTotal = /\b(total|altogether|spend|spent|spending)\b/.test(n);
 
-    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|yesterday|today|tomorrow)\b/g;
+    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|previous|previously|before|earlier|original|originally|initial|initially|yesterday|today|tomorrow)\\b/g;
 
     var subject = n.replace(intent, ' ').replace(/\s+/g, ' ').trim();
     var subjectTerms = helpers.queryTerms(subject, room);
@@ -121,6 +123,23 @@ Mopapa.askParts.moneyAnswer = (function () {
         answer: 'The original recorded cost was ' +
           Mopapa.rules.money(priced[0].text) + '.',
         sources: [priced[0]]
+      };
+    }
+
+    if (wantsPrevious) {
+      priced.sort(helpers.sortNewest);
+
+      if (priced.length < 2) {
+        return {
+          answer: 'I found only one saved cost for this item, so I cannot identify a previous amount.',
+          sources: priced.slice(0, 1)
+        };
+      }
+
+      return {
+        answer: 'The previous recorded cost was ' +
+          Mopapa.rules.money(priced[1].text) + '.',
+        sources: [priced[1]]
       };
     }
     
