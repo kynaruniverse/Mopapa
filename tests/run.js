@@ -6765,6 +6765,7 @@ const invalidRestoreEntryCases = [
     name: 'amount supplied as a string',
     fields: { amount: '12.50' }
   },
+
   {
     name: 'malformed structured location fact',
     fields: {
@@ -6778,6 +6779,89 @@ const invalidRestoreEntryCases = [
       }
     }
   },
+  {
+    name: 'structured fact has unsupported attribute',
+    fields: {
+      fact: {
+        attr: 'person',
+        items: ['keys'],
+        prep: 'in',
+        where: 'kitchen',
+        value: 'kitchen',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'structured fact has non-string item',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys', 42],
+        prep: 'in',
+        where: 'kitchen',
+        value: 'kitchen',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'structured fact has empty preposition',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: ' ',
+        where: 'kitchen',
+        value: 'kitchen',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'structured fact has empty location description',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'in',
+        where: '',
+        value: 'kitchen',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'structured fact has empty value',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'in',
+        where: 'kitchen',
+        value: ' ',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'structured fact has non-boolean plural value',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'in',
+        where: 'kitchen',
+        value: 'kitchen',
+        plural: 'false'
+      }
+    }
+  },
+  {
+    name: 'amounts contain a null value',
+    fields: { amounts: [12.5, null] }
+  },
+
   {
     name: 'empty entry ID',
     fields: { id: '' }
