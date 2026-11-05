@@ -24,7 +24,7 @@ Mopapa.askParts.moneyAnswer = (function () {
       helpers.isPreviousQuestion(q);
     var wantsSpendingTotal = /\b(total|altogether|spend|spent|spending)\b/.test(n);
 
-    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|previous|previously|before|earlier|original|originally|initial|initially|yesterday|today|tomorrow)\\b/g;
+    var intent = /\b(cost|costs|price|priced|pricing|expensive|cheap|charge|charges|charged|pay|paid|spend|spent|spending|payment|payments|much|amount|total|money|according|latest|newest|recent|most|entry|entries|record|recorded|save|saved|saving|log|logged|logging|did|what|was|is|the|for|on|in|at|previous|previously|before|earlier|original|originally|initial|initially|yesterday|today|tomorrow)\b/g;
 
     var subject = n.replace(intent, ' ').replace(/\s+/g, ' ').trim();
     var subjectTerms = helpers.queryTerms(subject, room);
