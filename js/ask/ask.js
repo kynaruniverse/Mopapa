@@ -218,8 +218,10 @@ Mopapa.ask = (function () {
               isWhenQuestion: isWhenQuestion,
               sortByWhen: sortByWhen,
               confirmedBySig: learning.confirmedBySig,
-                extractTextDate: extractTextDate,
-                isHistoricalQuestion: isHistoricalQuestion
+              extractTextDate: extractTextDate,
+              isHistoricalQuestion: isHistoricalQuestion,
+              isOriginalQuestion: isOriginalQuestion,
+              isPreviousQuestion: isPreviousQuestion
             }
           );
         },
