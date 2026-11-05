@@ -6650,6 +6650,296 @@ test('custom room reload rejects names outside the permitted length', function (
   );
 });
 
+function assertRestoreRejectsBackup(backup) {
+  const original = {
+    schemaVersion: 1,
+    entries: [{
+      id: 'existing-memory',
+      text: 'This memory must survive',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [{
+      id: 'custom_books',
+      name: 'Books',
+      icon: 'book'
+    }],
+    ask: {
+      aliases: [['mummy', 'mum']],
+      boosts: {},
+      unanswered: []
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+
+  w.Mopapa.store.load();
+
+  const beforeData = w.Mopapa.store.data();
+  const beforeRaw = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify(backup)
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(
+    w.Mopapa.store.data(),
+    beforeData,
+    'Rejected restore must preserve the complete in-memory state'
+  );
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    beforeRaw,
+    'Rejected restore must preserve the original saved data'
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'existing-memory'
+  );
+}
+
+const invalidRestoreEntryCases = [
+  {
+    name: 'invalid scheduled date',
+    fields: { when: 'not-a-date' }
+  },
+  {
+    name: 'invalid creation date',
+    fields: { created: 'yesterday-ish' }
+  },
+  {
+    name: 'invalid hasTime value',
+    fields: { hasTime: 'yes' }
+  },
+  {
+    name: 'invalid completion value',
+    fields: { done: 1 }
+  },
+  {
+    name: 'invalid pinned value',
+    fields: { pinned: 'true' }
+  },
+  {
+    name: 'tags supplied as a string',
+    fields: { tags: 'holiday' }
+  },
+  {
+    name: 'more than eight tags',
+    fields: { tags: Array(9).fill('tag') }
+  },
+  {
+    name: 'empty tag',
+    fields: { tags: [''] }
+  },
+  {
+    name: 'non-string tag',
+    fields: { tags: ['valid', 42] }
+  },
+  {
+    name: 'amounts supplied as a string',
+    fields: { amounts: '12.50' }
+  },
+  {
+    name: 'non-numeric amount in amounts',
+    fields: { amounts: ['12.50'] }
+  },
+  {
+    name: 'amount supplied as a string',
+    fields: { amount: '12.50' }
+  },
+  {
+    name: 'malformed structured location fact',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: [],
+        prep: 'in',
+        where: 'kitchen',
+        value: 'kitchen',
+        plural: false
+      }
+    }
+  },
+  {
+    name: 'empty entry ID',
+    fields: { id: '' }
+  },
+  {
+    name: 'whitespace-padded entry ID',
+    fields: { id: ' bad-id ' }
+  },
+  {
+    name: 'empty entry text',
+    fields: { text: '' }
+  },
+  {
+    name: 'overlong entry text',
+    fields: { text: 'x'.repeat(1001) }
+  },
+  {
+    name: 'empty room ID',
+    fields: { room: '' }
+  }
+];
+
+invalidRestoreEntryCases.forEach(function (item) {
+  test(
+    'restore rejects ' + item.name + ' without changing existing data',
+    function () {
+      const invalidEntry = Object.assign({
+        id: 'invalid-entry',
+        text: 'Imported entry',
+        room: 'notes'
+      }, item.fields);
+
+      assertRestoreRejectsBackup({
+        entries: [
+          {
+            id: 'valid-entry',
+            text: 'Valid imported neighbour',
+            room: 'notes'
+          },
+          invalidEntry
+        ]
+      });
+    }
+  );
+});
+
+test('restore rejects duplicate entry IDs without changing existing data', function () {
+  assertRestoreRejectsBackup({
+    entries: [
+      {
+        id: 'duplicate',
+        text: 'First entry',
+        room: 'notes'
+      },
+      {
+        id: 'duplicate',
+        text: 'Second entry',
+        room: 'notes'
+      }
+    ]
+  });
+});
+
+const invalidRestoreRoomCases = [
+  {
+    name: 'custom rooms supplied as null',
+    rooms: null
+  },
+  {
+    name: 'more than ten custom rooms',
+    rooms: Array.from({ length: 11 }, function (_, index) {
+      return {
+        id: 'custom_room' + index,
+        name: 'Room ' + index,
+        icon: 'book'
+      };
+    })
+  },
+  {
+    name: 'malformed custom room record',
+    rooms: [null]
+  },
+  {
+    name: 'invalid custom room ID',
+    rooms: [{
+      id: 'invalid-id',
+      name: 'Books',
+      icon: 'book'
+    }]
+  },
+  {
+    name: 'unsupported custom room icon',
+    rooms: [{
+      id: 'custom_books',
+      name: 'Books',
+      icon: 'unknown'
+    }]
+  },
+  {
+    name: 'duplicate custom room IDs',
+    rooms: [
+      {
+        id: 'custom_same',
+        name: 'Books',
+        icon: 'book'
+      },
+      {
+        id: 'custom_same',
+        name: 'Music',
+        icon: 'music'
+      }
+    ]
+  },
+  {
+    name: 'duplicate custom room names',
+    rooms: [
+      {
+        id: 'custom_books',
+        name: 'Books',
+        icon: 'book'
+      },
+      {
+        id: 'custom_books2',
+        name: 'BOOKS',
+        icon: 'music'
+      }
+    ]
+  },
+  {
+    name: 'built-in room name used as custom room',
+    rooms: [{
+      id: 'custom_notes',
+      name: 'Notes',
+      icon: 'book'
+    }]
+  },
+  {
+    name: 'custom room name shorter than permitted',
+    rooms: [{
+      id: 'custom_a',
+      name: 'A',
+      icon: 'book'
+    }]
+  }
+];
+
+invalidRestoreRoomCases.forEach(function (item) {
+  test(
+    'restore rejects ' + item.name + ' without changing existing data',
+    function () {
+      assertRestoreRejectsBackup({
+        entries: [{
+          id: 'valid-entry',
+          text: 'Valid imported entry',
+          room: 'notes'
+        }],
+        customRooms: item.rooms
+      });
+    }
+  );
+});
+
 test('restore rejects a future schema version without replacing current data', function () {
   const w = boot(stored([
     { id: 'keep', text: 'Keep this entry', room: 'notes' }
