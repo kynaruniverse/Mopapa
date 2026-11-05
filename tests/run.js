@@ -873,6 +873,147 @@ test('loading malformed entries does not discard valid neighbours', function () 
   );
 });
 
+test('reloading unchanged corrupt data reuses its existing recovery copy', function () {
+  const raw = '{broken json';
+  const w = boot({
+    'mopapa.v1': raw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.load();
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(copies[0].kind, 'corrupt');
+  assert.strictEqual(
+    w.localStorage._[copies[0].key],
+    raw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    true
+  );
+});
+
+
+test('different corrupt data still receives a separate recovery copy', function () {
+  const firstRaw = '{broken json A';
+  const secondRaw = '{broken json B';
+
+  assert.strictEqual(firstRaw.length, secondRaw.length);
+
+  const w = boot({
+    'mopapa.v1': firstRaw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  w.Mopapa.store.load();
+
+  w.localStorage.setItem('mopapa.v1', secondRaw);
+
+  w.Mopapa.store.load();
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 2);
+
+  assert.deepStrictEqual(
+    copies.map(function (copy) {
+      return w.localStorage._[copy.key];
+    }).sort(),
+    [firstRaw, secondRaw].sort()
+  );
+});
+
+
+test('reloading unchanged partially rejected data reuses its recovery copy', function () {
+  const raw = JSON.stringify({
+    entries: [
+      { id: 'valid', text: 'Keep this memory', room: 'notes' },
+      null
+    ],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const w = boot({
+    'mopapa.v1': raw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.load();
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(copies[0].kind, 'recovery');
+  assert.strictEqual(
+    w.localStorage._[copies[0].key],
+    raw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryCopySaved,
+    true
+  );
+});
+
+
+test('different partially rejected data retains separate recovery copies', function () {
+  const firstRaw = JSON.stringify({
+    entries: [null],
+    marker: 'first'
+  });
+
+  const secondRaw = JSON.stringify({
+    entries: [null],
+    marker: 'second'
+  });
+
+  const w = boot({
+    'mopapa.v1': firstRaw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  w.Mopapa.store.load();
+
+  w.localStorage.setItem('mopapa.v1', secondRaw);
+
+  w.Mopapa.store.load();
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 2);
+
+  assert.deepStrictEqual(
+    copies.map(function (copy) {
+      return w.localStorage._[copy.key];
+    }).sort(),
+    [firstRaw, secondRaw].sort()
+  );
+});
+
 test('recovery copies can be discovered after reloading storage', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({

@@ -601,8 +601,34 @@ function load() {
     ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
   };
 
+  function hasStoredCopy(prefix, rawData) {
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+
+        if (
+          key &&
+          key.indexOf(prefix) === 0 &&
+          localStorage.getItem(key) === rawData
+        ) {
+          return true;
+        }
+      }
+    } catch (e) {
+      return false;
+    }
+
+    return false;
+  }
+
   function preserveRecoveryCopy(rawData) {
-    var base = KEY + '.recovery.' + Date.now();
+    var prefix = KEY + '.recovery.';
+
+    if (hasStoredCopy(prefix, rawData)) {
+      return true;
+    }
+
+    var base = prefix + Date.now();
     var recoveryKey = base;
     var suffix = 1;
 
@@ -670,17 +696,23 @@ function load() {
   } catch (e) {
     if (raw !== null) {
       try {
-        var corruptBase = KEY + '.corrupt.' + Date.now();
-        var corruptKey = corruptBase;
-        var corruptSuffix = 1;
+        var corruptPrefix = KEY + '.corrupt.';
 
-        while (localStorage.getItem(corruptKey) !== null) {
-          corruptKey = corruptBase + '.' + corruptSuffix;
-          corruptSuffix++;
+        if (hasStoredCopy(corruptPrefix, raw)) {
+          data.corruptCopySaved = true;
+        } else {
+          var corruptBase = corruptPrefix + Date.now();
+          var corruptKey = corruptBase;
+          var corruptSuffix = 1;
+
+          while (localStorage.getItem(corruptKey) !== null) {
+            corruptKey = corruptBase + '.' + corruptSuffix;
+            corruptSuffix++;
+          }
+
+          localStorage.setItem(corruptKey, raw);
+          data.corruptCopySaved = true;
         }
-
-        localStorage.setItem(corruptKey, raw);
-        data.corruptCopySaved = true;
       } catch (e2) {
         data.corruptCopySaved = false;
       }
