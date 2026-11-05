@@ -928,11 +928,11 @@ test('different corrupt data still receives a separate recovery copy', function 
 
   assert.strictEqual(copies.length, 2);
 
-  assert.deepStrictEqual(
-    copies.map(function (copy) {
+  assert.strictEqual(
+    JSON.stringify(copies.map(function (copy) {
       return w.localStorage._[copy.key];
-    }).sort(),
-    [firstRaw, secondRaw].sort()
+    }).sort()),
+    JSON.stringify([firstRaw, secondRaw].sort())
   );
 });
 
@@ -1006,11 +1006,11 @@ test('different partially rejected data retains separate recovery copies', funct
 
   assert.strictEqual(copies.length, 2);
 
-  assert.deepStrictEqual(
-    copies.map(function (copy) {
+  assert.strictEqual(
+    JSON.stringify(copies.map(function (copy) {
       return w.localStorage._[copy.key];
-    }).sort(),
-    [firstRaw, secondRaw].sort()
+    }).sort()),
+    JSON.stringify([firstRaw, secondRaw].sort())
   );
 });
 
