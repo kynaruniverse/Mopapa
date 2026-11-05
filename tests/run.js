@@ -975,6 +975,97 @@ test('reloading unchanged partially rejected data reuses its recovery copy', fun
   );
 });
 
+test('partially rejected data is preserved when recovery inventory inspection fails', function () {
+  const raw = JSON.stringify({
+    entries: [
+      { id: 'valid', text: 'Keep this memory', room: 'notes' },
+      null
+    ],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const w = boot({
+    'mopapa.v1': raw,
+    'mopapa.v1.recovery.100': raw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  Object.defineProperty(w.localStorage, 'length', {
+    get: function () {
+      throw new Error('simulated storage enumeration failure');
+    }
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryCopySaved,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryBlocked,
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.recovery.100'],
+    raw
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.recovery.123456'],
+    raw
+  );
+});
+
+test('corrupt data is preserved when corrupt-copy inspection fails', function () {
+  const raw = '{broken json';
+
+  const w = boot({
+    'mopapa.v1': raw,
+    'mopapa.v1.corrupt.100': raw
+  });
+
+  vm.runInContext(
+    'Date.now = function () { return 123456; };',
+    w
+  );
+
+  Object.defineProperty(w.localStorage, 'length', {
+    get: function () {
+      throw new Error('simulated storage enumeration failure');
+    }
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corrupt,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.corrupt.100'],
+    raw
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.corrupt.123456'],
+    raw
+  );
+});
 
 test('different partially rejected data retains separate recovery copies', function () {
   const firstRaw = JSON.stringify({

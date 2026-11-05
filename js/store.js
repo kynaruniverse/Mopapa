@@ -615,7 +615,7 @@ function load() {
         }
       }
     } catch (e) {
-      return false;
+      return null;
     }
 
     return false;
@@ -624,7 +624,7 @@ function load() {
   function preserveRecoveryCopy(rawData) {
     var prefix = KEY + '.recovery.';
 
-    if (hasStoredCopy(prefix, rawData)) {
+    if (hasStoredCopy(prefix, rawData) === true) {
       return true;
     }
 
@@ -698,7 +698,7 @@ function load() {
       try {
         var corruptPrefix = KEY + '.corrupt.';
 
-        if (hasStoredCopy(corruptPrefix, raw)) {
+        if (hasStoredCopy(corruptPrefix, raw) === true) {
           data.corruptCopySaved = true;
         } else {
           var corruptBase = corruptPrefix + Date.now();
