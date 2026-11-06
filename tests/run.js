@@ -1751,7 +1751,21 @@ test('search matches common irregular plurals in both directions', function () {
     ['teeth', 'tooth'],
     ['tooth', 'teeth'],
     ['mice', 'mouse'],
-    ['mouse', 'mice']
+    ['mouse', 'mice'],
+    ['buses', 'bus'],
+    ['bus', 'buses'],
+    ['leaves', 'leaf'],
+    ['leaf', 'leaves'],
+    ['wives', 'wife'],
+    ['wife', 'wives'],
+    ['knives', 'knife'],
+    ['knife', 'knives'],
+    ['wolves', 'wolf'],
+    ['wolf', 'wolves'],
+    ['loaves', 'loaf'],
+    ['loaf', 'loaves'],
+    ['halves', 'half'],
+    ['half', 'halves']
   ];
 
   cases.forEach(function (item) {
