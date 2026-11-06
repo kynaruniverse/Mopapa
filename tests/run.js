@@ -4363,6 +4363,68 @@ test('question detection leaves subject-first boiler statements unchanged', func
   });
 });
 
+test('question detection recognises auxiliary questions with bare noun subjects', function () {
+  const w = boot({});
+
+  const questions = [
+    'Does boiler service need doing',
+    'Do annual checks require a certificate',
+    'Did the engineer include the replacement parts',
+    'Can boiler service be booked online',
+    'Should annual checks be recorded',
+    'Will replacement cover include the service',
+    'Have annual checks been completed',
+    'Has the engineer sent the report'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Auxiliary question should be recognised: ' + text
+    );
+  });
+});
+
+test('question detection does not treat auxiliary-led fragments as direct questions', function () {
+  const w = boot({});
+
+  const fragments = [
+    'Do not forget to renew boiler cover',
+    'Should be completed before the appointment',
+    'Can be booked through the engineer',
+    'Have been waiting for the replacement parts',
+    'Will be repaired by the end of the week'
+  ];
+
+  fragments.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Auxiliary-led fragment should not be treated as a direct question: ' + text
+    );
+  });
+});
+
+test('question detection preserves ordinary statements after auxiliary words', function () {
+  const w = boot({});
+
+  const statements = [
+    'The engineer can book the service online',
+    'Annual checks should be recorded',
+    'The replacement parts will arrive tomorrow',
+    'We have completed the annual check'
+  ];
+
+  statements.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Subject-first statement should not be treated as a direct question: ' + text
+    );
+  });
+});
+
 test('question detection still recognises direct questions without question marks', function () {
   const w = boot({});
 
