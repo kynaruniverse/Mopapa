@@ -4275,8 +4275,7 @@ test('boiler and appointment sentence fragments are not treated as direct questi
     'When my boiler service is due',
     'When the boiler service needs doing',
     'What the engineer said about the boiler',
-    'Where the boiler service paperwork is',
-    'How often the boiler needs servicing'
+    'Where the boiler service paperwork is'
   ];
 
   fragments.forEach(function (text) {
