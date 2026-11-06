@@ -30,7 +30,7 @@ Mopapa.search = (function () {
 
     function pluralStem(word) {
     if (
-      word.length < 5 ||
+      word.length < 4 ||
       word === 'news' ||
       word === 'series' ||
       word === 'species' ||
