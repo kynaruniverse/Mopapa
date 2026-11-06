@@ -1393,6 +1393,87 @@ test('search matches common plural queries to singular saved words', function ()
   assert.strictEqual(boxes.results[0].entry.id, 'storage-box');
 });
 
+test('search matches singular queries to common plural saved words', function () {
+  const w = boot(stored([
+    {
+      id: 'keys',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(8)
+    },
+    {
+      id: 'batteries',
+      text: 'Rechargeable batteries are in the kitchen drawer',
+      room: 'notes',
+      created: ago(7)
+    },
+    {
+      id: 'boxes',
+      text: 'Storage boxes are in the cupboard',
+      room: 'notes',
+      created: ago(6)
+    },
+    {
+      id: 'stories',
+      text: 'Favourite stories for bedtime',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'watches',
+      text: 'Old watches are in the jewellery box',
+      room: 'notes',
+      created: ago(4)
+    },
+    {
+      id: 'brushes',
+      text: 'Paint brushes are in the garage',
+      room: 'notes',
+      created: ago(3)
+    },
+    {
+      id: 'classes',
+      text: 'Swimming classes are on Tuesdays',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'buzzes',
+      text: 'The doorbell buzzes twice',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const cases = [
+    ['key', 'keys'],
+    ['battery', 'batteries'],
+    ['box', 'boxes'],
+    ['story', 'stories'],
+    ['watch', 'watches'],
+    ['brush', 'brushes'],
+    ['class', 'classes'],
+    ['buzz', 'buzzes']
+  ];
+
+  cases.forEach(function (item) {
+    const result = w.Mopapa.search.find(item[0]);
+
+    assert.strictEqual(
+      result.total,
+      1,
+      'Expected "' + item[0] + '" to find its plural entry'
+    );
+
+    assert.strictEqual(
+      result.results[0].entry.id,
+      item[1]
+    );
+  });
+});
+
 test('search does not apply plural stemming to common non-plural words', function () {
   const w = boot(stored([
     {

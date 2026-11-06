@@ -59,9 +59,13 @@ Mopapa.search = (function () {
     // Prefix matching makes a partial word such as "headphon" useful.
     if (entryWord.indexOf(searchWord) === 0) return true;
 
-    // Allow common plural queries to match singular saved words.
+    // Allow plural queries to match singular saved words.
     var singular = pluralStem(searchWord);
     if (singular && entryWord.indexOf(singular) === 0) return true;
+
+    // Also allow singular queries to match plural saved words.
+    var entrySingular = pluralStem(entryWord);
+    if (entrySingular && entrySingular.indexOf(searchWord) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.
     return /^\d/.test(searchWord) &&
