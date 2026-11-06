@@ -27,6 +27,10 @@ Export backups are files you control. Store them securely because they may conta
 
 Mopapa is a prototype. Browser storage is local and is not a substitute for a secure, synchronised account system. Do not assume that reminders or notifications will be delivered. Keep regular backups.
 
+## Storage architecture
+
+Mopapa currently uses browser localStorage as its primary storage mechanism. The reasons for retaining it, its limitations, benchmark evidence and the conditions for reconsidering IndexedDB are documented in [Storage Architecture Decision](docs/storage-architecture.md).
+
 ## Tests
 
 Run the automated test suite from the repository root:
