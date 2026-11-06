@@ -1300,6 +1300,70 @@ test('search requires every meaningful query word to match', function () {
   assert.deepStrictEqual(Array.from(result.results), []);
 });
 
+test('search combines saved text and tags to match a complete query', function () {
+  const w = boot(stored([
+    {
+      id: 'boiler-service',
+      text: 'Service is due in March',
+      room: 'notes',
+      tags: ['boiler', 'annual'],
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('boiler service');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'boiler-service');
+});
+
+
+test('search combines room IDs and saved text to match a complete query', function () {
+  const w = boot(stored([
+    {
+      id: 'insurance-task',
+      text: 'Renew insurance before Friday',
+      room: 'todo',
+      created: ago(1)
+    },
+    {
+      id: 'insurance-note',
+      text: 'Insurance documents are in the folder',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('todo insurance');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'insurance-task');
+});
+
+
+test('search does not return an entry when one meaningful term is missing across all fields', function () {
+  const w = boot(stored([
+    {
+      id: 'insurance-task',
+      text: 'Renew insurance before Friday',
+      room: 'todo',
+      tags: ['boiler', 'annual'],
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('todo insurance boiler service');
+
+  assert.strictEqual(result.total, 0);
+  assert.deepStrictEqual(Array.from(result.results), []);
+});
+
 test('search includes saved tags when matching entries', function () {
   const w = boot(stored([
     {
