@@ -1458,6 +1458,50 @@ test('search ignores repeated copies of the same query word', function () {
 });
 
 
+test('search matches common irregular plurals', function () {
+  const w = boot(stored([
+    {
+      id: 'buses',
+      text: 'The buses stop outside',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'leaves',
+      text: 'The leaves are in the garden',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'knives',
+      text: 'The knives are in the kitchen drawer',
+      room: 'notes',
+      created: ago(3)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const cases = [
+    { query: 'bus', id: 'buses' },
+    { query: 'leaf', id: 'leaves' },
+    { query: 'knife', id: 'knives' }
+  ];
+
+  cases.forEach(function (item) {
+    const result = w.Mopapa.search.find(item.query);
+
+    assert.strictEqual(
+      result.total,
+      1,
+      'Expected "' + item.query + '" to find its plural form'
+    );
+
+    assert.strictEqual(result.results[0].entry.id, item.id);
+  });
+});
+
+
 test('search supports incomplete final words', function () {
   const w = boot(stored([
     {

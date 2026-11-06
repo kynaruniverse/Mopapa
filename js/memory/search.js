@@ -68,7 +68,14 @@ Mopapa.search = (function () {
     women: 'woman',
     feet: 'foot',
     teeth: 'tooth',
-    mice: 'mouse'
+    mice: 'mouse',
+    buses: 'bus',
+    leaves: 'leaf',
+    wives: 'wife',
+    knives: 'knife',
+    wolves: 'wolf',
+    loaves: 'loaf',
+    halves: 'half'
   };
 
   function irregularStem(word) {
