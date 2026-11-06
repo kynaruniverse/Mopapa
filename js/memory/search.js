@@ -28,7 +28,7 @@ Mopapa.search = (function () {
     });
   }
 
-    function pluralStem(word) {
+  function pluralStem(word) {
     if (
       word.length < 4 ||
       word === 'news' ||
@@ -93,7 +93,7 @@ Mopapa.search = (function () {
     if (singular && entryWord.indexOf(singular) === 0) return true;
 
     // Also allow singular queries to match plural saved words.
-    var entrySingular = irregularStem(entryWord) || pluralStem(entryWord);
+    var entrySingular = pluralStem(entryWord) || irregularStem(entryWord);
     if (entrySingular && entrySingular.indexOf(searchWord) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.

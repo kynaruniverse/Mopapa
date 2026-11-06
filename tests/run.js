@@ -1765,7 +1765,27 @@ test('search matches common irregular plurals in both directions', function () {
     ['loaves', 'loaf'],
     ['loaf', 'loaves'],
     ['halves', 'half'],
-    ['half', 'halves']
+    ['half', 'halves'],
+    ['geese', 'goose'],
+    ['goose', 'geese'],
+    ['oxen', 'ox'],
+    ['ox', 'oxen'],
+    ['dice', 'die'],
+    ['die', 'dice'],
+    ['indices', 'index'],
+    ['index', 'indices'],
+    ['criteria', 'criterion'],
+    ['criterion', 'criteria'],
+    ['phenomena', 'phenomenon'],
+    ['phenomenon', 'phenomena'],
+    ['cacti', 'cactus'],
+    ['cactus', 'cacti'],
+    ['fungi', 'fungus'],
+    ['fungus', 'fungi'],
+    ['analyses', 'analysis'],
+    ['analysis', 'analyses'],
+    ['diagnoses', 'diagnosis'],
+    ['diagnosis', 'diagnoses']
   ];
 
   cases.forEach(function (item) {
