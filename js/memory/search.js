@@ -75,7 +75,17 @@ Mopapa.search = (function () {
     knives: 'knife',
     wolves: 'wolf',
     loaves: 'loaf',
-    halves: 'half'
+    halves: 'half',
+    geese: 'goose',
+    oxen: 'ox',
+    dice: 'die',
+    indices: 'index',
+    criteria: 'criterion',
+    phenomena: 'phenomenon',
+    cacti: 'cactus',
+    fungi: 'fungus',
+    analyses: 'analysis',
+    diagnoses: 'diagnosis'
   };
 
   function irregularStem(word) {
@@ -93,7 +103,7 @@ Mopapa.search = (function () {
     if (singular && entryWord.indexOf(singular) === 0) return true;
 
     // Also allow singular queries to match plural saved words.
-    var entrySingular = pluralStem(entryWord) || irregularStem(entryWord);
+    var entrySingular = irregularStem(entryWord) || pluralStem(entryWord);
     if (entrySingular && entrySingular.indexOf(searchWord) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.
