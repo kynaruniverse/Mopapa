@@ -1421,7 +1421,7 @@ test('search matches singular queries to common plural saved words', function ()
     },
     {
       id: 'watches',
-      text: 'Old watches are in the jewellery box',
+      text: 'Old watches are in the jewellery cabinet',
       room: 'notes',
       created: ago(4)
     },
