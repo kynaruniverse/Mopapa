@@ -1355,6 +1355,70 @@ test('search supports incomplete final words', function () {
   assert.strictEqual(result.results[0].entry.id, 'passport');
 });
 
+test('search matches common plural queries to singular saved words', function () {
+  const w = boot(stored([
+    {
+      id: 'spare-key',
+      text: 'Spare key is in the blue tin',
+      room: 'notes',
+      created: ago(3)
+    },
+    {
+      id: 'battery',
+      text: 'Rechargeable battery is in the kitchen drawer',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'storage-box',
+      text: 'Important papers are in the storage box',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const keys = w.Mopapa.search.find('spare keys');
+  const batteries = w.Mopapa.search.find('batteries');
+  const boxes = w.Mopapa.search.find('boxes');
+
+  assert.strictEqual(keys.total, 1);
+  assert.strictEqual(keys.results[0].entry.id, 'spare-key');
+
+  assert.strictEqual(batteries.total, 1);
+  assert.strictEqual(batteries.results[0].entry.id, 'battery');
+
+  assert.strictEqual(boxes.total, 1);
+  assert.strictEqual(boxes.results[0].entry.id, 'storage-box');
+});
+
+test('search does not apply plural stemming to common non-plural words', function () {
+  const w = boot(stored([
+    {
+      id: 'new-lamp',
+      text: 'A new lamp is on the desk',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'series',
+      text: 'The television series starts on Friday',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const news = w.Mopapa.search.find('news');
+  const series = w.Mopapa.search.find('series');
+
+  assert.strictEqual(news.total, 0);
+  assert.strictEqual(series.total, 1);
+  assert.strictEqual(series.results[0].entry.id, 'series');
+});
+
 test('search ignores stop words and duplicate query words', function () {
   const w = boot(stored([
     {

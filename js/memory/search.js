@@ -28,9 +28,40 @@ Mopapa.search = (function () {
     });
   }
 
+    function pluralStem(word) {
+    if (
+      word.length < 5 ||
+      word === 'news' ||
+      word === 'series' ||
+      word === 'species' ||
+      word === 'always' ||
+      word === 'perhaps'
+    ) {
+      return '';
+    }
+
+    if (/[^aeiou]ies$/.test(word)) {
+      return word.slice(0, -3) + 'y';
+    }
+
+    if (/(ches|shes|xes|zes|sses)$/.test(word)) {
+      return word.slice(0, -2);
+    }
+
+    if (/s$/.test(word) && !/(ss|us|is)$/.test(word)) {
+      return word.slice(0, -1);
+    }
+
+    return '';
+  }
+
   function wordMatches(searchWord, entryWord) {
     // Prefix matching makes a partial word such as "headphon" useful.
     if (entryWord.indexOf(searchWord) === 0) return true;
+
+    // Allow common plural queries to match singular saved words.
+    var singular = pluralStem(searchWord);
+    if (singular && entryWord.indexOf(singular) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.
     return /^\d/.test(searchWord) &&
