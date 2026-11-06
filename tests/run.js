@@ -1532,17 +1532,67 @@ test('search does not apply plural stemming to common non-plural words', functio
       text: 'The television series starts on Friday',
       room: 'notes',
       created: ago(2)
+    },
+    {
+      id: 'thistle',
+      text: 'A thistle grows beside the path',
+      room: 'notes',
+      created: ago(3)
+    },
+    {
+      id: 'thunder',
+      text: 'Thunder was heard overnight',
+      room: 'notes',
+      created: ago(4)
+    },
+    {
+      id: 'length',
+      text: 'The length of the shelf is one metre',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'chaotic',
+      text: 'The room became chaotic',
+      room: 'notes',
+      created: ago(6)
+    },
+    {
+      id: 'ethology',
+      text: 'Read about animal ethology',
+      room: 'notes',
+      created: ago(7)
+    },
+    {
+      id: 'biannual',
+      text: 'The biannual review is in June',
+      room: 'notes',
+      created: ago(8)
     }
   ]));
 
   w.Mopapa.store.load();
 
-  const news = w.Mopapa.search.find('news');
-  const series = w.Mopapa.search.find('series');
+  const cases = [
+    ['news', 0],
+    ['series', 1],
+    ['this', 0],
+    ['thus', 0],
+    ['lens', 0],
+    ['chaos', 0],
+    ['ethos', 0],
+    ['bias', 0]
+  ];
 
-  assert.strictEqual(news.total, 0);
-  assert.strictEqual(series.total, 1);
-  assert.strictEqual(series.results[0].entry.id, 'series');
+  cases.forEach(function (item) {
+    const result = w.Mopapa.search.find(item[0]);
+
+    assert.strictEqual(
+      result.total,
+      item[1],
+      'Unexpected plural stemming result for "' + item[0] + '"'
+    );
+  });
 });
 
 test('search ignores stop words and duplicate query words', function () {

@@ -35,7 +35,13 @@ Mopapa.search = (function () {
       word === 'series' ||
       word === 'species' ||
       word === 'always' ||
-      word === 'perhaps'
+      word === 'perhaps' ||
+      word === 'this' ||
+      word === 'thus' ||
+      word === 'lens' ||
+      word === 'chaos' ||
+      word === 'ethos' ||
+      word === 'bias'
     ) {
       return '';
     }
