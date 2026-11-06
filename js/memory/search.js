@@ -66,7 +66,9 @@ Mopapa.search = (function () {
   };
 
   function irregularStem(word) {
-    return IRREGULAR_SINGULAR[word] || '';
+    return Object.prototype.hasOwnProperty.call(IRREGULAR_SINGULAR, word)
+      ? IRREGULAR_SINGULAR[word]
+      : '';
   }
 
   function wordMatches(searchWord, entryWord) {
