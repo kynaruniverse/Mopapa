@@ -4287,6 +4287,82 @@ test('boiler and appointment sentence fragments are not treated as direct questi
   });
 });
 
+test('question detection recognises is and are questions with bare noun subjects', function () {
+  const w = boot({});
+
+  const questions = [
+    'Is boiler service due in March',
+    'Are annual checks required for landlords',
+    'Is replacement cover included',
+    'Are spare keys in the kitchen drawer'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Bare noun question should be recognised: ' + text
+    );
+  });
+});
+
+test('question detection recognises be-verb questions with longer subjects', function () {
+  const w = boot({});
+
+  const questions = [
+    'Is the boiler service due in March',
+    'Are the replacement filters available',
+    'Is my new insurance policy active',
+    'Are the annual maintenance checks included'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Be-verb question should be recognised: ' + text
+    );
+  });
+});
+
+test('question detection does not treat passive fragments as direct questions', function () {
+  const w = boot({});
+
+  const fragments = [
+    'Is required to renew boiler cover',
+    'Are expected to attend the appointment',
+    'Is being repaired by the engineer',
+    'Are told to wait outside'
+  ];
+
+  fragments.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Passive fragment should not be treated as a direct question: ' + text
+    );
+  });
+});
+
+test('question detection leaves subject-first boiler statements unchanged', function () {
+  const w = boot({});
+
+  const statements = [
+    'The boiler service is due in March',
+    'Our annual check is due next month',
+    'Boiler cover includes the annual service',
+    'The replacement filters are available'
+  ];
+
+  statements.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Statement should not be treated as a direct question: ' + text
+    );
+  });
+});
+
 test('question detection still recognises direct questions without question marks', function () {
   const w = boot({});
 
