@@ -45,9 +45,10 @@ Mopapa.askParts.dateIntent = (function () {
       return false;
     }
 
-    return /\b(when|what time|what date|next)\b/.test(n) ||
+    return /\b(when|whens|what time|what date|next)\b/.test(n) ||
+      /\bwhats the (?:date|time)\b/.test(n) ||
       /\bwhat is due\b/.test(n) ||
-      /\bwhat's due\b/.test(n) ||
+      /\bwhats due\b/.test(n) ||
       /\bwhen is\b/.test(n) ||
       /\bwhen are\b/.test(n);
   }

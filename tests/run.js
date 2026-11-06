@@ -3564,6 +3564,9 @@ test('ask date-intent module distinguishes logged questions from scheduled quest
 
   assert.strictEqual(intent.isWhenQuestion('When is the dentist?'), true);
   assert.strictEqual(intent.isWhenQuestion('What time is the appointment?'), true);
+  assert.strictEqual(intent.isWhenQuestion("When's my dentist appointment?"), true);
+  assert.strictEqual(intent.isWhenQuestion("What's the date of my dentist appointment?"), true);
+  assert.strictEqual(intent.isWhenQuestion("What's the time of my dentist appointment?"), true);  
   assert.strictEqual(intent.isWhenQuestion('What did I save yesterday?'), false);
   assert.strictEqual(intent.isWhenQuestion('What is next on my wishlist?'), false);
   assert.strictEqual(intent.isWhenQuestion('What is my next appointment?'), true);
@@ -8787,6 +8790,79 @@ test('ask: where uses the newest saved location, even for old entries without fi
   ], 'Where did I leave my keys?');
   assert.ok(/in the car/.test(r.answer), r.answer);
   assert.strictEqual(r.sources[0].id, 'new');
+});
+
+test('ask: conversational location questions resolve the correct saved fact', function () {
+  const entries = [
+    {
+      id: 'spare-key',
+      text: 'Spare keys are in the blue tin',
+      room: 'notes',
+      created: ago(1)
+    }
+  ];
+
+  const questions = [
+    'Can you tell me where I put the spare key?',
+    'Do you know where my spare key is?',
+    'Do you remember where I left the spare keys?',
+    'Can you remind me where I put the spare key?'
+  ];
+
+  questions.forEach(function (question) {
+    const result = askWith(entries, question);
+
+    assert.ok(
+      /blue tin/i.test(result.answer),
+      question + ' -> ' + result.answer
+    );
+
+    assert.strictEqual(
+      result.sources[0].id,
+      'spare-key',
+      question + ' should use the correct saved entry'
+    );
+  });
+});
+
+test('ask: conversational and contracted appointment questions return the scheduled date', function () {
+  const appointmentWhen = new Date(
+    Date.now() + 5 * 86400000
+  ).toISOString();
+
+  const entries = [
+    {
+      id: 'dentist-appointment',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: appointmentWhen,
+      hasTime: false,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const questions = [
+    'Do you know when the dentist appointment is?',
+    'Can you tell me when the dentist appointment is?',
+    "When's my dentist appointment?",
+    "What's the date of my dentist appointment?"
+  ];
+
+  questions.forEach(function (question) {
+    const result = askWith(entries, question);
+
+    assert.ok(
+      /Dentist appointment/i.test(result.answer),
+      question + ' -> ' + result.answer
+    );
+
+    assert.strictEqual(
+      result.sources[0].id,
+      'dentist-appointment',
+      question + ' should use the correct saved appointment'
+    );
+  });
 });
 
 test('ask: flat number and plural are kept', function () {

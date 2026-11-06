@@ -13,7 +13,7 @@ Mopapa.askParts.query = (function () {
   var STOP = (
     'a an the i me my mine we our you your he she it they them is are was were am ' +
     'do does did have has had can could would should will need needs needed ' +
-    'what whats when whens ' +
+    'what whats when whens date dates time times ' +
     'know knows knowing knew understand understood ' +
     'where wheres who whos whose which why how many much often show tell find search ' +
     'please logged log logbook entry entries item items any anything something everything ' +
