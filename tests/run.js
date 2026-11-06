@@ -1534,8 +1534,8 @@ test('search does not apply plural stemming to common non-plural words', functio
       created: ago(2)
     },
     {
-      id: 'thistle',
-      text: 'A thistle grows beside the path',
+      id: 'thimble',
+      text: 'A thimble sits beside the path',
       room: 'notes',
       created: ago(3)
     },
