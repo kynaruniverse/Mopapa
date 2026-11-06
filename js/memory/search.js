@@ -95,6 +95,39 @@ Mopapa.search = (function () {
       entryWord.indexOf(searchWord, 1) === 1;
   }
 
+  function allTermsMatch(terms, entryWords) {
+    var assigned = [];
+
+    function assign(termIndex, seen) {
+      for (var i = 0; i < entryWords.length; i++) {
+        if (
+          seen[i] ||
+          !wordMatches(terms[termIndex], entryWords[i])
+        ) {
+          continue;
+        }
+
+        seen[i] = true;
+
+        if (
+          typeof assigned[i] === 'undefined' ||
+          assign(assigned[i], seen)
+        ) {
+          assigned[i] = termIndex;
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    for (var i = 0; i < terms.length; i++) {
+      if (!assign(i, [])) return false;
+    }
+
+    return true;
+  }
+
   function find(query) {
     var terms = queryWords(query);
     if (!terms.length) return { tooShort: true, total: 0, results: [] };
@@ -111,10 +144,8 @@ Mopapa.search = (function () {
       var searchable = normalize(entry.text + ' ' + roomTerms + ' ' + tagTerms);
 
       var entryWords = searchable ? searchable.split(' ') : [];
-      var matched = terms.every(function (term) {
-        return entryWords.some(function (entryWord) { return wordMatches(term, entryWord); });
-      });
-      if (!matched) return;
+
+      if (!allTermsMatch(terms, entryWords)) return;
 
       var score = terms.length;
       if (searchable.indexOf(normalizedQuery) !== -1) score += 3;

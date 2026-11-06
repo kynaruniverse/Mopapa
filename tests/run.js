@@ -1401,6 +1401,63 @@ test('search includes room names and IDs when matching entries', function () {
   assert.strictEqual(result.results[0].entry.id, 'task-room');
 });
 
+test('search does not reuse one saved word to satisfy multiple terms', function () {
+  const w = boot(stored([
+    {
+      id: 'boiler',
+      text: 'Boiler maintenance is due',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('boil boiler');
+
+  assert.strictEqual(result.total, 0);
+  assert.deepStrictEqual(Array.from(result.results), []);
+});
+
+
+test('search matches overlapping prefixes to separate words regardless of query order', function () {
+  const w = boot(stored([
+    {
+      id: 'keys',
+      text: 'Keyboard and key are in the drawer',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('key keyboard');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'keys');
+});
+
+
+test('search ignores repeated copies of the same query word', function () {
+  const w = boot(stored([
+    {
+      id: 'boiler',
+      text: 'Boiler maintenance is due',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('boiler boiler');
+
+  assert.strictEqual(result.total, 1);
+  assert.strictEqual(result.results[0].entry.id, 'boiler');
+});
+
+
 test('search supports incomplete final words', function () {
   const w = boot(stored([
     {
