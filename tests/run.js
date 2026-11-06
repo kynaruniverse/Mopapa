@@ -1355,6 +1355,103 @@ test('search supports incomplete final words', function () {
   assert.strictEqual(result.results[0].entry.id, 'passport');
 });
 
+test('search rejects queries containing no meaningful words', function () {
+  const w = boot(stored([
+    {
+      id: 'kitchen',
+      text: 'Kitchen supplies are in the cupboard',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const cases = ['a', 'i', 'in', 'to', 'of'];
+
+  cases.forEach(function (query) {
+    const result = w.Mopapa.search.find(query);
+
+    assert.strictEqual(
+      result.tooShort,
+      true,
+      'Expected "' + query + '" to be rejected as a non-meaningful query'
+    );
+
+    assert.strictEqual(result.total, 0);
+    assert.strictEqual(result.results.length, 0);
+  });
+});
+
+
+test('search supports useful two-character prefixes', function () {
+  const w = boot(stored([
+    {
+      id: 'boiler',
+      text: 'Boiler service is due in March',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'box',
+      text: 'Storage box is in the spare room',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'garden',
+      text: 'Garden maintenance is due in April',
+      room: 'notes',
+      created: ago(3)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('bo');
+
+  assert.strictEqual(result.tooShort, false);
+  assert.strictEqual(result.total, 2);
+
+  const ids = result.results.map(function (item) {
+    return item.entry.id;
+  });
+
+  assert.ok(ids.includes('boiler'));
+  assert.ok(ids.includes('box'));
+  assert.ok(!ids.includes('garden'));
+});
+
+
+test('search ranks exact words above longer words sharing the prefix', function () {
+  const w = boot(stored([
+    {
+      id: 'keyboard',
+      text: 'Spare keyboard is in the desk drawer',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'key',
+      text: 'Spare key is in the blue tin',
+      room: 'notes',
+      created: ago(2)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.search.find('spare key');
+
+  assert.strictEqual(result.total, 2);
+
+  assert.strictEqual(
+    result.results[0].entry.id,
+    'key',
+    'The exact word match should rank above the longer prefix match'
+  );
+});
+
 test('search matches common plural queries to singular saved words', function () {
   const w = boot(stored([
     {
