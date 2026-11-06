@@ -2196,6 +2196,17 @@ async function run() {
       return !document.querySelector('.app-dialog').open;
     });
 
+    await page.waitForFunction(function () {
+      var bubble = document.getElementById('bubble');
+      var toast = document.getElementById('toast');
+
+      var message =
+        (bubble ? bubble.textContent : '') + ' ' +
+        (toast ? toast.textContent : '');
+
+      return message.includes("couldn't restore");
+    });
+
     assert.strictEqual(
       await page.evaluate(function () {
         return localStorage.getItem('mopapa.v1');
