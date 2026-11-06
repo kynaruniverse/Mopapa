@@ -89,11 +89,11 @@ Mopapa.search = (function () {
     if (entryWord.indexOf(searchWord) === 0) return true;
 
     // Allow plural queries to match singular saved words.
-    var singular = pluralStem(searchWord) || irregularStem(searchWord);
+    var singular = irregularStem(searchWord) || pluralStem(searchWord);
     if (singular && entryWord.indexOf(singular) === 0) return true;
 
     // Also allow singular queries to match plural saved words.
-    var entrySingular = pluralStem(entryWord) || irregularStem(entryWord);
+    var entrySingular = irregularStem(entryWord) || pluralStem(entryWord);
     if (entrySingular && entrySingular.indexOf(searchWord) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.
