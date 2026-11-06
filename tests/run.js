@@ -4387,6 +4387,55 @@ test('question detection recognises auxiliary questions with bare noun subjects'
   });
 });
 
+test('question detection recognises a wider range of auxiliary question verbs', function () {
+  const w = boot({});
+
+  const questions = [
+    'Do annual gas safety checks apply to landlords',
+    'Do spare keys belong in the kitchen drawer',
+    'Can the engineer come tomorrow',
+    'Does the engineer know the appointment date',
+    'Can annual checks happen remotely',
+    'Will the engineer provide a certificate',
+    'Does the appointment start at 10',
+    'Does the boiler repair affect the warranty',
+    'Can the engineer attend on Friday',
+    'Will the replacement cover remain active',
+    'Does the repair matter',
+    'Can the replacement parts arrive tomorrow'
+  ];
+
+  questions.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Auxiliary question should be recognised: ' + text
+    );
+  });
+});
+
+test('expanded auxiliary question detection does not misclassify task instructions', function () {
+  const w = boot({});
+
+  const statements = [
+    'Do my taxes by Friday',
+    'Do the washing before lunch',
+    'Have my passport renewed by June',
+    'Do not forget to renew boiler cover',
+    'Should be completed before the appointment',
+    'Can be booked through the engineer',
+    'Will be repaired by the end of the week'
+  ];
+
+  statements.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Instruction or fragment should not be treated as a question: ' + text
+    );
+  });
+});
+
 test('question detection does not treat auxiliary-led fragments as direct questions', function () {
   const w = boot({});
 
