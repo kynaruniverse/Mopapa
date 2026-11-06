@@ -5632,6 +5632,146 @@ test('restore imports entries, room-learning data and Ask learning data', functi
   assert.strictEqual(saved.entries[0].id, 'restored');
 });
 
+test('restore preserves the exact existing record before replacing it', function () {
+  const w = boot(stored([
+    { id: 'existing', text: 'Existing memory', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'restored', text: 'Restored memory', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, true);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    before
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'restored'
+  );
+});
+
+test('restore is cancelled when the current record changes during file reading', function () {
+  const w = boot(stored([
+    { id: 'existing', text: 'Existing memory', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+  const externalChange = JSON.stringify({
+    entries: [
+      { id: 'external', text: 'Newer external memory', room: 'notes' }
+    ]
+  });
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      w.localStorage._['mopapa.v1'] = externalChange;
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'restored', text: 'Restored memory', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    externalChange
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'existing'
+  );
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+  assert.notStrictEqual(before, externalChange);
+});
+
+test('restore is cancelled when the existing record cannot be preserved', function () {
+  const w = boot(stored([
+    { id: 'existing', text: 'Existing memory', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage.getItem('mopapa.v1');
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  w.localStorage.failWrites = true;
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'restored', text: 'Restored memory', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    before
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'existing'
+  );
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
 test('restore rejects malformed JSON without changing existing data', function () {
   const w = boot(stored([
     { id: 'keep', text: 'Keep this entry', room: 'notes' }

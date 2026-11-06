@@ -292,7 +292,24 @@
       function () {
         M.store.importJSON(file, function (ok) {
           if (!ok) {
-            M.pet.say("I couldn't restore that backup. The existing saved data has been kept.");
+            if (M.store.saveError() === 'conflict') {
+              M.pet.say(
+                "Your saved data changed in another tab. I cancelled the restore to avoid overwriting newer memories. Reload Mopapa before trying again."
+              );
+            } else if (M.store.saveError() === 'recovery') {
+              M.pet.say(
+                "I couldn't secure a recovery copy of your current data, so I cancelled the restore. Your existing saved data has not been replaced."
+              );
+            } else if (M.store.saveError() === 'storage') {
+              M.pet.say(
+                "I couldn't access browser storage, so I cancelled the restore. Your existing saved data has not been deliberately replaced."
+              );
+            } else {
+              M.pet.say(
+                "I couldn't restore that backup. The existing saved data has been kept."
+              );
+            }
+
             return;
           }
 

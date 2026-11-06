@@ -1098,6 +1098,31 @@ function load() {
           throw new Error('bad file');
         }
 
+        var currentRaw;
+
+        try {
+          currentRaw = localStorage.getItem(KEY);
+        } catch (e) {
+          saveError = 'storage';
+          finish(false);
+          return;
+        }
+
+        if (currentRaw !== lastKnownRaw) {
+          saveError = 'conflict';
+          finish(false);
+          return;
+        }
+
+        if (
+          currentRaw !== null &&
+          !preserveRecoveryCopy(currentRaw)
+        ) {
+          saveError = 'recovery';
+          finish(false);
+          return;
+        }
+
         var previous = data;
 
         data = {
