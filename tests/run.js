@@ -7434,6 +7434,150 @@ test('restore rejects files larger than 5 MB before reading them', function () {
   assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
 });
 
+
+test('restore preserves existing data when FileReader reports a read error', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      this.onerror();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 50 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore preserves existing data when FileReader throws while reading', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      throw new Error('simulated file read failure');
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 50 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+});
+
+test('restore rolls back when saved data changes before the import commits', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const external = JSON.stringify({
+    schemaVersion: 1,
+    entries: [
+      { id: 'external', text: 'Changed in another tab', room: 'notes' }
+    ],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+
+      w.localStorage.setItem('mopapa.v1', external);
+
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Replacement entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], external);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+});
+
+test('restore completes its callback only once when FileReader fires multiple events', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+      this.onerror();
+    };
+  };
+
+  let callbackCount = 0;
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 50,
+      content: JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Replacement entry', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) {
+      callbackCount++;
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(callbackCount, 1);
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'replacement');
+
+  const saved = JSON.parse(w.localStorage._['mopapa.v1']);
+
+  assert.strictEqual(saved.entries[0].id, 'replacement');
+});
+
 test('capture code preserves text after failed save and does not ask for a room when uncertain', function () {
   const talk = fs.readFileSync(__dirname + '/../js/ui/talk.js', 'utf8');
   assert.ok(talk.includes('input.value = ctx.text;'));
