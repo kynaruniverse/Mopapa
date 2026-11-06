@@ -1474,6 +1474,51 @@ test('search matches singular queries to common plural saved words', function ()
   });
 });
 
+test('search matches common irregular plurals in both directions', function () {
+  const cases = [
+    ['people', 'person'],
+    ['person', 'people'],
+    ['children', 'child'],
+    ['child', 'children'],
+    ['men', 'man'],
+    ['man', 'men'],
+    ['women', 'woman'],
+    ['woman', 'women'],
+    ['feet', 'foot'],
+    ['foot', 'feet'],
+    ['teeth', 'tooth'],
+    ['tooth', 'teeth'],
+    ['mice', 'mouse'],
+    ['mouse', 'mice']
+  ];
+
+  cases.forEach(function (item) {
+    const w = boot(stored([
+      {
+        id: 'irregular-plural',
+        text: 'Remember the ' + item[1] + ' detail',
+        room: 'notes',
+        created: ago(1)
+      }
+    ]));
+
+    w.Mopapa.store.load();
+
+    const result = w.Mopapa.search.find(item[0]);
+
+    assert.strictEqual(
+      result.total,
+      1,
+      'Expected "' + item[0] + '" to find "' + item[1] + '"'
+    );
+
+    assert.strictEqual(
+      result.results[0].entry.id,
+      'irregular-plural'
+    );
+  });
+});
+
 test('search does not apply plural stemming to common non-plural words', function () {
   const w = boot(stored([
     {

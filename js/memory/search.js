@@ -55,16 +55,30 @@ Mopapa.search = (function () {
     return '';
   }
 
+  var IRREGULAR_SINGULAR = {
+    people: 'person',
+    children: 'child',
+    men: 'man',
+    women: 'woman',
+    feet: 'foot',
+    teeth: 'tooth',
+    mice: 'mouse'
+  };
+
+  function irregularStem(word) {
+    return IRREGULAR_SINGULAR[word] || '';
+  }
+
   function wordMatches(searchWord, entryWord) {
     // Prefix matching makes a partial word such as "headphon" useful.
     if (entryWord.indexOf(searchWord) === 0) return true;
 
     // Allow plural queries to match singular saved words.
-    var singular = pluralStem(searchWord);
+    var singular = pluralStem(searchWord) || irregularStem(searchWord);
     if (singular && entryWord.indexOf(singular) === 0) return true;
 
     // Also allow singular queries to match plural saved words.
-    var entrySingular = pluralStem(entryWord);
+    var entrySingular = pluralStem(entryWord) || irregularStem(entryWord);
     if (entrySingular && entrySingular.indexOf(searchWord) === 0) return true;
 
     // A number-only query can also match an amount prefixed with £.
