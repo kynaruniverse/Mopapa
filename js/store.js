@@ -589,6 +589,50 @@ function cleanImportedCustomRooms(list) {
   return cleaned;
 }
 
+function hasStoredCopy(prefix, rawData) {
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+
+      if (
+        key &&
+        key.indexOf(prefix) === 0 &&
+        localStorage.getItem(key) === rawData
+      ) {
+        return true;
+      }
+    }
+  } catch (e) {
+    return null;
+  }
+
+  return false;
+}
+
+function preserveRecoveryCopy(rawData) {
+  var prefix = KEY + '.recovery.';
+
+  if (hasStoredCopy(prefix, rawData) === true) {
+    return true;
+  }
+
+  var base = prefix + Date.now();
+  var recoveryKey = base;
+  var suffix = 1;
+
+  try {
+    while (localStorage.getItem(recoveryKey) !== null) {
+      recoveryKey = base + '.' + suffix;
+      suffix++;
+    }
+
+    localStorage.setItem(recoveryKey, rawData);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function load() {
   lastKnownRaw = null;
   saveError = null;
@@ -600,50 +644,6 @@ function load() {
     customRooms: [],
     ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
   };
-
-  function hasStoredCopy(prefix, rawData) {
-    try {
-      for (var i = 0; i < localStorage.length; i++) {
-        var key = localStorage.key(i);
-
-        if (
-          key &&
-          key.indexOf(prefix) === 0 &&
-          localStorage.getItem(key) === rawData
-        ) {
-          return true;
-        }
-      }
-    } catch (e) {
-      return null;
-    }
-
-    return false;
-  }
-
-  function preserveRecoveryCopy(rawData) {
-    var prefix = KEY + '.recovery.';
-
-    if (hasStoredCopy(prefix, rawData) === true) {
-      return true;
-    }
-
-    var base = prefix + Date.now();
-    var recoveryKey = base;
-    var suffix = 1;
-
-    try {
-      while (localStorage.getItem(recoveryKey) !== null) {
-        recoveryKey = base + '.' + suffix;
-        suffix++;
-      }
-
-      localStorage.setItem(recoveryKey, rawData);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
 
   var raw = null;
 
