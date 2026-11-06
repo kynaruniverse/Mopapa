@@ -4367,6 +4367,7 @@ test('question detection recognises auxiliary questions with bare noun subjects'
   const w = boot({});
 
   const questions = [
+    'Do my keys fit',    
     'Does boiler service need doing',
     'Do annual checks require a certificate',
     'Did the engineer include the replacement parts',
