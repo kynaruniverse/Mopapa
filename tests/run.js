@@ -362,6 +362,50 @@ test('Keep mode saves question-shaped text without asking', function () {
   );
 });
 
+test('Keep mode files a tax deadline without sending it to Ask', function () {
+  const app = bootTalk();
+  const text = 'Do my taxes by Friday';
+
+  app.elements['talk-input'].value = text;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'save' && call.entry.text === text;
+  }));
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'answer';
+    }),
+    false
+  );
+});
+
+test('Ask mode searches a boiler-service question without filing it', function () {
+  const app = bootTalk();
+  const text = 'Is boiler service due in March?';
+
+  app.elements['talk-mode-ask'].click();
+  app.elements['talk-input'].value = text;
+
+  app.elements['talk-form'].dispatch('submit', {
+    preventDefault: function () {}
+  });
+
+  assert.ok(app.calls.some(function (call) {
+    return call.type === 'answer' && call.question === text;
+  }));
+
+  assert.strictEqual(
+    app.calls.some(function (call) {
+      return call.type === 'save';
+    }),
+    false
+  );
+});
 
 test('Ask mode searches statement-shaped text without filing it', function () {
   const app = bootTalk();
@@ -2959,6 +3003,120 @@ test('anniversary ordering is independent of storage order', function () {
   assert.deepStrictEqual(firstOrder, secondOrder);
 });
 
+test('tax-related direct instructions are confidently classified as to-dos', function () {
+  const w = boot({});
+
+  const examples = [
+    'Do my taxes by Friday',
+    'Do my tax return by Friday',
+    'Please file my taxes by Friday',
+    'Submit my tax return next week'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(
+      text,
+      w.Mopapa.rules.parse(text, new Date(2026, 9, 21, 10, 0))
+    );
+
+    assert.strictEqual(
+      result.room,
+      'todo',
+      'Tax instruction should be a To-do: ' + text
+    );
+
+    assert.strictEqual(result.confident, true);
+  });
+});
+
+test('dated boiler-service task intentions are classified as to-dos', function () {
+  const w = boot({});
+
+  const examples = [
+    'I need to book boiler service in March',
+    'I should arrange boiler service next month',
+    'I must renew the boiler cover by Friday'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(
+      text,
+      w.Mopapa.rules.parse(text, new Date(2026, 9, 21, 10, 0))
+    );
+
+    assert.strictEqual(
+      result.room,
+      'todo',
+      'Boiler-service task should be a To-do: ' + text
+    );
+
+    assert.strictEqual(result.confident, true);
+  });
+});
+
+test('boiler-service questions are not confidently classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'Is boiler service due in March?',
+    'Should I book boiler service in March?',
+    'Does the boiler need servicing next month?',
+    'When is the boiler service due?'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(
+      text,
+      w.Mopapa.rules.parse(text, new Date(2026, 9, 21, 10, 0))
+    );
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Question was incorrectly classified as a To-do: ' + text
+    );
+  });
+});
+
+test('negative tax and maintenance instructions are not classified as tasks', function () {
+  const w = boot({});
+
+  const examples = [
+    'Do not do my taxes by Friday',
+    "Don't file my tax return yet",
+    'Never book boiler service without checking',
+    'I should not arrange boiler service in March'
+  ];
+
+  examples.forEach(function (text) {
+    const result = w.Mopapa.sorter.classify(text, null);
+
+    assert.notStrictEqual(
+      result.confident && result.room === 'todo',
+      true,
+      'Negative instruction was incorrectly classified as a To-do: ' + text
+    );
+  });
+});
+
+test('boiler-service questions with question marks are recognised as questions', function () {
+  const w = boot({});
+
+  const examples = [
+    'Is boiler service due in March?',
+    'Should I book boiler service?',
+    'When is the boiler service due?'
+  ];
+
+  examples.forEach(function (text) {
+    assert.strictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Question should be recognised: ' + text
+    );
+  });
+});
+
 test('direct task instructions are classified as to-dos', function () {
   const w = boot({});
   const now = new Date(2026, 9, 21, 10, 0);
@@ -4106,6 +4264,26 @@ test('question detection distinguishes possessive fragments from direct question
       w.Mopapa.rules.questionLevel(item.text),
       item.expected,
       'Unexpected question classification: ' + item.text
+    );
+  });
+});
+
+test('boiler and appointment sentence fragments are not treated as direct questions', function () {
+  const w = boot({});
+
+  const fragments = [
+    'When my boiler service is due',
+    'When the boiler service needs doing',
+    'What the engineer said about the boiler',
+    'Where the boiler service paperwork is',
+    'How often the boiler needs servicing'
+  ];
+
+  fragments.forEach(function (text) {
+    assert.notStrictEqual(
+      w.Mopapa.rules.questionLevel(text),
+      'sure',
+      'Sentence fragment should not be treated as a direct question: ' + text
     );
   });
 });
