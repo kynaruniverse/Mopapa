@@ -5800,6 +5800,66 @@ test('restore rejects malformed JSON without changing existing data', function (
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
+test('new restore attempts clear stale storage errors before reading', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  w.localStorage.failWrites = false;
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      this.result = '{"entries":';
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 20 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+});
+
+test('new restore attempts clear stale errors when file reading fails', function () {
+  const w = boot(stored());
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  w.localStorage.failWrites = false;
+
+  w.FileReader = function () {
+    this.readAsText = function () {
+      this.onerror();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    { size: 20 },
+    function (ok) { result = ok; }
+  );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), null);
+});
+
 test('restore rejects malformed optional entry fields without changing existing data', function () {
   const invalidEntries = [
     { id: 'bad-date', text: 'Bad date', room: 'notes', when: 'not-a-date' },

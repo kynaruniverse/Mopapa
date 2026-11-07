@@ -1024,6 +1024,8 @@ function load() {
   }
   
   function importJSON(file, cb) {
+    saveError = null;
+
     var completed = false;
 
     function finish(ok) {
