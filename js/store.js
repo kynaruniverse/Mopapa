@@ -1060,6 +1060,12 @@ function load() {
     r.onload = function () {
       if (completed) return;
 
+      if (writeMode === 'readonly') {
+        saveError = 'readonly';
+        finish(false);
+        return;
+      }
+
       try {
         var p = JSON.parse(r.result);
 

@@ -5795,6 +5795,48 @@ test('read-only restore is rejected before creating a recovery copy', function (
   assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
 });
 
+test('restore is cancelled if tab becomes read-only while file is being read', function () {
+  const w = boot(stored([
+    { id: 'keep', text: 'Keep this entry', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+
+  let reader = null;
+  let result = null;
+
+  w.FileReader = function () {
+    reader = this;
+
+    this.readAsText = function () {};
+  };
+
+  w.Mopapa.store.importJSON(
+    { size: 20 },
+    function (ok) { result = ok; }
+  );
+
+  assert.ok(reader);
+
+  w.Mopapa.store.setWriteMode('readonly');
+
+  reader.result = JSON.stringify({
+    entries: [
+      { id: 'replacement', text: 'Replacement entry', room: 'notes' }
+    ]
+  });
+
+  reader.onload();
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'readonly');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
+});
+
 test('restore rejects malformed JSON without changing existing data', function () {
   const w = boot(stored([
     { id: 'keep', text: 'Keep this entry', room: 'notes' }
