@@ -1028,6 +1028,12 @@ function load() {
 
     var completed = false;
 
+    if (writeMode === 'readonly') {
+      saveError = 'readonly';
+      if (typeof cb === 'function') cb(false);
+      return;
+    }
+
     function finish(ok) {
       if (completed) return;
       completed = true;

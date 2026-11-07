@@ -292,7 +292,11 @@
       function () {
         M.store.importJSON(file, function (ok) {
           if (!ok) {
-            if (M.store.saveError() === 'conflict') {
+            if (M.store.saveError() === 'readonly') {
+              M.pet.say(
+                "I couldn't restore that backup because another Mopapa tab currently has editing access. Close the other tab and reload this one before restoring."
+              );
+            } else if (M.store.saveError() === 'conflict') {
               M.pet.say(
                 "Your saved data changed in another tab. I cancelled the restore to avoid overwriting newer memories. Reload Mopapa before trying again."
               );
