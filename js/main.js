@@ -302,7 +302,7 @@
               );
             } else if (M.store.saveError() === 'storage') {
               M.pet.say(
-                "I couldn't access browser storage, so I cancelled the restore. Your existing saved data has not been deliberately replaced."
+                "I couldn't restore that backup because I couldn't access browser storage. I cancelled the restore. Your existing saved data has not been deliberately replaced."
               );
             } else {
               M.pet.say(
