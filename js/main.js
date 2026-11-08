@@ -233,7 +233,7 @@
 
       label.textContent = copy.kind === 'corrupt'
         ? 'Corrupt-data copy'
-        : 'Rejected-entry recovery';
+        : 'Saved-data recovery copy';
 
       if (
         copy.timestamp !== null &&
