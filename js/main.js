@@ -163,9 +163,9 @@
     
   if (M.store.data().roomRepairSaveFailed) {
     M.pet.say(
-      "I found an entry assigned to a missing room, but couldn't save the repair. The entry has been left unchanged. Back up your data and check available browser storage."
+      "I found an entry assigned to a missing room, but couldn't safely preserve and save the repair. The entry has been left unchanged. Back up your data and check available browser storage."
     );
-  }    
+  }
     
     document.getElementById('btn-export').addEventListener('click', function () {
     try {

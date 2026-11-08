@@ -791,6 +791,33 @@ function load() {
   return data;
 }
 
+  function preserveCurrentRecoveryCopy() {
+    var currentRaw;
+
+    try {
+      currentRaw = localStorage.getItem(KEY);
+    } catch (e) {
+      saveError = 'storage';
+      return false;
+    }
+
+    if (currentRaw !== lastKnownRaw) {
+      saveError = 'conflict';
+      return false;
+    }
+
+    if (currentRaw === null) {
+      return true;
+    }
+
+    if (!preserveRecoveryCopy(currentRaw)) {
+      saveError = 'recovery';
+      return false;
+    }
+
+    return true;
+  }
+  
   function save() {
     var currentRaw;
     var nextRaw;
@@ -1248,6 +1275,7 @@ function load() {
     data: function () { return data; },
     load: load,
     save: save,
+    preserveCurrentRecoveryCopy: preserveCurrentRecoveryCopy,
     saveError: function () { return saveError; },
     setWriteMode: setWriteMode,
     writeMode: getWriteMode,

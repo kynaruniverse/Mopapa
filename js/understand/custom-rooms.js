@@ -80,6 +80,24 @@ Mopapa.customRooms = (function () {
       return entry.room;
     });
 
+    var needsRepair = entries.some(function (entry) {
+      return !Mopapa.rooms.some(function (room) {
+        return room.id === entry.room;
+      });
+    });
+
+    var isReadonly = Mopapa.store.writeMode &&
+      Mopapa.store.writeMode() === 'readonly';
+
+    if (
+      needsRepair &&
+      !isReadonly &&
+      !Mopapa.store.preserveCurrentRecoveryCopy()
+    ) {
+      Mopapa.store.data().roomRepairSaveFailed = true;
+      return;
+    }
+
     entries.forEach(function (entry) {
       var known = Mopapa.rooms.some(function (room) {
         return room.id === entry.room;

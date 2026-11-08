@@ -7131,7 +7131,80 @@ test('entries referencing missing custom rooms are recovered into notes', functi
 
   assert.strictEqual(entry.room, 'notes');
   assert.strictEqual(w.Mopapa.entries.byRoom('notes').length, 1);
-  assert.strictEqual(w.Mopapa.store.save(), true);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(copies[0].kind, 'recovery');
+
+  const originalCopy = JSON.parse(
+    w.localStorage._[copies[0].key]
+  );
+
+  assert.strictEqual(
+    originalCopy.entries[0].room,
+    'custom_missing'
+  );
+
+  const saved = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(saved.entries[0].room, 'notes');
+});
+
+test('orphan-room repair is cancelled when saved data changes before preservation', function () {
+  const w = boot(stored([{
+    id: 'orphaned-entry',
+    text: 'The spare key is in the kitchen drawer',
+    room: 'custom_missing'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const changedRaw = JSON.stringify({
+    entries: [{
+      id: 'newer-entry',
+      text: 'A newer saved memory',
+      room: 'notes'
+    }],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  });
+
+  w.localStorage.setItem('mopapa.v1', changedRaw);
+
+  w.Mopapa.customRooms.init();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'custom_missing'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().roomRepairSaveFailed,
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    changedRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    0
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.saveError(),
+    'conflict'
+  );
 });
 
 test('loading unversioned data upgrades it to schema version 1', function () {
@@ -7442,6 +7515,11 @@ test('failed orphan-room repair is reported without changing persisted data', fu
     w.localStorage.getItem('mopapa.v1'),
     before
   );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    0
+  );  
 });
 
 test('failed orphan-room repair can be retried without losing the original assignment', function () {
