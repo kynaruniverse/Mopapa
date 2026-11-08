@@ -128,18 +128,19 @@
 
     if (rejectedCount) {
       rejectedSummary.push(
-        rejectedCount + ' saved entr' +
-        (rejectedCount === 1 ? 'y was' : 'ies were')
+        rejectedCount +
+        (rejectedCount === 1 ? ' saved entry' : ' saved entries')
       );
     }
 
     if (rejectedRooms) {
-      rejectedSummary.push('your saved custom rooms were');
+      rejectedSummary.push('your custom rooms');
     }
 
     M.dialog.notice(
+      'Invalid saved data was found in ' +
       rejectedSummary.join(' and ') +
-      ' rejected because the saved data was invalid. ' +
+      '. ' +
       (recoverySaved
         ? 'A copy of the exact original saved data was preserved in this browser. Use Download recovery copy to save it to a file before making further changes.'
         : 'Mopapa could not preserve the original data in a separate browser copy. Changes have been locked to protect it. Use Download original data to save the exact original record before restoring a valid backup.')

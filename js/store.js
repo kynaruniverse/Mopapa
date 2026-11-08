@@ -589,6 +589,49 @@ function cleanImportedCustomRooms(list) {
   return cleaned;
 }
 
+function cleanSavedCustomRooms(list) {
+  var result = {
+    rooms: [],
+    rejected: false
+  };
+
+  if (!Array.isArray(list)) {
+    result.rejected = true;
+    return result;
+  }
+
+  var ids = Object.create(null);
+  var names = Object.create(null);
+
+  list.forEach(function (room) {
+    var cleaned = cleanImportedCustomRooms([room]);
+
+    if (!cleaned) {
+      result.rejected = true;
+      return;
+    }
+
+    var candidate = cleaned[0];
+    var nameKey = candidate.name.toLowerCase();
+
+    if (
+      ids[candidate.id] ||
+      names[nameKey] ||
+      result.rooms.length >= 10
+    ) {
+      result.rejected = true;
+      return;
+    }
+
+    ids[candidate.id] = true;
+    names[nameKey] = true;
+
+    result.rooms.push(candidate);
+  });
+
+  return result;
+}
+
 function hasStoredCopy(prefix, rawData) {
   try {
     for (var i = 0; i < localStorage.length; i++) {
@@ -697,11 +740,13 @@ function load() {
           ? p.customRooms
           : [];
 
-        var cleanedCustomRooms = cleanImportedCustomRooms(
+        var cleanedSavedRooms = cleanSavedCustomRooms(
           storedCustomRooms
         );
 
-        if (cleanedCustomRooms === null) {
+        data.customRooms = cleanedSavedRooms.rooms;
+
+        if (cleanedSavedRooms.rejected) {
           data.rejectedCustomRooms = true;
 
           var customRoomsRecoverySaved = preserveRecoveryCopy(raw);
@@ -709,10 +754,6 @@ function load() {
           data.recoveryCopySaved = customRoomsRecoverySaved;
           data.recoveryBlocked = data.recoveryBlocked ||
             !customRoomsRecoverySaved;
-
-          data.customRooms = [];
-        } else {
-          data.customRooms = cleanedCustomRooms;
         }
 
         data.ask = cleanAsk(p.ask);

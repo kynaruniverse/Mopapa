@@ -1352,7 +1352,12 @@ test('loading rejects malformed custom rooms and preserves the original record',
 
   assert.strictEqual(
     w.Mopapa.store.data().customRooms.length,
-    0
+    1
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].id,
+    'custom_garden'
   );
 
   assert.strictEqual(
