@@ -687,7 +687,34 @@ function load() {
 
         data.entries = cleanedEntries;
         data.learned = cleanLegacyLearned(p.learned);
-        data.customRooms = Array.isArray(p.customRooms) ? p.customRooms : [];
+
+        var hasCustomRooms = Object.prototype.hasOwnProperty.call(
+          p,
+          'customRooms'
+        );
+
+        var storedCustomRooms = hasCustomRooms
+          ? p.customRooms
+          : [];
+
+        var cleanedCustomRooms = cleanImportedCustomRooms(
+          storedCustomRooms
+        );
+
+        if (cleanedCustomRooms === null) {
+          data.rejectedCustomRooms = true;
+
+          var customRoomsRecoverySaved = preserveRecoveryCopy(raw);
+
+          data.recoveryCopySaved = customRoomsRecoverySaved;
+          data.recoveryBlocked = data.recoveryBlocked ||
+            !customRoomsRecoverySaved;
+
+          data.customRooms = [];
+        } else {
+          data.customRooms = cleanedCustomRooms;
+        }
+
         data.ask = cleanAsk(p.ask);
       } else {
         throw new Error('unexpected shape');

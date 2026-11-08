@@ -116,16 +116,33 @@
         ? 'Your saved data could not be read. A copy was preserved in this browser. Use Download recovery copy to save it to a file.'
         : 'Your saved data could not be read, and the browser could not preserve a recovery copy. Use Download original data to save the exact original record before restoring a valid backup.'
     );
-  } else if (M.store.data().rejectedEntries) {
-    var rejectedCount = M.store.data().rejectedEntries;
+
+  } else if (
+    M.store.data().rejectedEntries ||
+    M.store.data().rejectedCustomRooms
+  ) {
+    var rejectedCount = M.store.data().rejectedEntries || 0;
+    var rejectedRooms = M.store.data().rejectedCustomRooms;
     var recoverySaved = M.store.data().recoveryCopySaved;
+    var rejectedSummary = [];
+
+    if (rejectedCount) {
+      rejectedSummary.push(
+        rejectedCount + ' saved entr' +
+        (rejectedCount === 1 ? 'y was' : 'ies were')
+      );
+    }
+
+    if (rejectedRooms) {
+      rejectedSummary.push('your saved custom rooms were');
+    }
 
     M.dialog.notice(
-      rejectedCount + ' saved entr' + (rejectedCount === 1 ? 'y was' : 'ies were') +
-      ' rejected because the data was invalid. ' +
+      rejectedSummary.join(' and ') +
+      ' rejected because the saved data was invalid. ' +
       (recoverySaved
-        ? 'A copy of the original saved data was preserved in this browser. Use Download recovery copy to save it to a file before making further changes.'
-        : 'Mopapa could not preserve the original data in a separate browser copy. Changes have been locked to protect the original record. Use Download original data to save the exact original record. Back up data can export the readable entries, but that backup will not contain the rejected entries. Restore a valid backup to resume normal changes.')
+        ? 'A copy of the exact original saved data was preserved in this browser. Use Download recovery copy to save it to a file before making further changes.'
+        : 'Mopapa could not preserve the original data in a separate browser copy. Changes have been locked to protect it. Use Download original data to save the exact original record before restoring a valid backup.')
     );
   }
 
@@ -136,7 +153,7 @@
   } else if (M.store.data().corrupt) {
     M.pet.say("I couldn't read your saved memories, so I've locked normal changes to protect the original data. Download a recovery copy if available, or restore a valid backup.");
   } else if (M.store.data().recoveryBlocked) {
-    M.pet.say("Some saved entries were invalid, and I couldn't preserve the original record separately. I've locked changes to protect it. Download the original data before restoring a valid backup.");
+    M.pet.say("Some saved data was invalid, and I couldn't preserve the original record separately. I've locked changes to protect it. Download the original data before restoring a valid backup.");
   } else {
     M.pet.say(n
       ? "Welcome back. I'm keeping " + n + ' thing' + (n === 1 ? '' : 's') + ' in this browser.'

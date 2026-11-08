@@ -1282,6 +1282,158 @@ test('loading rejected entries reports when recovery backup fails', function () 
   );  
 });
 
+test('loading accepts and normalises valid saved custom rooms', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      customRooms: [
+        {
+          id: 'custom_garden',
+          name: 'Garden',
+          icon: '🌱'
+        }
+      ]
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(w.Mopapa.store.data().customRooms)),
+    [
+      {
+        id: 'custom_garden',
+        name: 'Garden',
+        icon: 'sprout'
+      }
+    ]
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().rejectedCustomRooms,
+    undefined
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryCopySaved,
+    undefined
+  );
+});
+
+
+test('loading rejects malformed custom rooms and preserves the original record', function () {
+  const originalRaw = JSON.stringify({
+    entries: [
+      {
+        id: 'valid-entry',
+        text: 'Keep this memory',
+        room: 'notes'
+      }
+    ],
+    customRooms: [
+      {
+        id: 'custom_garden',
+        name: 'Garden',
+        icon: 'sprout'
+      },
+      {
+        id: 'custom_garden',
+        name: 'Duplicate garden',
+        icon: 'star'
+      }
+    ]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms.length,
+    0
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().rejectedCustomRooms,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryCopySaved,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryBlocked,
+    false
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(copies[0].kind, 'recovery');
+  assert.strictEqual(
+    w.localStorage._[copies[0].key],
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].id,
+    'valid-entry'
+  );
+});
+
+
+test('loading locks changes when invalid custom rooms cannot be preserved', function () {
+  const originalRaw = JSON.stringify({
+    entries: [],
+    customRooms: [
+      {
+        id: 'invalid room id',
+        name: 'Garden',
+        icon: 'sprout'
+      }
+    ]
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.localStorage.failWrites = true;
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().rejectedCustomRooms,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms.length,
+    0
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryCopySaved,
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().recoveryBlocked,
+    true
+  );
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1'],
+    originalRaw
+  );
+});
+
 test('search requires every meaningful query word to match', function () {
   const w = boot(stored([
     {
