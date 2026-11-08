@@ -575,8 +575,8 @@ async function run() {
     assert.deepStrictEqual(labels, [
       'Corrupt-data copy',
       'Corrupt-data copy',
-      'Rejected-entry recovery',
-      'Rejected-entry recovery'
+      'Saved-data recovery copy',
+      'Saved-data recovery copy'
     ]);
 
     var dates = await items.locator('.recovery-copy-date').allTextContents();
