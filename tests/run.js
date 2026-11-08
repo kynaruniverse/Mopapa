@@ -7040,6 +7040,16 @@ test('corrupt data without a preserved copy can still be exported as original da
     'mopapa.v1': originalRaw
   });
 
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.corrupt.') === 0) {
+      throw new Error('simulated recovery-copy failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
   w.Mopapa.store.load();
 
   assert.strictEqual(w.Mopapa.store.data().corrupt, true);
