@@ -7061,18 +7061,28 @@ test('corrupt data without a preserved copy can still be exported as original da
     downloaded = parts.join('');
   };
 
-  w.URL.createObjectURL = function () {
-    return 'blob:original-data';
+  w.URL = {
+    createObjectURL: function () {
+      return 'blob:original-data';
+    },
+    revokeObjectURL: function () {}
   };
 
-  w.document.createElement = function () {
-    return {
-      click: function () {},
-      remove: function () {},
-      set href(value) {},
-      set download(value) {}
-    };
+  w.document = {
+    body: {
+      appendChild: function () {}
+    },
+    createElement: function () {
+      return {
+        click: function () {},
+        remove: function () {},
+        set href(value) {},
+        set download(value) {}
+      };
+    }
   };
+
+  w.setTimeout = function () {};
 
   assert.strictEqual(
     w.Mopapa.store.exportOriginalRecoveryCopy(),
