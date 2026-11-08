@@ -7033,6 +7033,49 @@ test('loading an existing empty storage value treats it as corrupt', function ()
   );
 });
 
+test('corrupt data without a preserved copy can still be exported as original data', function () {
+  const originalRaw = '{"entries":';
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, false);
+
+  let downloaded = null;
+
+  w.Blob = function (parts) {
+    downloaded = parts.join('');
+  };
+
+  w.URL.createObjectURL = function () {
+    return 'blob:original-data';
+  };
+
+  w.document.createElement = function () {
+    return {
+      click: function () {},
+      remove: function () {},
+      set href(value) {},
+      set download(value) {}
+    };
+  };
+
+  assert.strictEqual(
+    w.Mopapa.store.exportOriginalRecoveryCopy(),
+    true
+  );
+
+  assert.strictEqual(downloaded, originalRaw);
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+});
+
 test('normal backup refuses to export when existing storage is empty and corrupt', function () {
   const w = boot({
     'mopapa.v1': ''

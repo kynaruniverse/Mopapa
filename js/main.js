@@ -114,7 +114,7 @@
     M.dialog.notice(
       M.store.data().corruptCopySaved
         ? 'Your saved data could not be read. A copy was preserved in this browser. Use Download recovery copy to save it to a file.'
-        : 'Your saved data could not be read, and the browser could not preserve a recovery copy. Check whether any existing backup is available.'
+        : 'Your saved data could not be read, and the browser could not preserve a recovery copy. Use Download original data to save the exact original record before restoring a valid backup.'
     );
   } else if (M.store.data().rejectedEntries) {
     var rejectedCount = M.store.data().rejectedEntries;
@@ -171,7 +171,14 @@
     'recovery-inventory-status'
   );
 
-  originalRecoveryButton.hidden = !M.store.data().recoveryBlocked;
+  originalRecoveryButton.hidden = !(
+    M.store.data().recoveryBlocked ||
+    (
+      M.store.data().corrupt &&
+      !M.store.data().corruptCopySaved
+    )
+  );
+  
   var recoveryList = document.getElementById('recovery-copy-list');
 
   function renderRecoveryCopies() {

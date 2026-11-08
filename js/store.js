@@ -816,7 +816,13 @@ function load() {
   }
 
   function exportOriginalRecoveryCopy() {
-    if (!data.recoveryBlocked || lastKnownRaw === null) {
+    if (
+      (
+        !data.recoveryBlocked &&
+        !(data.corrupt && !data.corruptCopySaved)
+      ) ||
+      lastKnownRaw === null
+    ) {
       return false;
     }
 
