@@ -5265,6 +5265,257 @@ test('learned room scores stay dormant and unchanged', function () {
   assert.strictEqual(JSON.stringify(w.Mopapa.store.data().learned), before);
 });
 
+test('entry deletion preserves the exact original saved record', function () {
+  const initial = stored([
+    {
+      id: 'recovery-delete',
+      text: 'Passport is in the desk drawer',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.entries.remove('recovery-delete'),
+    true
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries.length,
+    0
+  );
+
+  assert.strictEqual(
+    JSON.parse(w.localStorage.getItem('mopapa.v1')).entries.length,
+    0
+  );
+});
+
+test('entry deletion is cancelled when its recovery copy cannot be created', function () {
+  const initial = stored([
+    {
+      id: 'recovery-failure',
+      text: 'Keep this memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const w = boot(initial);
+  w.Mopapa.store.load();
+
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.recovery.') === 0) {
+      throw new Error('simulated recovery-copy failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(
+    w.Mopapa.entries.remove('recovery-failure'),
+    false
+  );
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Keep this memory'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    initial['mopapa.v1']
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('entry deletion is cancelled in read-only mode without creating a recovery copy', function () {
+  const w = boot(stored([
+    {
+      id: 'readonly-delete',
+      text: 'Keep this memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.setWriteMode('readonly');
+
+  assert.strictEqual(
+    w.Mopapa.entries.remove('readonly-delete'),
+    false
+  );
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'readonly');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Keep this memory'
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('entry deletion is cancelled when another tab changes saved data', function () {
+  const w = boot(stored([
+    {
+      id: 'concurrent-delete',
+      text: 'Original memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const newerRaw = JSON.stringify({
+    entries: [
+      {
+        id: 'newer-memory',
+        text: 'Newer saved memory',
+        room: 'notes',
+        created: new Date().toISOString()
+      }
+    ],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerRaw);
+
+  assert.strictEqual(
+    w.Mopapa.entries.remove('concurrent-delete'),
+    false
+  );
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Original memory'
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('entry deletion rolls back if saving fails after recovery preservation', function () {
+  const w = boot(stored([
+    {
+      id: 'rollback-delete',
+      text: 'Keep this original memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1') {
+      throw new Error('simulated main storage failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(
+    w.Mopapa.entries.remove('rollback-delete'),
+    false
+  );
+
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].text,
+    'Keep this original memory'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('saving unchanged entry text preserves its source choices', function () {
+  const ask = {
+    aliases: [],
+    boosts: {
+      cost: { unchanged: 2 },
+      date: { unchanged: 1 }
+    },
+    unanswered: []
+  };
+
+  const w = boot(stored([
+    {
+      id: 'unchanged',
+      text: 'Car service £100',
+      room: 'notes',
+      created: ago(1)
+    }
+  ], {}, ask));
+
+  w.Mopapa.store.load();
+
+  const before = JSON.stringify(
+    w.Mopapa.store.data().ask.boosts
+  );
+
+  assert.strictEqual(
+    w.Mopapa.entries.updateText(
+      'unchanged',
+      'Car service £100'
+    ),
+    true
+  );
+
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data().ask.boosts),
+    before
+  );
+});
+
+
 test('failed add removes unsaved entry from list and leaves persisted data intact', function () {
   const w = boot(stored());
   w.Mopapa.store.load();

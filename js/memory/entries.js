@@ -160,6 +160,8 @@ Mopapa.entries = (function () {
     var nextText = String(value == null ? '' : value).trim();
     if (!nextText || nextText.length > 1000) return false;
 
+    if (nextText === e.text) return true;
+
     var previousText = e.text;
     var previousFact = e.fact;
     var previousAmounts = e.amounts;
@@ -189,6 +191,10 @@ Mopapa.entries = (function () {
 
     for (var i = 0; i < l.length; i++) {
       if (l[i].id === id) {
+        if (!Mopapa.store.preserveCurrentRecoveryCopy()) {
+          return false;
+        }
+
         var previousChoices = sourceChoicesSnapshot();
         var removed = l.splice(i, 1)[0];
 
@@ -204,7 +210,7 @@ Mopapa.entries = (function () {
 
     return false;
   }
-
+  
   function toggleDone(id) {
     var e = find(id);
     if (!e) return false;

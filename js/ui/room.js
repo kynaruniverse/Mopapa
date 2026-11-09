@@ -13,6 +13,30 @@ Mopapa.room = (function () {
     return e;
   }
 
+  function entrySaveFailure(action, fallback) {
+    var error = Mopapa.store.saveError();
+
+    if (error === 'conflict') {
+      return 'Saved data changed in another tab. Reload Mopapa before ' +
+        action + '. Your change was not applied.';
+    }
+
+    if (error === 'readonly') {
+      return 'This tab is read-only. Close the other Mopapa tab and reload before ' +
+        action + '.';
+    }
+
+    if (error === 'recovery') {
+      return "I couldn't safely preserve the original data. The entry was not deleted.";
+    }
+
+    if (error === 'corrupt') {
+      return 'The saved data is unreadable. Recover it before making changes.';
+    }
+
+    return fallback;
+  }
+  
   function init() {
     $('back').addEventListener('click', function () {
       if (history.state && history.state.room) history.back(); else close();
@@ -223,7 +247,10 @@ Mopapa.room = (function () {
             return;
           }
           if (!Mopapa.entries.updateText(e.id, newText)) {
-            status.textContent = 'Mopapa could not save that change on this device. Your original entry is unchanged.';
+            status.textContent = entrySaveFailure(
+              'editing this entry',
+              'Mopapa could not save that change on this device. Your original entry is unchanged.'
+            );
             return;
           }
           editingId = null;
@@ -363,7 +390,10 @@ Mopapa.room = (function () {
       del.addEventListener('click', function () {
         Mopapa.dialog.confirm('Delete this entry? This cannot be undone.', 'Delete', function() {
           if (!Mopapa.entries.remove(e.id)) {
-            Mopapa.pet.say('I could not delete that entry on this device. It is still saved.');
+            Mopapa.pet.say(entrySaveFailure(
+              'deleting this entry',
+              'I could not delete that entry on this device. It is still saved.'
+            ));
             return;
           }
           Mopapa.refreshPanels();
