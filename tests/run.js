@@ -5712,6 +5712,302 @@ test('custom room creation survives a fresh storage load', function () {
   assert.strictEqual(room.icon, 'plane');
 });
 
+test('custom room deletion preserves the exact original data before moving entries', function () {
+  const original = {
+    entries: [
+      {
+        id: 'book-entry',
+        text: 'The important book is on the shelf',
+        room: 'custom_books'
+      }
+    ],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Books', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.moved, 1);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(copies[0].kind, 'recovery');
+
+  const preserved = JSON.parse(
+    w.localStorage._[copies[0].key]
+  );
+
+  assert.strictEqual(
+    preserved.entries[0].room,
+    'custom_books'
+  );
+
+  assert.strictEqual(
+    preserved.customRooms[0].name,
+    'Books'
+  );
+
+  const saved = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(saved.entries[0].room, 'notes');
+  assert.strictEqual(saved.customRooms.length, 0);
+});
+
+test('custom room deletion is cancelled when its recovery copy cannot be preserved', function () {
+  const original = {
+    entries: [
+      {
+        id: 'book-entry',
+        text: 'The important book is on the shelf',
+        room: 'custom_books'
+      }
+    ],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Books', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.recovery.') === 0) {
+      throw new Error('simulated recovery-copy failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'custom_books'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    JSON.stringify(original)
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('custom room deletion is cancelled when saved data changes in another tab', function () {
+  const original = {
+    entries: [
+      {
+        id: 'book-entry',
+        text: 'The important book is on the shelf',
+        room: 'custom_books'
+      }
+    ],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Books', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+
+  const newerRaw = JSON.stringify({
+    entries: [
+      {
+        id: 'newer-entry',
+        text: 'A newer saved memory',
+        room: 'notes'
+      }
+    ],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerRaw);
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'custom_books'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('custom room deletion does not create recovery copies in read-only mode', function () {
+  const original = {
+    entries: [
+      {
+        id: 'book-entry',
+        text: 'The important book is on the shelf',
+        room: 'custom_books'
+      }
+    ],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Books', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+  w.Mopapa.store.setWriteMode('readonly');
+
+  const result = w.Mopapa.customRooms.remove('custom_books');
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'readonly');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries[0].room,
+    'custom_books'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('custom room rename is cancelled when saved data changes in another tab', function() {
+  const original = {
+    entries: [],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Books', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  };
+  
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
+  
+  w.Mopapa.store.load();
+  w.Mopapa.customRooms.init();
+  
+  const newerRaw = JSON.stringify({
+    entries: [],
+    learned: {},
+    customRooms: [
+      { id: 'custom_books', name: 'Reading', icon: 'book' }
+    ],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    }
+  });
+  
+  w.localStorage.setItem('mopapa.v1', newerRaw);
+  
+  const result = w.Mopapa.customRooms.rename(
+    'custom_books',
+    'Library'
+  );
+  
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+  
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerRaw
+  );
+  
+  assert.strictEqual(
+    w.Mopapa.store.data().customRooms[0].name,
+    'Books'
+  );
+  
+  assert.strictEqual(
+    w.Mopapa.rooms.filter(function(room) {
+      return room.id === 'custom_books';
+    })[0].name,
+    'Books'
+  );
+});
+
 test('failed custom-room creation leaves no in-memory or stored room', function () {
   const w = boot(stored());
   w.Mopapa.store.load();

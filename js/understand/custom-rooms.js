@@ -180,6 +180,30 @@ Mopapa.customRooms = (function () {
     return null;
   }
 
+  function saveFailureMessage(action, fallback) {
+    var error = Mopapa.store.saveError();
+
+    if (error === 'conflict') {
+      return 'Saved data changed in another tab. Reload Mopapa before ' +
+        action + '. Your change was not applied.';
+    }
+
+    if (error === 'readonly') {
+      return 'This tab is read-only. Close the other Mopapa tab and reload before ' +
+        action + '.';
+    }
+
+    if (error === 'recovery') {
+      return "I couldn't safely preserve the original data. Nothing was changed.";
+    }
+
+    if (error === 'corrupt') {
+      return 'The saved data is unreadable. Restore or recover it before making changes.';
+    }
+
+    return fallback;
+  }
+  
   function rename(id, name) {
     if (typeof id !== 'string' || typeof name !== 'string') {
       return { ok: false, message: 'That room could not be found.' };
@@ -210,9 +234,13 @@ Mopapa.customRooms = (function () {
 
     if (!Mopapa.store.save()) {
       room.name = previous;
+
       return {
         ok: false,
-        message: 'I could not save that name on this device. The original name is unchanged.'
+        message: saveFailureMessage(
+          'renaming this room',
+          'I could not save that name on this device. The original name is unchanged.'
+        )
       };
     }
 
@@ -237,6 +265,16 @@ Mopapa.customRooms = (function () {
 
     if (!room) {
       return { ok: false, message: 'That custom room could not be found.' };
+    }
+
+    if (!Mopapa.store.preserveCurrentRecoveryCopy()) {
+      return {
+        ok: false,
+        message: saveFailureMessage(
+          'deleting this room',
+          "I couldn't preserve the original saved data. The room has not been deleted."
+        )
+      };
     }
 
     var data = Mopapa.store.data();
@@ -267,7 +305,10 @@ Mopapa.customRooms = (function () {
 
       return {
         ok: false,
-        message: 'I could not delete that room on this device. Nothing was changed.'
+        message: saveFailureMessage(
+          'deleting this room',
+          'I could not delete that room on this device. Nothing was changed.'
+        )
       };
     }
 
@@ -277,7 +318,7 @@ Mopapa.customRooms = (function () {
 
     return { ok: true, moved: moved };
   }
-
+  
   return {
     init: reload,
     reload: reload,

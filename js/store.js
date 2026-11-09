@@ -794,6 +794,28 @@ function load() {
   function preserveCurrentRecoveryCopy() {
     var currentRaw;
 
+    saveError = null;
+
+    if (writeMode === 'readonly') {
+      saveError = 'readonly';
+      return false;
+    }
+
+    if (data.storageUnavailable) {
+      saveError = 'storage';
+      return false;
+    }
+
+    if (data.corrupt) {
+      saveError = 'corrupt';
+      return false;
+    }
+
+    if (data.recoveryBlocked) {
+      saveError = 'recovery';
+      return false;
+    }
+
     try {
       currentRaw = localStorage.getItem(KEY);
     } catch (e) {
