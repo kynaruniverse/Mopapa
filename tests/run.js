@@ -3250,15 +3250,9 @@ test('room ordering interprets date-only values in the local calendar timezone',
 
   w.Mopapa.rules.dateForEntry = originalDateForEntry;
 
-  assert.deepStrictEqual(
-    entries.map(function (entry) {
-      return entry.id;
-    }),
-    [
-      'timed-entry',
-      'date-only-entry'
-    ]
-  );
+  assert.strictEqual(entries.length, 2);
+  assert.strictEqual(entries[0].id, 'timed-entry');
+  assert.strictEqual(entries[1].id, 'date-only-entry');
 });
 
 test('resurfacing returns no memories when storage is empty', function () {
