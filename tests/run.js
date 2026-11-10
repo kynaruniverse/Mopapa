@@ -1402,8 +1402,10 @@ test('recovery creation uses the next collision suffix without overwriting copie
     'mopapa.v1.recovery.5000.1': 'second existing copy'
   });
 
-  w.Date.now = function () {
-    return 5000;
+  w.Date = class extends Date {
+    static now() {
+      return 5000;
+    }
   };
 
   w.Mopapa.store.load();
@@ -1447,8 +1449,10 @@ test('recovery preservation succeeds when automatic cleanup fails', function () 
 
   const w = boot(storage);
 
-  w.Date.now = function () {
-    return 5000;
+  w.Date = class extends Date {
+    static now() {
+      return 5000;
+    }
   };
 
   w.Mopapa.store.load();
