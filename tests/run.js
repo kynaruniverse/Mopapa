@@ -2846,6 +2846,13 @@ test('load drops null and array entries instead of crashing later', function () 
 test('loading saved entries rejects malformed optional fields but keeps valid neighbours', function () {
   const malformedEntries = [
     { id: 'bad-when', text: 'Bad date', room: 'notes', when: 'not-a-date' },
+    {
+      id: 'bad-iso-timestamp',
+      text: 'Impossible timestamp date',
+      room: 'notes',
+      when: '2026-02-30T10:00:00.000Z',
+      hasTime: true
+    },
     { id: 'bad-has-time', text: 'Bad time flag', room: 'notes', hasTime: 'yes' },
     { id: 'bad-done', text: 'Bad completion flag', room: 'notes', done: 1 },
     { id: 'bad-pinned', text: 'Bad pin flag', room: 'notes', pinned: 'true' },
@@ -2879,7 +2886,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
 
-  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 9);
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 10);
   assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
 
   const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
@@ -9523,6 +9530,13 @@ const invalidRestoreEntryCases = [
     fields: {
       when: '2026-02-30',
       hasTime: false
+    }
+  },
+  {
+    name: 'impossible ISO timestamp calendar date',
+    fields: {
+      when: '2026-02-30T10:00:00.000Z',
+      hasTime: true
     }
   },
   {

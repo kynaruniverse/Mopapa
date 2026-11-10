@@ -370,7 +370,7 @@ function validDateValue(value) {
     return false;
   }
 
-  var parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  var parts = value.match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[^0-9])/);
 
   if (!parts) return true;
 
