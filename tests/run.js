@@ -9519,6 +9519,13 @@ const invalidRestoreEntryCases = [
     fields: { when: 'not-a-date' }
   },
   {
+    name: 'impossible date-only scheduled date',
+    fields: {
+      when: '2026-02-30',
+      hasTime: false
+    }
+  },
+  {
     name: 'invalid creation date',
     fields: { created: 'yesterday-ish' }
   },

@@ -362,6 +362,32 @@ function cleanEntries(list) {
   });
 }
 
+function validDateValue(value) {
+  if (
+    typeof value !== 'string' ||
+    !Number.isFinite(Date.parse(value))
+  ) {
+    return false;
+  }
+
+  var parts = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!parts) return true;
+
+  var year = Number(parts[1]);
+  var month = Number(parts[2]);
+  var day = Number(parts[3]);
+  var date = new Date(0);
+
+  date.setUTCFullYear(year, month - 1, day);
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 function validImportedEntries(list) {
   if (!Array.isArray(list)) return false;
 
@@ -394,10 +420,7 @@ function validImportedEntries(list) {
       Object.prototype.hasOwnProperty.call(entry, 'when') &&
       entry.when !== null &&
       entry.when !== '' &&
-      (
-        typeof entry.when !== 'string' ||
-        !Number.isFinite(Date.parse(entry.when))
-      )
+      !validDateValue(entry.when)
     ) {
       return false;
     }
