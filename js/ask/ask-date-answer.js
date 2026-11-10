@@ -27,8 +27,8 @@ Mopapa.askParts.dateAnswer = (function () {
 
         return e.done || Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(function (a, b) {
-        return new Date(b.created).getTime() -
-          new Date(a.created).getTime();
+        return Mopapa.rules.dateForEntry(b.created, false).getTime() -
+          Mopapa.rules.dateForEntry(a.created, false).getTime();
       });
 
       if (!historicalDated.length && asksPastDate) {

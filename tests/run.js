@@ -3214,6 +3214,53 @@ test('date-only agenda entries retain their intended calendar day', function () 
   assert.strictEqual(items[0].label, 'Tomorrow');
 });
 
+test('room ordering interprets date-only values in the local calendar timezone', function () {
+  const w = boot(stored([
+    {
+      id: 'date-only-entry',
+      text: 'Date-only appointment',
+      room: 'appointments',
+      when: '2026-11-03',
+      hasTime: false,
+      done: false
+    },
+    {
+      id: 'timed-entry',
+      text: 'Previous evening appointment',
+      room: 'appointments',
+      when: '2026-11-03T04:00:00.000Z',
+      hasTime: true,
+      done: false
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const originalDateForEntry = w.Mopapa.rules.dateForEntry;
+
+  w.Mopapa.rules.dateForEntry = function (value, hasTime) {
+    if (value === '2026-11-03' && hasTime === false) {
+      return new Date('2026-11-03T08:00:00.000Z');
+    }
+
+    return originalDateForEntry(value, hasTime);
+  };
+
+  const entries = w.Mopapa.entries.byRoom('appointments');
+
+  w.Mopapa.rules.dateForEntry = originalDateForEntry;
+
+  assert.deepStrictEqual(
+    entries.map(function (entry) {
+      return entry.id;
+    }),
+    [
+      'timed-entry',
+      'date-only-entry'
+    ]
+  );
+});
+
 test('resurfacing returns no memories when storage is empty', function () {
   const w = boot({});
   const now = new Date(2026, 10, 4, 12, 0);
@@ -4819,6 +4866,50 @@ test('ask date-filter module filters entries by logged and due dates', function 
     }, dueFilter),
     false
   );
+});
+
+test('Ask date filters interpret date-only values using local calendar dates', function () {
+  const w = boot({});
+  const loggedOn = w.Mopapa.askParts.dateFilter.loggedOn;
+  const originalDateForEntry = w.Mopapa.rules.dateForEntry;
+
+  const start = new Date('2026-11-03T08:00:00.000Z');
+  const end = new Date('2026-11-04T08:00:00.000Z');
+
+  w.Mopapa.rules.dateForEntry = function (value, hasTime) {
+    if (value === '2026-11-03' && hasTime === false) {
+      return new Date('2026-11-03T08:00:00.000Z');
+    }
+
+    return originalDateForEntry(value, hasTime);
+  };
+
+  const loggedFilter = {
+    start: start,
+    end: end,
+    due: false
+  };
+
+  assert.strictEqual(
+    loggedOn({ created: '2026-11-03' }, loggedFilter),
+    true
+  );
+
+  const dueFilter = {
+    start: start,
+    end: end,
+    due: true
+  };
+
+  assert.strictEqual(
+    loggedOn({
+      when: '2026-11-03',
+      hasTime: false
+    }, dueFilter),
+    true
+  );
+
+  w.Mopapa.rules.dateForEntry = originalDateForEntry;
 });
 
 test('date parser accepts leap day in year 2000', function () {
@@ -12128,6 +12219,50 @@ test('ask evaluation: past-tense appointment questions select the old date after
     }),
     ['eval-past-question-old']
   );
+});
+
+test('Ask historical ordering interprets date-only creation dates locally', function () {
+  const w = boot(stored([
+    {
+      id: 'historical-date-only',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: '2020-11-03',
+      hasTime: false,
+      created: '2026-11-03',
+      done: true
+    },
+    {
+      id: 'historical-timestamp',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: '2020-11-03',
+      hasTime: false,
+      created: '2026-11-03T04:00:00.000Z',
+      done: true
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const originalDateForEntry = w.Mopapa.rules.dateForEntry;
+
+  w.Mopapa.rules.dateForEntry = function (value, hasTime) {
+    if (value === '2026-11-03' && hasTime === false) {
+      return new Date('2026-11-03T08:00:00.000Z');
+    }
+
+    return originalDateForEntry(value, hasTime);
+  };
+
+  const result = w.Mopapa.ask.answer(
+    'When was my dentist appointment?'
+  );
+
+  w.Mopapa.rules.dateForEntry = originalDateForEntry;
+
+  assert.strictEqual(result.sources.length, 1);
+  assert.strictEqual(result.sources[0].id, 'historical-date-only');
 });
 
 test('ask evaluation: latest cost questions use the newest corrected amount', function () {

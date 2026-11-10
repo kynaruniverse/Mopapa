@@ -296,7 +296,10 @@ Mopapa.entries = (function () {
     var l = list().filter(function (e) { return e.room === room; });
     l.sort(function (a, b) {
       if (a.done !== b.done) return a.done ? 1 : -1;
-      if (a.when && b.when) return new Date(a.when) - new Date(b.when);
+      if (a.when && b.when) {
+        return Mopapa.rules.dateForEntry(a.when, a.hasTime) -
+          Mopapa.rules.dateForEntry(b.when, b.hasTime);
+      }
       if (a.when) return -1;
       if (b.when) return 1;
       return a.created < b.created ? 1 : (a.created > b.created ? -1 : 0);

@@ -80,7 +80,7 @@ Mopapa.askParts.dateFilter = (function () {
 
     if (filter.due && !value) return false;
 
-    var d = new Date(value);
+    var d = Mopapa.rules.dateForEntry(value, false);
 
     return !isNaN(d.getTime()) &&
       d >= filter.start &&
