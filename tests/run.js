@@ -9544,6 +9544,12 @@ const invalidRestoreEntryCases = [
     fields: { created: 'yesterday-ish' }
   },
   {
+    name: 'impossible ISO creation timestamp calendar date',
+    fields: {
+      created: '2026-02-30T10:00:00.000Z'
+    }
+  },
+  {
     name: 'invalid hasTime value',
     fields: { hasTime: 'yes' }
   },

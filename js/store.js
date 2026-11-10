@@ -448,10 +448,7 @@ function validImportedEntries(list) {
 
     if (
       Object.prototype.hasOwnProperty.call(entry, 'created') &&
-      (
-        typeof entry.created !== 'string' ||
-        !Number.isFinite(Date.parse(entry.created))
-      )
+      !validDateValue(entry.created)
     ) {
       return false;
     }
