@@ -5625,6 +5625,44 @@ test('failed delete restores the original source choices', function () {
   assert.strictEqual(JSON.stringify(w.Mopapa.store.data().ask.boosts), before);
 });
 
+test('moving an entry to its existing room preserves its date and completion state', function () {
+  const future = new Date(Date.now() + 2 * 86400000).toISOString();
+
+  const w = boot(stored([
+    {
+      id: 'same-room',
+      text: 'Existing appointment',
+      room: 'appointments',
+      when: future,
+      hasTime: true,
+      done: true,
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  let writes = 0;
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1') writes++;
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(
+    w.Mopapa.entries.move('same-room', 'appointments'),
+    true
+  );
+
+  const entry = w.Mopapa.entries.byRoom('appointments')[0];
+
+  assert.strictEqual(entry.room, 'appointments');
+  assert.strictEqual(entry.when, future);
+  assert.strictEqual(entry.hasTime, true);
+  assert.strictEqual(entry.done, true);
+  assert.strictEqual(writes, 0);
+});
 
 test('moving a dated entry to a non-dated room removes it from the agenda', function () {
   const future = new Date(Date.now() + 2 * 86400000).toISOString();
@@ -5708,6 +5746,35 @@ test('failed move restores the original date and time settings', function () {
   assert.strictEqual(entry.when, future);
   assert.strictEqual(entry.hasTime, true);
   assert.strictEqual(w.Mopapa.agenda.getItems().length, 1);
+});
+
+test('saving unchanged tags does not write to storage', function () {
+  const w = boot(stored([
+    {
+      id: 'same-tags',
+      text: 'A tagged memory',
+      room: 'notes',
+      tags: ['Home', 'Important'],
+      created: new Date().toISOString()
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  let writes = 0;
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1') writes++;
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(
+    w.Mopapa.entries.setTags('same-tags', ['Home', 'Important']),
+    true
+  );
+
+  assert.strictEqual(writes, 0);
 });
 
 test('tag cleaning handles prototype-like names and case-insensitive duplicates', function () {

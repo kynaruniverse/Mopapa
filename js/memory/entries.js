@@ -27,12 +27,22 @@ Mopapa.entries = (function () {
   function setTags(id, value) {
     var e = find(id);
     if (!e) return false;
+
     var previous = Array.isArray(e.tags) ? e.tags.slice() : [];
-    e.tags = cleanTags(value);
+    var nextTags = cleanTags(value);
+
+    if (JSON.stringify(previous) === JSON.stringify(nextTags)) {
+      return true;
+    }
+
+    e.tags = nextTags;
+
     if (Mopapa.store.save()) return true;
+
     e.tags = previous;
     return false;
   }
+  
   function tagSummary() {
     var groups = Object.create(null);
     list().forEach(function (entry) {
@@ -250,6 +260,8 @@ Mopapa.entries = (function () {
     })[0];
 
     if (!targetRoom) return false;
+
+    if (e.room === room) return true;
 
     var previous = {
       room: e.room,

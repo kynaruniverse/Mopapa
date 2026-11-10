@@ -27,7 +27,7 @@ Mopapa.room = (function () {
     }
 
     if (error === 'recovery') {
-      return "I couldn't safely preserve the original data. The entry was not deleted.";
+      return "I couldn't safely protect the saved data. Your change was not applied.";
     }
 
     if (error === 'corrupt') {
@@ -312,7 +312,10 @@ Mopapa.room = (function () {
         cb.setAttribute('aria-label', 'Done');
         cb.addEventListener('change', function () {
           if (!Mopapa.entries.toggleDone(e.id)) {
-            Mopapa.pet.say('I could not save that change on this device. Your to-do is still open.');
+            Mopapa.pet.say(entrySaveFailure(
+              'marking this to-do done',
+              'I could not save that change on this device. Your to-do is still open.'
+            ));
             renderList();
             return;
           }
@@ -336,7 +339,10 @@ Mopapa.room = (function () {
       });
       sel.addEventListener('change', function () {
         if (!Mopapa.entries.move(e.id, sel.value)) {
-          Mopapa.pet.say('I could not save that move on this device. The entry stayed in its room.');
+          Mopapa.pet.say(entrySaveFailure(
+            'moving this entry',
+            'I could not save that move on this device. The entry stayed in its room.'
+          ));
           renderList();
           return;
         }
@@ -352,7 +358,10 @@ Mopapa.room = (function () {
       pin.addEventListener('click', function () {
         var result = Mopapa.entries.togglePinned(e.id);
         if (result === null) {
-          Mopapa.pet.say('I could not save that change on this device.');
+          Mopapa.pet.say(entrySaveFailure(
+            'changing this memory pin',
+            'I could not save that change on this device.'
+          ));
           return;
         }
         Mopapa.refreshPanels();
@@ -375,7 +384,10 @@ Mopapa.room = (function () {
         var currentTags = Array.isArray(e.tags) ? e.tags.join(', ') : '';
         Mopapa.dialog.prompt('Tags, separated by commas. Up to 8 tags, 24 characters each. Clear the field to remove all tags.', currentTags, 'Save tags', function(entered) {
           if (!Mopapa.entries.setTags(e.id, entered)) {
-            Mopapa.pet.say('I could not save those tags on this device. Your original tags are unchanged.');
+            Mopapa.pet.say(entrySaveFailure(
+              'saving these tags',
+              'I could not save those tags on this device. Your original tags are unchanged.'
+            ));
             return;
           }
           renderList();
@@ -407,5 +419,10 @@ Mopapa.room = (function () {
   }
 
 
-  return { init: init, open: open, renderRooms: renderRooms };
+  return {
+    init: init,
+    open: open,
+    renderRooms: renderRooms,
+    entrySaveFailure: entrySaveFailure
+  };
 })();

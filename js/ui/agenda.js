@@ -74,7 +74,12 @@ Mopapa.agendaUI = (function () {
         doneButton.textContent = 'Mark done';
         doneButton.addEventListener('click', function () {
           if (!Mopapa.entries.toggleDone(entry.id)) {
-            if (Mopapa.pet && Mopapa.pet.say) Mopapa.pet.say('I could not save that change on this device. Your to-do is still open.');
+            if (Mopapa.pet && Mopapa.pet.say) {
+              Mopapa.pet.say(Mopapa.room.entrySaveFailure(
+                'marking this to-do done',
+                'I could not save that change on this device. Your to-do is still open.'
+              ));
+            }
             return;
           }
           if (Mopapa.room && Mopapa.room.renderRooms) Mopapa.room.renderRooms();
