@@ -65,16 +65,15 @@ Mopapa.askParts.moneyAnswer = (function () {
 
     candidates.sort(helpers.sortNewest);
 
-    if (wantsSpendingTotal) {
-      candidates = candidates.filter(function (e) {
-        if (isExcludedFromSpending(e.text)) {
-          excluded.push(e);
-          return false;
-        }
+    // Quotes, estimates, refunds and money received are not confirmed costs.
+    candidates = candidates.filter(function (e) {
+      if (isExcludedFromSpending(e.text)) {
+        excluded.push(e);
+        return false;
+      }
 
-        return true;
-      });
-    }
+      return true;
+    });
 
     if (isGeneralSpendingTotal && !candidates.length) {
       return {

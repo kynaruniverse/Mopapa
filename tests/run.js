@@ -11130,6 +11130,174 @@ test('ask: spending totals exclude sales, quotes and refunds', function () {
   assert.ok(r.sources.some(function (e) { return e.id === 'refund'; }));
 });
 
+test('ask evaluation: direct cost questions exclude quotes, estimates, refunds and money received', function () {
+  const cases = [
+    {
+      id: 'quote',
+      text: 'Boiler service quote £120'
+    },
+    {
+      id: 'estimate',
+      text: 'Boiler service estimate £135'
+    },
+    {
+      id: 'refund',
+      text: 'Received refund £40 for boiler service'
+    },
+    {
+      id: 'received',
+      text: 'Received £110 for boiler service'
+    },
+    {
+      id: 'sale',
+      text: 'Sold boiler service package for £150'
+    },
+    {
+      id: 'quoted',
+      text: 'Boiler service quoted at £125'
+    }
+  ];
+
+  cases.forEach(function (item) {
+    const result = askWith([{
+      id: item.id,
+      text: item.text,
+      room: 'notes',
+      created: ago(1)
+    }], 'How much did the boiler service cost?');
+
+    assert.ok(
+      /excluded them|excluded 1 matching entry/i.test(result.answer),
+      item.id + ' was treated as a confirmed cost: ' + result.answer
+    );
+
+    assert.deepStrictEqual(
+      Array.from(result.sources).map(function (entry) {
+        return entry.id;
+      }),
+      [item.id],
+      item.id + ' did not retain its explanatory source'
+    );
+  });
+});
+
+test('ask evaluation: latest, previous and original costs ignore quotes and estimates', function () {
+  const entries = [
+    {
+      id: 'latest-estimate',
+      text: 'Boiler service estimate £200',
+      room: 'notes',
+      created: ago(0)
+    },
+    {
+      id: 'latest-actual',
+      text: 'Boiler service £150',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'middle-quote',
+      text: 'Boiler service quote £175',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'previous-actual',
+      text: 'Boiler service £120',
+      room: 'notes',
+      created: ago(5)
+    },
+    {
+      id: 'original-actual',
+      text: 'Boiler service £90',
+      room: 'notes',
+      created: ago(10)
+    }
+  ];
+
+  const cases = [
+    {
+      question: 'What was the latest boiler service cost?',
+      expectedAmount: /£150/,
+      expectedSource: 'latest-actual'
+    },
+    {
+      question: 'What was the previous boiler service cost?',
+      expectedAmount: /£120/,
+      expectedSource: 'previous-actual'
+    },
+    {
+      question: 'What was the original boiler service cost?',
+      expectedAmount: /£90/,
+      expectedSource: 'original-actual'
+    }
+  ];
+
+  cases.forEach(function (item) {
+    const result = askWith(entries, item.question);
+
+    assert.ok(
+      item.expectedAmount.test(result.answer),
+      item.question + ' returned the wrong amount: ' + result.answer
+    );
+
+    assert.deepStrictEqual(
+      Array.from(result.sources).map(function (entry) {
+        return entry.id;
+      }),
+      [item.expectedSource],
+      item.question + ' returned the wrong supporting source'
+    );
+  });
+});
+
+test('ask evaluation: excluded quotes do not create false ambiguity between actual costs', function () {
+  const entries = [
+    {
+      id: 'actual-new',
+      text: 'Car service £175',
+      room: 'notes',
+      created: ago(1)
+    },
+    {
+      id: 'quote',
+      text: 'Car service quote £250',
+      room: 'notes',
+      created: ago(2)
+    },
+    {
+      id: 'actual-old',
+      text: 'Car service £125',
+      room: 'notes',
+      created: ago(5)
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'How much did the car service cost?'
+  );
+
+  assert.ok(
+    /multiple matching entries with costs|Which job or purchase/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    ['actual-new', 'actual-old']
+  );
+
+  assert.ok(
+    !sourceIds.includes('quote'),
+    'The quote should not be presented as a confirmed cost'
+  );
+});
+
 test('ask: past date questions stay in the past', function () {
   const y = new Date().getFullYear();
   const r = askWith([
