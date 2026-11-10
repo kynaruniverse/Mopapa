@@ -10,6 +10,9 @@ function boot(storage, storageApi) {
     setItem(k, v) {
       if (this.failWrites) throw new Error('simulated storage failure');
       this._[k] = String(v);
+    },
+    removeItem(k) {
+      delete this._[k];
     }
   };
   const win = {
@@ -1203,6 +1206,178 @@ test('recovery copies are ordered by numeric timestamp and collision suffix', fu
   assert.strictEqual(copies[0].sequence, 10);
   assert.strictEqual(copies[0].kind, 'corrupt');
   assert.strictEqual(copies[2].sequence, 0);
+});
+
+test('recovery retention keeps the 20 newest ordinary copies', function () {
+  const storage = {
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  };
+
+  for (let i = 1; i <= 25; i++) {
+    storage['mopapa.v1.recovery.' + (1000 + i)] = 'copy-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 20);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1001'),
+    null
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1005'),
+    null
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1006'),
+    'copy-6'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1025'),
+    'copy-25'
+  );
+
+  assert.ok(
+    copies.some(function (copy) {
+      return w.localStorage.getItem(copy.key) ===
+        w.localStorage.getItem('mopapa.v1');
+    })
+  );
+});
+
+test('recovery retention never deletes corrupt-data copies', function () {
+  const storage = {
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    }),
+    'mopapa.v1.corrupt.100': '{original corrupt data}'
+  };
+
+  for (let i = 1; i <= 22; i++) {
+    storage['mopapa.v1.recovery.' + (2000 + i)] = 'copy-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.corrupt.100'),
+    '{original corrupt data}'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().filter(function (copy) {
+      return copy.kind === 'corrupt';
+    }).length,
+    1
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().filter(function (copy) {
+      return copy.kind === 'recovery';
+    }).length,
+    20
+  );
+});
+
+test('recovery retention protects the copy matching current saved data', function () {
+  const currentRaw = JSON.stringify({
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const storage = {
+    'mopapa.v1': currentRaw,
+    'mopapa.v1.recovery.100': currentRaw
+  };
+
+  for (let i = 1; i <= 21; i++) {
+    storage['mopapa.v1.recovery.' + (3000 + i)] = 'copy-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.100'),
+    currentRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    21
+  );
+});
+
+test('failed recovery creation never prunes existing copies', function () {
+  const storage = {
+    'mopapa.v1': JSON.stringify({
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] }
+    })
+  };
+
+  for (let i = 1; i <= 22; i++) {
+    storage['mopapa.v1.recovery.' + (4000 + i)] = 'copy-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    22
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.4001'),
+    'copy-1'
+  );
 });
 
 test('recovery inventory retains malformed legacy keys without misdating them', function () {

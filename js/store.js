@@ -652,28 +652,133 @@ function hasStoredCopy(prefix, rawData) {
   return false;
 }
 
-function preserveRecoveryCopy(rawData) {
+function recoveryCopyKey(rawData) {
   var prefix = KEY + '.recovery.';
 
-  if (hasStoredCopy(prefix, rawData) === true) {
-    return true;
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+
+      if (
+        key &&
+        key.indexOf(prefix) === 0 &&
+        localStorage.getItem(key) === rawData
+      ) {
+        return key;
+      }
+    }
+  } catch (e) {
+    return undefined;
   }
 
-  var base = prefix + Date.now();
-  var recoveryKey = base;
-  var suffix = 1;
+  return null;
+}
+
+function pruneRecoveryCopies(protectedKey) {
+  var prefix = KEY + '.recovery.';
+  var copies = [];
 
   try {
-    while (localStorage.getItem(recoveryKey) !== null) {
-      recoveryKey = base + '.' + suffix;
-      suffix++;
-    }
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
 
-    localStorage.setItem(recoveryKey, rawData);
-    return true;
+      if (!key || key.indexOf(prefix) !== 0) continue;
+
+      var suffix = key.slice(prefix.length);
+      var match = suffix.match(/^(\d+)(?:\.(\d+))?$/);
+
+      if (!match) continue;
+
+      copies.push({
+        key: key,
+        timestamp: Number(match[1]),
+        sequence: match[2] ? Number(match[2]) : 0
+      });
+    }
   } catch (e) {
     return false;
   }
+
+  copies.sort(function (a, b) {
+    if (a.timestamp !== b.timestamp) {
+      return b.timestamp - a.timestamp;
+    }
+
+    if (a.sequence !== b.sequence) {
+      return b.sequence - a.sequence;
+    }
+
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  });
+
+  var keep = Object.create(null);
+
+  copies.slice(0, 20).forEach(function (copy) {
+    keep[copy.key] = true;
+  });
+
+  keep[protectedKey] = true;
+
+  for (var j = 0; j < copies.length; j++) {
+    var candidate = copies[j];
+
+    if (keep[candidate.key]) continue;
+
+    try {
+      localStorage.removeItem(candidate.key);
+
+      if (localStorage.getItem(candidate.key) !== null) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function preserveRecoveryCopy(rawData) {
+  var existingKey = recoveryCopyKey(rawData);
+  var recoveryKey = existingKey;
+
+  if (existingKey === undefined) {
+    return false;
+  }
+
+  if (existingKey === null) {
+    var prefix = KEY + '.recovery.';
+    var base = prefix + Date.now();
+    recoveryKey = base;
+    var suffix = 1;
+
+    try {
+      while (localStorage.getItem(recoveryKey) !== null) {
+        recoveryKey = base + '.' + suffix;
+        suffix++;
+      }
+
+      localStorage.setItem(recoveryKey, rawData);
+
+      if (localStorage.getItem(recoveryKey) !== rawData) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  } else {
+    try {
+      if (localStorage.getItem(recoveryKey) !== rawData) {
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  pruneRecoveryCopies(recoveryKey);
+
+  return true;
 }
 
 function load() {
