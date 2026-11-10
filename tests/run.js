@@ -2858,6 +2858,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
     { id: 'bad-pinned', text: 'Bad pin flag', room: 'notes', pinned: 'true' },
     { id: 'bad-created', text: 'Bad creation date', room: 'notes', created: 'yesterday-ish' },
     { id: 'bad-tags', text: 'Bad tags', room: 'notes', tags: ['valid', 42] },
+    { id: 'bad-long-tag', text: 'Overlong tag', room: 'notes', tags: ['x'.repeat(25)] },
     { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-a-number'] },
     { id: 'bad-amount', text: 'Bad amount', room: 'notes', amount: '12.50' },
     {
@@ -2886,7 +2887,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
 
-  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 10);
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 11);
   assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
 
   const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
@@ -9572,6 +9573,10 @@ const invalidRestoreEntryCases = [
   {
     name: 'empty tag',
     fields: { tags: [''] }
+  },
+  {
+    name: 'tag exceeding the 24-character limit',
+    fields: { tags: ['x'.repeat(25)] }
   },
   {
     name: 'non-string tag',

@@ -459,7 +459,11 @@ function validImportedEntries(list) {
         !Array.isArray(entry.tags) ||
         entry.tags.length > 8 ||
         !entry.tags.every(function (tag) {
-          return typeof tag === 'string' && tag.trim().length > 0;
+          return (
+            typeof tag === 'string' &&
+            tag.trim().length > 0 &&
+            tag.length <= 24
+          );
         })
       )
     ) {
