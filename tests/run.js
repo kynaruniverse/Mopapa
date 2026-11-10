@@ -11943,6 +11943,101 @@ test('ask evaluation: a rescheduled appointment uses its upcoming date', functio
   assert.strictEqual(result.sources[0].id, 'eval-rescheduled-new');
 });
 
+test('ask evaluation: past-tense appointment questions return completed appointment dates', function () {
+  const past = new Date(Date.now() - 5 * 86400000);
+
+  const result = askWith([{
+    id: 'eval-completed-dentist',
+    text: 'Dentist check-up',
+    room: 'appointments',
+    when: past.toISOString(),
+    hasTime: false,
+    created: ago(5),
+    done: true
+  }], 'When was my dentist appointment?');
+
+  assert.ok(
+    /original scheduled date was/i.test(result.answer),
+    result.answer
+  );
+
+  assert.ok(
+    !/could not find|none has a date/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-completed-dentist']
+  );
+});
+
+test('ask evaluation: past-tense appointment questions do not return future dates', function () {
+  const future = new Date(Date.now() + 7 * 86400000);
+
+  const result = askWith([{
+    id: 'eval-future-dentist',
+    text: 'Dentist check-up',
+    room: 'appointments',
+    when: future.toISOString(),
+    hasTime: false,
+    created: ago(1),
+    done: false
+  }], 'When was my dentist appointment?');
+
+  assert.ok(
+    /could not find a past scheduled date/i.test(result.answer),
+    result.answer
+  );
+
+  assert.strictEqual(result.sources.length, 0);
+});
+
+test('ask evaluation: past-tense appointment questions select the old date after rescheduling', function () {
+  const oldWhen = new Date(Date.now() - 5 * 86400000);
+  const newWhen = new Date(Date.now() + 7 * 86400000);
+
+  const entries = [
+    {
+      id: 'eval-past-question-new',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: newWhen.toISOString(),
+      hasTime: false,
+      created: ago(1),
+      done: false
+    },
+    {
+      id: 'eval-past-question-old',
+      text: 'Dentist check-up',
+      room: 'appointments',
+      when: oldWhen.toISOString(),
+      hasTime: false,
+      created: ago(5),
+      done: false
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When was my dentist appointment?'
+  );
+
+  assert.ok(
+    /original scheduled date was/i.test(result.answer),
+    result.answer
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-past-question-old']
+  );
+});
+
 test('ask evaluation: latest cost questions use the newest corrected amount', function () {
   const entries = [
     {

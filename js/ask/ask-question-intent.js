@@ -51,7 +51,8 @@ Mopapa.askParts.questionIntent = (function () {
   function isHistoricalQuestion(q) {
     var n = norm(q);
 
-    return /\b(before|previously|previous|earlier|original|originally|initial|initially)\b/.test(n);
+    return /\b(before|previously|previous|earlier|original|originally|initial|initially)\b/.test(n) ||
+      /\b(?:when|what date|what time)\s+(?:was|were)\b/.test(n);
   }
 
   function isOriginalQuestion(q) {

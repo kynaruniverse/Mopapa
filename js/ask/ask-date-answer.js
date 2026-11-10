@@ -10,14 +10,33 @@ Mopapa.askParts.dateAnswer = (function () {
       helpers.isHistoricalQuestion &&
       helpers.isHistoricalQuestion(q)
     ) {
+      var asksPastDate =
+        /\b(?:when|what date|what time)\s+(?:was|were)\b/i.test(q) &&
+        !(helpers.isOriginalQuestion && helpers.isOriginalQuestion(q)) &&
+        !(helpers.isPreviousQuestion && helpers.isPreviousQuestion(q));
+
       var historicalDated = matches.filter(function (e) {
-        return !e.done &&
-          e.when &&
-          !isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime());
+        if (
+          !e.when ||
+          isNaN(Mopapa.rules.dateForEntry(e.when, e.hasTime).getTime())
+        ) {
+          return false;
+        }
+
+        if (!asksPastDate) return true;
+
+        return e.done || Mopapa.rules.isPast(e.when, e.hasTime);
       }).sort(function (a, b) {
         return new Date(b.created).getTime() -
           new Date(a.created).getTime();
       });
+
+      if (!historicalDated.length && asksPastDate) {
+        return {
+          answer: 'I could not find a past scheduled date for that appointment.',
+          sources: []
+        };
+      }
 
       if (historicalDated.length) {
         var historicalSubjects = [];
