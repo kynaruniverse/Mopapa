@@ -898,6 +898,7 @@ function load() {
       data.corrupt = true;
     }
   }
+
   return data;
 }
 
@@ -991,9 +992,31 @@ function load() {
     try {
       nextRaw = JSON.stringify(data);
       localStorage.setItem(KEY, nextRaw);
+
+      if (localStorage.getItem(KEY) !== nextRaw) {
+        try {
+          if (currentRaw === null) {
+            localStorage.removeItem(KEY);
+          } else {
+            localStorage.setItem(KEY, currentRaw);
+          }
+        } catch (restoreError) {}
+
+        saveError = 'storage';
+        return false;
+      }
+
       lastKnownRaw = nextRaw;
       return true;
     } catch (e) {
+      try {
+        if (currentRaw === null) {
+          localStorage.removeItem(KEY);
+        } else {
+          localStorage.setItem(KEY, currentRaw);
+        }
+      } catch (restoreError) {}
+
       saveError = 'storage';
       return false;
     }

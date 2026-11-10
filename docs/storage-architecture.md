@@ -28,7 +28,9 @@ The current implementation:
 - Writes the application state as a JSON value.
 - Checks for changes made by another tab before saving.
 - Uses browser locking where supported to prevent simultaneous writable tabs.
-- Detects storage failures and avoids pretending that an unsuccessful save succeeded.
+- Reads the primary record back after each write and verifies the exact saved value before reporting success.
+- Attempts to restore the previous primary record if a write fails verification.
+- Updates its conflict-detection baseline only after a verified write.
 - Preserves corrupt or partially rejected source data in separate recovery copies where possible.
 - Supports exporting a backup and restoring a previously exported backup.
 - Requests persistent browser storage where the browser supports that capability.
@@ -69,9 +71,18 @@ Data stored in one browser profile is not automatically synchronised to another 
 
 ### Recovery-copy growth
 
-Recovery copies are stored separately from the main record. They can consume additional browser storage, especially when several full-record copies are retained.
+Recovery copies are stored separately from the main record and consume additional browser storage.
 
-Recovery copies must not be automatically deleted using an arbitrary age or count limit. A copy may be the only surviving version of valuable data.
+The current retention policy allows a maximum of 20 ordinary recovery copies.
+
+- Corrupt-data recovery copies are never automatically pruned.
+- The copy matching the current saved data is protected.
+- A new recovery copy must be written and read back successfully before pruning begins.
+- If the recovery inventory cannot be inspected, no copies are deleted.
+- Cleanup failure does not invalidate an already verified recovery copy.
+- Legacy copies with unrecognisable timestamps are retained rather than automatically pruned.
+
+Recovery copies remain in the same browser storage environment as the primary record. They are not a substitute for exporting a backup to another location.
 
 ### Browser storage persistence
 
@@ -113,6 +124,8 @@ Any future migration must:
 - Preserve existing localStorage data until migration has been verified.
 - Validate the source record before migration.
 - Avoid overwriting an existing destination record without verification.
+- Read migrated data back and verify it before treating migration as successful.
+- Preserve the original source data until the destination has been independently verified.
 - Handle interrupted migrations safely.
 - Preserve recovery copies.
 - Include a clear rollback or recovery route.

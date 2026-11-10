@@ -8793,6 +8793,60 @@ test('store distinguishes storage failures from save conflicts', function () {
   );
 });
 
+test('silent storage write failure is detected and original data is restored', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+  const originalSetItem = w.localStorage.setItem;
+
+  w.Mopapa.store.data().entries[0].text = 'Updated memory';
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1' && value !== originalRaw) {
+      return;
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+  assert.strictEqual(w.localStorage.getItem('mopapa.v1'), originalRaw);
+});
+
+test('storage write with altered content is rejected and original data is restored', function () {
+  const w = boot(stored([{
+    id: 'original',
+    text: 'Original memory',
+    room: 'notes'
+  }]));
+
+  w.Mopapa.store.load();
+
+  const originalRaw = w.localStorage.getItem('mopapa.v1');
+  const originalSetItem = w.localStorage.setItem;
+
+  w.Mopapa.store.data().entries[0].text = 'Updated memory';
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1' && value !== originalRaw) {
+      return originalSetItem.call(this, key, value + ' ');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(w.Mopapa.store.save(), false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+  assert.strictEqual(w.localStorage.getItem('mopapa.v1'), originalRaw);
+});
+
 test('failed storage writes preserve the exact saved record and can be retried', function () {
   const w = boot(stored([{
     id: 'original',
