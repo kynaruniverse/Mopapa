@@ -6372,7 +6372,11 @@ test('restore imports entries, room-learning data and Ask learning data', functi
     customRooms: [{ id: 'custom_books', name: 'Books', icon: 'book' }],
     ask: {
       aliases: [['gp', 'doctor']],
-      boosts: {},
+      boosts: {
+        'gp doctor': {
+          restored: 2
+        }
+      },
       unanswered: [{ q: 'Who was that?', at: '2026-01-01' }]
     }
   };
@@ -6397,6 +6401,10 @@ test('restore imports entries, room-learning data and Ask learning data', functi
   assert.strictEqual(w.Mopapa.store.data().learned.example, 2);
   assert.strictEqual(w.Mopapa.store.data().customRooms.length, 1);
   assert.strictEqual(w.Mopapa.store.data().ask.aliases[0][0], 'gp');
+  assert.strictEqual(
+    w.Mopapa.store.data().ask.boosts['gp doctor'].restored,
+    2
+  );
   assert.strictEqual(w.Mopapa.store.data().ask.unanswered.length, 1);
 
   const saved = JSON.parse(w.localStorage._['mopapa.v1']);
@@ -6707,7 +6715,20 @@ test('restore rejects malformed optional entry fields without changing existing 
     { id: 'too-many-tags', text: 'Too many tags', room: 'notes', tags: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'] },
     { id: 'bad-amounts', text: 'Bad amounts', room: 'notes', amounts: ['not-money'] },
     { id: 'bad-amount', text: 'Bad amount', room: 'notes', amount: '12.50' },
-    { id: 'bad-fact', text: 'Bad fact', room: 'notes', fact: { attr: 'location', items: ['keys'] } }
+    { id: 'bad-fact', text: 'Bad fact', room: 'notes', fact: { attr: 'location', items: ['keys'] } },
+    { id: 'numeric-date', text: 'Numeric date', room: 'notes', when: 123 },
+    { id: 'null-created', text: 'Null creation date', room: 'notes', created: null },
+    { id: 'non-string-tag', text: 'Non-string tag', room: 'notes', tags: ['home', 7] },
+    { id: 'blank-tag', text: 'Blank tag', room: 'notes', tags: ['   '] },
+    { id: 'null-amount', text: 'Null structured amount', room: 'notes', amounts: [null] },
+    { id: 'object-amount', text: 'Object structured amount', room: 'notes', amount: { value: 12 } },
+    { id: 'wrong-fact-attribute', text: 'Wrong fact attribute', room: 'notes', fact: { attr: 'person', items: ['keys'], prep: 'in', where: 'drawer', value: 'in drawer', plural: false } },
+    { id: 'empty-fact-items', text: 'Empty fact items', room: 'notes', fact: { attr: 'location', items: [], prep: 'in', where: 'drawer', value: 'in drawer', plural: false } },
+    { id: 'blank-fact-item', text: 'Blank fact item', room: 'notes', fact: { attr: 'location', items: [' '], prep: 'in', where: 'drawer', value: 'in drawer', plural: false } },
+    { id: 'blank-fact-prep', text: 'Blank fact preposition', room: 'notes', fact: { attr: 'location', items: ['keys'], prep: ' ', where: 'drawer', value: 'in drawer', plural: false } },
+    { id: 'blank-fact-where', text: 'Blank fact location', room: 'notes', fact: { attr: 'location', items: ['keys'], prep: 'in', where: ' ', value: 'in drawer', plural: false } },
+    { id: 'blank-fact-value', text: 'Blank fact value', room: 'notes', fact: { attr: 'location', items: ['keys'], prep: 'in', where: 'drawer', value: ' ', plural: false } },
+    { id: 'invalid-fact-plural', text: 'Invalid fact plural flag', room: 'notes', fact: { attr: 'location', items: ['keys'], prep: 'in', where: 'drawer', value: 'in drawer', plural: 'no' } }
   ];
 
   invalidEntries.forEach(function (entry) {
@@ -9454,14 +9475,60 @@ test('restore rejects JSON without an entries array', function () {
   assert.strictEqual(w.localStorage._['mopapa.v1'], before);
 });
 
-test('restore rolls back in-memory data when local storage refuses the write', function () {
-  const w = boot(stored([
-    { id: 'keep', text: 'Keep this entry', room: 'notes' }
-  ]));
+test('restore rolls back every in-memory data domain when the primary storage write fails', function () {
+  const original = {
+    schemaVersion: 1,
+    entries: [
+      {
+        id: 'keep',
+        text: 'Keep this original entry',
+        room: 'notes'
+      }
+    ],
+    learned: {
+      example: 2
+    },
+    customRooms: [
+      {
+        id: 'custom_books',
+        name: 'Books',
+        icon: 'book'
+      }
+    ],
+    ask: {
+      aliases: [['gp', 'doctor']],
+      boosts: {
+        'gp doctor': {
+          keep: 3
+        }
+      },
+      unanswered: [
+        {
+          q: 'Who was that?',
+          at: '2026-01-01'
+        }
+      ]
+    }
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(original)
+  });
 
   w.Mopapa.store.load();
 
-  const before = w.localStorage._['mopapa.v1'];
+  const beforeRaw = w.localStorage._['mopapa.v1'];
+  const beforeData = JSON.stringify(w.Mopapa.store.data());
+
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1') {
+      throw new Error('simulated primary storage failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
 
   w.FileReader = function () {
     this.readAsText = function (file) {
@@ -9470,25 +9537,58 @@ test('restore rolls back in-memory data when local storage refuses the write', f
     };
   };
 
-  w.localStorage.failWrites = true;
-
   let result = null;
 
   w.Mopapa.store.importJSON(
     {
-      size: 50,
+      size: 200,
       content: JSON.stringify({
+        schemaVersion: 1,
         entries: [
-          { id: 'replacement', text: 'Replacement entry', room: 'notes' }
-        ]
+          {
+            id: 'replacement',
+            text: 'Replacement entry',
+            room: 'notes'
+          }
+        ],
+        learned: {
+          replacement: 5
+        },
+        customRooms: [],
+        ask: {
+          aliases: [],
+          boosts: {},
+          unanswered: []
+        }
       })
     },
-    function (ok) { result = ok; }
+    function (ok) {
+      result = ok;
+    }
   );
 
   assert.strictEqual(result, false);
-  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'keep');
-  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1'],
+    beforeRaw
+  );
+
+  assert.strictEqual(
+    JSON.stringify(w.Mopapa.store.data()),
+    beforeData
+  );
+
+  const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
+    return key.indexOf('mopapa.v1.recovery.') === 0;
+  });
+
+  assert.strictEqual(recoveryKeys.length, 1);
+  assert.strictEqual(
+    w.localStorage._[recoveryKeys[0]],
+    beforeRaw
+  );
 });
 
 test('restore rejects files larger than 5 MB before reading them', function () {
