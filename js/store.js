@@ -511,7 +511,17 @@ function validImportedEntries(list) {
           return typeof item === 'string' && !!item.trim();
         }) ||
         typeof fact.prep !== 'string' ||
-        !fact.prep.trim() ||
+        [
+          'in',
+          'inside',
+          'on',
+          'under',
+          'behind',
+          'beside',
+          'next to',
+          'within',
+          'at'
+        ].indexOf(fact.prep) === -1 ||
         typeof fact.where !== 'string' ||
         !fact.where.trim() ||
         typeof fact.value !== 'string' ||

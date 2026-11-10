@@ -2866,6 +2866,12 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
       text: 'Bad location fact',
       room: 'notes',
       fact: { attr: 'location', items: [], prep: 'in', where: 'kitchen', value: 'kitchen', plural: false }
+    },
+    {
+      id: 'bad-fact-preposition',
+      text: 'Unsupported location relationship',
+      room: 'notes',
+      fact: { attr: 'location', items: ['keys'], prep: 'through', where: 'kitchen', value: 'through kitchen', plural: false }
     }
   ];
 
@@ -2887,7 +2893,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
 
-  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 11);
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 12);
   assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
 
   const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
@@ -9647,6 +9653,19 @@ const invalidRestoreEntryCases = [
       }
     }
   },
+  {
+    name: 'structured fact has unsupported preposition',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'through',
+        where: 'kitchen',
+        value: 'through kitchen',
+        plural: false
+      }
+    }
+  },  
   {
     name: 'structured fact has empty location description',
     fields: {
