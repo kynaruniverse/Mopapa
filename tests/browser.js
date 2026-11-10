@@ -1661,6 +1661,10 @@ async function run() {
 
     await page.reload({ waitUntil: 'load' });
 
+    var originalRaw = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
     var backup = {
       schemaVersion: 1,
       entries: [
@@ -1710,6 +1714,25 @@ async function run() {
 
     assert.ok(
       await page.locator('#bubble').textContent()
+    );
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      1
+    );
+
+    var recoveryDownloadPromise = page.waitForEvent('download');
+
+    await page.locator('.recovery-copy-download').click();
+
+    var recoveryDownload = await recoveryDownloadPromise;
+    var recoveryPath = await recoveryDownload.path();
+
+    assert.ok(recoveryPath);
+
+    assert.strictEqual(
+      fs.readFileSync(recoveryPath, 'utf8'),
+      originalRaw
     );
   });
 

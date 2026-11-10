@@ -12,6 +12,9 @@ function boot(storage, storageApi) {
       this._[k] = String(v);
     },
     removeItem(k) {
+      if (this.failRemovals) {
+        throw new Error('simulated storage removal failure');
+      }
       delete this._[k];
     }
   };
@@ -1382,6 +1385,94 @@ test('failed recovery creation never prunes existing copies', function () {
   assert.strictEqual(
     w.localStorage.getItem('mopapa.v1.recovery.4001'),
     'copy-1'
+  );
+});
+
+test('recovery creation uses the next collision suffix without overwriting copies', function () {
+  const currentRaw = JSON.stringify({
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const w = boot({
+    'mopapa.v1': currentRaw,
+    'mopapa.v1.recovery.5000': 'first existing copy',
+    'mopapa.v1.recovery.5000.1': 'second existing copy'
+  });
+
+  w.Date.now = function () {
+    return 5000;
+  };
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.5000'),
+    'first existing copy'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.5000.1'),
+    'second existing copy'
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.5000.2'),
+    currentRaw
+  );
+});
+
+test('recovery preservation succeeds when automatic cleanup fails', function () {
+  const currentRaw = JSON.stringify({
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const storage = {
+    'mopapa.v1': currentRaw
+  };
+
+  for (let i = 1; i <= 21; i++) {
+    storage['mopapa.v1.recovery.' + (6000 + i)] = 'copy-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Date.now = function () {
+    return 5000;
+  };
+
+  w.Mopapa.store.load();
+
+  w.localStorage.failRemovals = true;
+
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.5000'),
+    currentRaw
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.6001'),
+    'copy-1'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    22
   );
 });
 

@@ -343,6 +343,7 @@
           }
 
           originalRecoveryButton.hidden = true;
+          renderRecoveryCopies();
           M.customRooms.reload();
           M.room.renderRooms();
           M.refreshPanels();
