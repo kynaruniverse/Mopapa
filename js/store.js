@@ -649,7 +649,33 @@ function hasStoredCopy(prefix, rawData) {
     return null;
   }
 
+
   return false;
+}
+
+function preserveCorruptCopy(rawData) {
+  var prefix = KEY + '.corrupt.';
+
+  if (hasStoredCopy(prefix, rawData) === true) {
+    return true;
+  }
+
+  var base = prefix + Date.now();
+  var key = base;
+  var suffix = 1;
+
+  try {
+    while (localStorage.getItem(key) !== null) {
+      key = base + '.' + suffix;
+      suffix++;
+    }
+
+    localStorage.setItem(key, rawData);
+
+    return localStorage.getItem(key) === rawData;
+  } catch (e) {
+    return false;
+  }
 }
 
 function recoveryCopyKey(rawData) {
@@ -865,30 +891,10 @@ function load() {
         throw new Error('unexpected shape');
       }
     }
+
   } catch (e) {
     if (raw !== null) {
-      try {
-        var corruptPrefix = KEY + '.corrupt.';
-
-        if (hasStoredCopy(corruptPrefix, raw) === true) {
-          data.corruptCopySaved = true;
-        } else {
-          var corruptBase = corruptPrefix + Date.now();
-          var corruptKey = corruptBase;
-          var corruptSuffix = 1;
-
-          while (localStorage.getItem(corruptKey) !== null) {
-            corruptKey = corruptBase + '.' + corruptSuffix;
-            corruptSuffix++;
-          }
-
-          localStorage.setItem(corruptKey, raw);
-          data.corruptCopySaved = true;
-        }
-      } catch (e2) {
-        data.corruptCopySaved = false;
-      }
-
+      data.corruptCopySaved = preserveCorruptCopy(raw);
       data.corrupt = true;
     }
   }

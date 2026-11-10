@@ -2964,6 +2964,43 @@ test('corrupt storage does not preserve stale in-memory entries', function () {
   );
 });
 
+test('corrupt storage is not marked recovered when corrupt-copy write cannot be verified', function () {
+  const originalRaw = '{invalid json';
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  const originalSetItem = w.localStorage.setItem;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.corrupt.') === 0) {
+      return;
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().filter(function (copy) {
+      return copy.kind === 'corrupt';
+    }).length,
+    0
+  );
+});
+
 test('loading duplicate saved IDs keeps only the first valid record', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
