@@ -59,6 +59,28 @@ Mopapa.askParts.dateAnswer = (function () {
           };
         }
 
+        if (asksPastDate) {
+          var distinctHistoricalDates = [];
+
+          historicalDated.forEach(function (entry) {
+            var key = Mopapa.rules.dateForEntry(
+              entry.when,
+              entry.hasTime
+            ).getTime();
+
+            if (distinctHistoricalDates.indexOf(key) === -1) {
+              distinctHistoricalDates.push(key);
+            }
+          });
+
+          if (distinctHistoricalDates.length > 1) {
+            return {
+              answer: 'I found multiple past dates for this appointment. Which occurrence do you mean?',
+              sources: historicalDated.slice(0, 5)
+            };
+          }
+        }
+
         var historicalIndex = 0;
         var historicalAnswer = 'The original scheduled date was ';
 
@@ -128,6 +150,31 @@ Mopapa.askParts.dateAnswer = (function () {
           distinctSubjects.push(subject);
         }
       });
+
+      if (/\bnext\b/i.test(q) && distinctWhen.length > 1) {
+        var earliestWhen = distinctWhen[0];
+
+        dated = dated.filter(function (entry) {
+          return Mopapa.rules.dateForEntry(
+            entry.when,
+            entry.hasTime
+          ).getTime() === earliestWhen;
+        });
+
+        distinctWhen = [earliestWhen];
+        distinctSubjects = [];
+
+        dated.forEach(function (entry) {
+          var subject = String(entry.text || '')
+            .toLowerCase()
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (distinctSubjects.indexOf(subject) === -1) {
+            distinctSubjects.push(subject);
+          }
+        });
+      }
 
       if (distinctWhen.length > 1 || distinctSubjects.length > 1) {
         var tappedWhen = helpers.confirmedBySig(dated, sig);

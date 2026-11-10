@@ -1084,6 +1084,72 @@ async function run() {
     );
   });
 
+  await check('Ask clarifies when identical past appointments have different dates', async function (page) {
+    var entries = [
+      {
+        id: 'browser-dentist-recent',
+        text: 'Dentist appointment',
+        room: 'appointments',
+        when: dateDaysAgo(5),
+        hasTime: false,
+        created: dateDaysAgo(6),
+        done: true
+      },
+      {
+        id: 'browser-dentist-older',
+        text: 'Dentist appointment',
+        room: 'appointments',
+        when: dateDaysAgo(35),
+        hasTime: false,
+        created: dateDaysAgo(36),
+        done: true
+      }
+    ];
+
+    await page.evaluate(function (savedEntries) {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: savedEntries,
+        learned: {},
+        customRooms: [],
+        ask: {
+          aliases: [],
+          boosts: {},
+          unanswered: []
+        }
+      }));
+    }, entries);
+
+    await page.reload({ waitUntil: 'load' });
+
+    await page.locator('#talk-mode-ask').click();
+
+    await page.locator('#talk-input').fill(
+      'When was my dentist appointment?'
+    );
+
+    await page.locator('#send').click();
+
+    await page.waitForFunction(function () {
+      return document.getElementById('bubble')
+        .textContent.includes('Which occurrence do you mean?');
+    });
+
+    var sources = page.locator(
+      '#answer-sources .source-entry'
+    );
+
+    assert.strictEqual(
+      await sources.count(),
+      2
+    );
+
+    assert.strictEqual(
+      await page.locator('#answer-sources').isVisible(),
+      true
+    );
+  });
+  
   await check('multiline text survives Shift+Enter and saves intact', async function (page) {
     var input = page.locator('#talk-input');
 

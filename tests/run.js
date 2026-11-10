@@ -11899,6 +11899,98 @@ test('ask evaluation: completed appointments do not override an upcoming appoint
   );
 });
 
+test('ask evaluation: a specific next recurring service selects the earliest upcoming occurrence', function () {
+  const nextWhen = new Date(Date.now() + 7 * 86400000);
+  const laterWhen = new Date(Date.now() + 35 * 86400000);
+
+  const entries = [
+    {
+      id: 'eval-boiler-next-occurrence',
+      text: 'Boiler service',
+      room: 'appointments',
+      when: nextWhen.toISOString(),
+      hasTime: false,
+      created: ago(2),
+      done: false
+    },
+    {
+      id: 'eval-boiler-later-occurrence',
+      text: 'Boiler service',
+      room: 'appointments',
+      when: laterWhen.toISOString(),
+      hasTime: false,
+      created: ago(1),
+      done: false
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When is my next boiler service?'
+  );
+
+  assert.deepStrictEqual(
+    Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    }),
+    ['eval-boiler-next-occurrence']
+  );
+
+  assert.ok(
+    /Boiler service/i.test(result.answer),
+    result.answer
+  );
+});
+
+test('ask evaluation: past-tense questions clarify between separate past occurrences of the same appointment', function () {
+  const recentPast = new Date(Date.now() - 5 * 86400000);
+  const olderPast = new Date(Date.now() - 35 * 86400000);
+
+  const entries = [
+    {
+      id: 'eval-dentist-recent-past',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: recentPast.toISOString(),
+      hasTime: false,
+      created: ago(1),
+      done: true
+    },
+    {
+      id: 'eval-dentist-older-past',
+      text: 'Dentist appointment',
+      room: 'appointments',
+      when: olderPast.toISOString(),
+      hasTime: false,
+      created: ago(30),
+      done: true
+    }
+  ];
+
+  const result = askWith(
+    entries,
+    'When was my dentist appointment?'
+  );
+
+  assert.ok(
+    /multiple past dates|Which occurrence do you mean/i.test(result.answer),
+    result.answer
+  );
+
+  const sourceIds = Array.from(result.sources).map(function (entry) {
+    return entry.id;
+  }).sort();
+
+  assert.deepStrictEqual(
+    sourceIds,
+    [
+      'eval-dentist-older-past',
+      'eval-dentist-recent-past'
+    ]
+  );
+});
+
+
 test('ask evaluation: a rescheduled appointment uses its upcoming date', function () {
   const oldWhen = new Date(Date.now() - 5 * 86400000);
   oldWhen.setHours(10, 0, 0, 0);
