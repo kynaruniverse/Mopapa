@@ -740,13 +740,10 @@ function pruneRecoveryCopies(protectedKey) {
 
 function preserveRecoveryCopy(rawData) {
   var existingKey = recoveryCopyKey(rawData);
+  var inventoryAvailable = existingKey !== undefined;
   var recoveryKey = existingKey;
 
-  if (existingKey === undefined) {
-    return false;
-  }
-
-  if (existingKey === null) {
+  if (existingKey === undefined || existingKey === null) {
     var prefix = KEY + '.recovery.';
     var base = prefix + Date.now();
     recoveryKey = base;
@@ -776,7 +773,9 @@ function preserveRecoveryCopy(rawData) {
     }
   }
 
-  pruneRecoveryCopies(recoveryKey);
+  if (inventoryAvailable) {
+    pruneRecoveryCopies(recoveryKey);
+  }
 
   return true;
 }

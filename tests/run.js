@@ -1247,7 +1247,12 @@ test('recovery retention keeps the 20 newest ordinary copies', function () {
 
   assert.strictEqual(
     w.localStorage.getItem('mopapa.v1.recovery.1006'),
-    'copy-6'
+    null
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1007'),
+    'copy-7'
   );
 
   assert.strictEqual(
