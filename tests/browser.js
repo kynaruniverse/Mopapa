@@ -1736,6 +1736,140 @@ async function run() {
     );
   });
 
+  await check('downloaded recovery copy can restore the complete previous state', async function (page) {
+    var original = {
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'drill-original',
+          text: 'Original memory must return',
+          room: 'notes',
+          created: '2026-10-01T10:00:00.000Z'
+        }
+      ],
+      learned: {
+        originalTerm: 4
+      },
+      customRooms: [
+        {
+          id: 'custom_drill',
+          name: 'Drill room',
+          icon: 'book'
+        }
+      ],
+      ask: {
+        aliases: [['gp', 'doctor']],
+        boosts: {},
+        unanswered: [
+          {
+            q: 'Where was the original appointment?',
+            at: '2026-10-01'
+          }
+        ]
+      }
+    };
+
+    var originalRaw = JSON.stringify(original);
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    var replacement = {
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'drill-replacement',
+          text: 'Replacement memory',
+          room: 'notes'
+        }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      }
+    };
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'replacement-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(JSON.stringify(replacement))
+    });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+
+      return data.entries &&
+        data.entries.length === 1 &&
+        data.entries[0].id === 'drill-replacement';
+    });
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      1
+    );
+
+    var downloadPromise = page.waitForEvent('download');
+
+    await page.locator('.recovery-copy-download').click();
+
+    var download = await downloadPromise;
+    var recoveryPath = await download.path();
+
+    assert.ok(recoveryPath);
+
+    assert.strictEqual(
+      fs.readFileSync(recoveryPath, 'utf8'),
+      originalRaw
+    );
+
+    await page.locator('#file-import').setInputFiles(recoveryPath);
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+
+      return data.entries &&
+        data.entries.length === 1 &&
+        data.entries[0].id === 'drill-original';
+    });
+
+    var restored = await savedData(page);
+
+    assert.strictEqual(restored.entries.length, 1);
+    assert.strictEqual(
+      restored.entries[0].text,
+      'Original memory must return'
+    );
+    assert.strictEqual(restored.learned.originalTerm, 4);
+    assert.strictEqual(restored.customRooms.length, 1);
+    assert.strictEqual(restored.customRooms[0].name, 'Drill room');
+    assert.strictEqual(restored.ask.aliases[0][0], 'gp');
+    assert.strictEqual(restored.ask.unanswered.length, 1);
+    assert.strictEqual(
+      restored.ask.unanswered[0].q,
+      'Where was the original appointment?'
+    );
+  });
+
   await check('duplicate IDs in a browser restore preserve existing data', async function (page) {
     await saveText(page, 'Existing memory must survive');
 
