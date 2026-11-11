@@ -119,10 +119,12 @@
 
   } else if (
     M.store.data().rejectedEntries ||
-    M.store.data().rejectedCustomRooms
+    M.store.data().rejectedCustomRooms ||
+    M.store.data().rejectedAsk
   ) {
     var rejectedCount = M.store.data().rejectedEntries || 0;
     var rejectedRooms = M.store.data().rejectedCustomRooms;
+    var rejectedAsk = M.store.data().rejectedAsk;
     var recoverySaved = M.store.data().recoveryCopySaved;
     var rejectedSummary = [];
 
@@ -135,6 +137,10 @@
 
     if (rejectedRooms) {
       rejectedSummary.push('your custom rooms');
+    }
+
+    if (rejectedAsk) {
+      rejectedSummary.push('Ask learning data');
     }
 
     M.dialog.notice(

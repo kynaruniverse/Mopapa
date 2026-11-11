@@ -9546,6 +9546,23 @@ function assertRestoreRejectsBackup(backup) {
   );
 }
 
+test('restore rejects damaged Ask learning data without changing existing data', function () {
+  assertRestoreRejectsBackup({
+    entries: [
+      {
+        id: 'valid-entry',
+        text: 'Valid memory',
+        room: 'notes'
+      }
+    ],
+    ask: {
+      aliases: [['invalid']],
+      boosts: {},
+      unanswered: []
+    }
+  });
+});
+
 const invalidRestoreEntryCases = [
   {
     name: 'invalid scheduled date',
@@ -13022,20 +13039,37 @@ test('learning: unanswered questions are logged once, capped, and clearable', fu
   assert.strictEqual(w.Mopapa.ask.learned().unanswered.length, 0);
 });
 
-test('learning: damaged saved learning data is cleaned on load', function () {
-  const w = boot({ 'mopapa.v1': JSON.stringify({
+test('learning: damaged saved learning data is cleaned and preserved on load', function () {
+  const raw = JSON.stringify({
     entries: [], learned: {}, customRooms: [],
     ask: {
       aliases: [['a'], 'x', ['gp', 'doctor']],
       boosts: { sig: { id1: 1, bad: 'x' }, broken: 5 },
       unanswered: [{ q: 'ok' }, { q: 5 }, null]
     }
-  }) });
+  });
+
+  const w = boot({ 'mopapa.v1': raw });
+
   w.Mopapa.store.load();
+
   const l = w.Mopapa.ask.learned();
+
   assert.strictEqual(l.aliases.length, 1);
   assert.strictEqual(l.unanswered.length, 1);
   assert.strictEqual(l.taps, 0);
+
+  assert.strictEqual(w.Mopapa.store.data().rejectedAsk, true);
+  assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
+  assert.strictEqual(w.Mopapa.store.data().recoveryBlocked, false);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    raw
+  );
 });
 
 test('learning screen is wired in and teaches without touching room learning', function () {

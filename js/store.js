@@ -236,6 +236,19 @@ function cleanAsk(a) {
   return out;
 }
 
+function stableJSON(value) {
+  if (Array.isArray(value)) {
+    return '[' + value.map(stableJSON).join(',') + ']';
+  }
+
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(function (key) {
+      return JSON.stringify(key) + ':' + stableJSON(value[key]);
+    }).join(',') + '}';
+  }
+
+  return JSON.stringify(value);
+}
 
 function normaliseLegacyAmounts(list) {
   if (!Array.isArray(list)) return list;
@@ -932,7 +945,24 @@ function load() {
             !customRoomsRecoverySaved;
         }
 
-        data.ask = cleanAsk(p.ask);
+        var cleanedAsk = cleanAsk(p.ask);
+
+        if (
+          Object.prototype.hasOwnProperty.call(p, 'ask') &&
+          stableJSON(cleanedAsk) !== stableJSON(p.ask)
+        ) {
+          data.rejectedAsk = true;
+
+          var askRecoverySaved = preserveRecoveryCopy(raw);
+
+          data.recoveryCopySaved =
+            data.recoveryCopySaved === true || askRecoverySaved;
+
+          data.recoveryBlocked =
+            data.recoveryBlocked || !askRecoverySaved;
+        }
+
+        data.ask = cleanedAsk;
       } else {
         throw new Error('unexpected shape');
       }
@@ -1408,6 +1438,10 @@ function load() {
               typeof p.learned !== 'object' ||
               Array.isArray(p.learned)
             )
+          ) ||
+          (
+            Object.prototype.hasOwnProperty.call(p, 'ask') &&
+            stableJSON(cleanAsk(p.ask)) !== stableJSON(p.ask)
           ) ||
           !importedCustomRooms
         ) {
