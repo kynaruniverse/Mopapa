@@ -10794,7 +10794,7 @@ test('Ask rebuilds an inconsistent location fact from its entry text', function 
 
   assert.strictEqual(
     locations.key.fact.where,
-    'kitchen drawer'
+    'the kitchen drawer'
   );
 });
 
