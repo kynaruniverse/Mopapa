@@ -29,6 +29,8 @@ Mopapa.askParts.facts = (function () {
       typeof fact.where === 'string' &&
       !!fact.where.trim() &&
       typeof fact.prep === 'string' &&
+      fact.value.toLowerCase() ===
+        (fact.prep + ' ' + fact.where).toLowerCase() &&
       typeof fact.plural === 'boolean'
     ) {
       return fact;

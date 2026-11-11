@@ -2872,7 +2872,13 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
       text: 'Unsupported location relationship',
       room: 'notes',
       fact: { attr: 'location', items: ['keys'], prep: 'through', where: 'kitchen', value: 'through kitchen', plural: false }
-    }
+    },
+    {
+      id: 'inconsistent-fact-value',
+      text: 'Inconsistent location relationship',
+      room: 'notes',
+      fact: { attr: 'location', items: ['keys'], prep: 'in', where: 'kitchen', value: 'in bedroom', plural: false }
+    }    
   ];
 
   const w = boot({
@@ -2893,7 +2899,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
 
-  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 12);
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 13);
   assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
 
   const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
@@ -9665,6 +9671,19 @@ const invalidRestoreEntryCases = [
         plural: false
       }
     }
+  },
+  {
+    name: 'structured fact value conflicts with its location',
+    fields: {
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'in',
+        where: 'kitchen',
+        value: 'in bedroom',
+        plural: false
+      }
+    }
   },  
   {
     name: 'structured fact has empty location description',
@@ -10744,6 +10763,39 @@ test('Ask rebuilds a malformed saved location fact from its entry text', functio
 
   assert.strictEqual(locations.key.fact.value, 'in the kitchen drawer');
   assert.strictEqual(locations.key.fact.where, 'the kitchen drawer');
+});
+
+test('Ask rebuilds an inconsistent location fact from its entry text', function () {
+  const w = boot({});
+  w.Mopapa.store.load();
+
+  const facts = w.Mopapa.askParts.facts;
+  const locations = facts.currentLocations([
+    {
+      id: 'inconsistent-fact',
+      text: 'Keys are in the kitchen drawer',
+      room: 'notes',
+      created: new Date().toISOString(),
+      fact: {
+        attr: 'location',
+        items: ['keys'],
+        prep: 'in',
+        where: 'kitchen drawer',
+        value: 'in the bedroom',
+        plural: false
+      }
+    }
+  ]);
+
+  assert.strictEqual(
+    locations.key.fact.value,
+    'in the kitchen drawer'
+  );
+
+  assert.strictEqual(
+    locations.key.fact.where,
+    'kitchen drawer'
+  );
 });
 
 test('Ask ignores a malformed location fact when its text cannot recover it', function () {

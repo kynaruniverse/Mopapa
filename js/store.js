@@ -526,6 +526,8 @@ function validImportedEntries(list) {
         !fact.where.trim() ||
         typeof fact.value !== 'string' ||
         !fact.value.trim() ||
+        fact.value.toLowerCase() !==
+          (fact.prep + ' ' + fact.where).toLowerCase() ||
         typeof fact.plural !== 'boolean'
       ) {
         return false;
