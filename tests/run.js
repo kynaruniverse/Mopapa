@@ -2860,6 +2860,13 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
       room: 'notes',
       hasTime: true
     },
+    {
+      id: 'time-with-date-only',
+      text: 'Time flag with date only',
+      room: 'notes',
+      when: '2026-11-20',
+      hasTime: true
+    },    
     { id: 'bad-done', text: 'Bad completion flag', room: 'notes', done: 1 },
     { id: 'bad-pinned', text: 'Bad pin flag', room: 'notes', pinned: 'true' },
     { id: 'bad-created', text: 'Bad creation date', room: 'notes', created: 'yesterday-ish' },
@@ -2905,7 +2912,7 @@ test('loading saved entries rejects malformed optional fields but keeps valid ne
   assert.strictEqual(entries[0].id, 'valid-before');
   assert.strictEqual(entries[1].id, 'valid-after');
 
-  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 14);
+  assert.strictEqual(w.Mopapa.store.data().rejectedEntries, 15);
   assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
 
   const recoveryKeys = Object.keys(w.localStorage._).filter(function (key) {
@@ -9579,6 +9586,13 @@ const invalidRestoreEntryCases = [
   {
     name: 'time flag with a null scheduled date',
     fields: { when: null, hasTime: true }
+  },  
+  {
+    name: 'time flag with date-only scheduled date',
+    fields: {
+      when: '2026-11-20',
+      hasTime: true
+    }
   },  
   {
     name: 'invalid completion value',

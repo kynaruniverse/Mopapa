@@ -434,7 +434,10 @@ function validImportedEntries(list) {
 
     if (
       entry.hasTime === true &&
-      !entry.when
+      (
+        !entry.when ||
+        !/(?:T|\s)\d{2}:\d{2}/.test(entry.when)
+      )
     ) {
       return false;
     }
