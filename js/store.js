@@ -433,6 +433,13 @@ function validImportedEntries(list) {
     }
 
     if (
+      entry.hasTime === true &&
+      !entry.when
+    ) {
+      return false;
+    }
+
+    if (
       Object.prototype.hasOwnProperty.call(entry, 'done') &&
       typeof entry.done !== 'boolean'
     ) {
