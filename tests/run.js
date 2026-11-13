@@ -7006,14 +7006,96 @@ test('restore is cancelled when the existing record cannot be preserved', functi
 
   assert.strictEqual(result, false);
   assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
-  assert.strictEqual(
-    w.localStorage.getItem('mopapa.v1'),
-    before
-  );
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
   assert.strictEqual(
     w.Mopapa.store.data().entries[0].id,
     'existing'
+  );  
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('restore is rejected when existing storage cannot be read', function () {
+  const w = boot(stored([
+    { id: 'existing', text: 'Existing memory', room: 'notes' }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const before = w.localStorage._['mopapa.v1'];
+  const originalGetItem = w.localStorage.getItem;
+
+  w.localStorage.getItem = function (key) {
+    if (key === 'mopapa.v1') {
+      throw new Error('simulated storage read failure');
+    }
+
+    return originalGetItem.call(this, key);
+  };
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'replacement', text: 'Replacement memory', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
   );
+
+  assert.strictEqual(result, false);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'storage');
+  assert.strictEqual(w.localStorage._['mopapa.v1'], before);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'existing');
+});
+
+test('restore succeeds when no existing primary record is present', function () {
+  const w = boot({});
+
+  w.Mopapa.store.load();
+
+  w.FileReader = function () {
+    this.readAsText = function (file) {
+      this.result = file.content;
+      this.onload();
+    };
+  };
+
+  let result = null;
+
+  w.Mopapa.store.importJSON(
+    {
+      size: 100,
+      content: JSON.stringify({
+        entries: [
+          { id: 'first-entry', text: 'First saved memory', room: 'notes' }
+        ]
+      })
+    },
+    function (ok) {
+      result = ok;
+    }
+  );
+
+  assert.strictEqual(result, true);
+  assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
+  assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'first-entry');
+
+  const saved = JSON.parse(w.localStorage._['mopapa.v1']);
+
+  assert.strictEqual(saved.entries[0].id, 'first-entry');
   assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
 });
 
