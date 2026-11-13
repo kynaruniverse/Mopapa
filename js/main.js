@@ -120,11 +120,13 @@
   } else if (
     M.store.data().rejectedEntries ||
     M.store.data().rejectedCustomRooms ||
-    M.store.data().rejectedAsk
+    M.store.data().rejectedAsk ||
+    M.store.data().rejectedLearned
   ) {
     var rejectedCount = M.store.data().rejectedEntries || 0;
     var rejectedRooms = M.store.data().rejectedCustomRooms;
     var rejectedAsk = M.store.data().rejectedAsk;
+    var rejectedLearned = M.store.data().rejectedLearned;
     var recoverySaved = M.store.data().recoveryCopySaved;
     var rejectedSummary = [];
 
@@ -141,6 +143,10 @@
 
     if (rejectedAsk) {
       rejectedSummary.push('Ask learning data');
+    }
+
+    if (rejectedLearned) {
+      rejectedSummary.push('room-learning data');
     }
 
     M.dialog.notice(

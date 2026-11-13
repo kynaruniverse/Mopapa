@@ -5695,6 +5695,42 @@ test('learned room scores stay dormant and unchanged', function () {
   assert.strictEqual(JSON.stringify(w.Mopapa.store.data().learned), before);
 });
 
+test('learning: damaged legacy room scores are cleaned and preserved on load', function () {
+  const raw = JSON.stringify({
+    entries: [],
+    learned: {
+      grocery: {
+        wishlist: 99,
+        broken: 'invalid'
+      },
+      invalid: 0
+    },
+    customRooms: []
+  });
+
+  const w = boot({ 'mopapa.v1': raw });
+
+  w.Mopapa.store.load();
+
+  const learned = w.Mopapa.store.data().learned;
+
+  assert.strictEqual(learned.grocery.wishlist, 99);
+  assert.strictEqual(learned.invalid, undefined);
+  assert.strictEqual(learned.grocery.broken, undefined);
+
+  assert.strictEqual(w.Mopapa.store.data().rejectedLearned, true);
+  assert.strictEqual(w.Mopapa.store.data().recoveryCopySaved, true);
+  assert.strictEqual(w.Mopapa.store.data().recoveryBlocked, false);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    raw
+  );
+});
+
 test('entry deletion preserves the exact original saved record', function () {
   const initial = stored([
     {
@@ -9559,6 +9595,24 @@ test('restore rejects damaged Ask learning data without changing existing data',
       aliases: [['invalid']],
       boosts: {},
       unanswered: []
+    }
+  });
+});
+
+test('restore rejects damaged legacy room-learning data without changing existing data', function () {
+  assertRestoreRejectsBackup({
+    entries: [
+      {
+        id: 'valid-entry',
+        text: 'Valid memory',
+        room: 'notes'
+      }
+    ],
+    learned: {
+      grocery: {
+        wishlist: 99,
+        broken: 'invalid'
+      }
     }
   });
 });

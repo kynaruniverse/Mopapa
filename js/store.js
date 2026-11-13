@@ -918,7 +918,25 @@ function load() {
         }
 
         data.entries = cleanedEntries;
-        data.learned = cleanLegacyLearned(p.learned);
+
+        var cleanedLearned = cleanLegacyLearned(p.learned);
+
+        if (
+          Object.prototype.hasOwnProperty.call(p, 'learned') &&
+          stableJSON(cleanedLearned) !== stableJSON(p.learned)
+        ) {
+          data.rejectedLearned = true;
+
+          var learnedRecoverySaved = preserveRecoveryCopy(raw);
+
+          data.recoveryCopySaved =
+            data.recoveryCopySaved === true || learnedRecoverySaved;
+
+          data.recoveryBlocked =
+            data.recoveryBlocked || !learnedRecoverySaved;
+        }
+
+        data.learned = cleanedLearned;
 
         var hasCustomRooms = Object.prototype.hasOwnProperty.call(
           p,
@@ -1436,7 +1454,9 @@ function load() {
             (
               !p.learned ||
               typeof p.learned !== 'object' ||
-              Array.isArray(p.learned)
+              Array.isArray(p.learned) ||
+              stableJSON(cleanLegacyLearned(p.learned)) !==
+                stableJSON(p.learned)
             )
           ) ||
           (
