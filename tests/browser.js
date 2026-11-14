@@ -1979,6 +1979,109 @@ async function run() {
     );
   });
 
+  await check('malformed JSON browser restore preserves every existing data domain', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem('mopapa.v1', JSON.stringify({
+        schemaVersion: 1,
+        entries: [
+          {
+            id: 'existing',
+            text: 'Existing memory must survive invalid restore',
+            room: 'notes'
+          }
+        ],
+        learned: {
+          example: 3
+        },
+        customRooms: [
+          {
+            id: 'custom_books',
+            name: 'Books',
+            icon: 'book'
+          }
+        ],
+        ask: {
+          aliases: [['gp', 'doctor']],
+          boosts: {
+            'gp doctor': {
+              existing: 2
+            }
+          },
+          unanswered: [
+            {
+              q: 'Who was that?',
+              at: '2026-01-01'
+            }
+          ]
+        }
+      }));
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    var beforeRaw = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    var beforeData = await savedData(page);
+
+    await page.locator('#file-import').setInputFiles({
+      name: 'malformed-backup.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{"schemaVersion":1,"entries":[')
+    });
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      return !document.querySelector('.app-dialog').open;
+    });
+
+    await page.waitForFunction(function () {
+      var bubble = document.getElementById('bubble');
+
+      return bubble &&
+        bubble.textContent.includes(
+          'existing saved data has been kept'
+        );
+    });
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      beforeRaw,
+      'Malformed JSON must not change the original persisted record'
+    );
+
+    var persistedData = await savedData(page);
+
+    assert.deepStrictEqual(
+      persistedData,
+      beforeData,
+      'Every persisted data domain must remain unchanged'
+    );
+
+    var inMemoryData = await page.evaluate(function () {
+      return JSON.parse(
+        JSON.stringify(window.Mopapa.store.data())
+      );
+    });
+
+    delete inMemoryData.roomRepairSaveFailed;
+
+    assert.deepStrictEqual(
+      inMemoryData,
+      beforeData,
+      'Every in-memory data domain must remain unchanged'
+    );
+  });
+  
   await check('duplicate IDs in a browser restore preserve existing data', async function (page) {
     await saveText(page, 'Existing memory must survive');
 
