@@ -2613,6 +2613,33 @@ async function run() {
       failureMessage.includes("couldn't restore"),
       'Expected the pet bubble or toast to explain the failed restore'
     );
+
+    assert.strictEqual(
+      await page.locator('#recovery-panel').isVisible(),
+      true,
+      'The recovery panel must become visible after a failed restore'
+    );
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      1,
+      'The recovery copy created before the failed restore must be listed'
+    );
+
+    var recoveryDownloadPromise = page.waitForEvent('download');
+
+    await page.locator('.recovery-copy-download').click();
+
+    var recoveryDownload = await recoveryDownloadPromise;
+    var recoveryPath = await recoveryDownload.path();
+
+    assert.ok(recoveryPath);
+
+    assert.strictEqual(
+      fs.readFileSync(recoveryPath, 'utf8'),
+      before,
+      'The exported recovery copy must exactly match the original pre-restore data'
+    );
   });
   
   await check('valid browser restore can recover from corrupt startup data', async function (page) {

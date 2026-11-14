@@ -351,6 +351,8 @@
               );
             }
 
+            renderRecoveryCopies();
+
             return;
           }
 
