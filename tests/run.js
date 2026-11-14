@@ -7410,7 +7410,8 @@ test('restore migrates legacy pound-string amounts before validation', function 
   assert.strictEqual(saved.entries[0].amount, 1200.5);
 });
 
-test('restore accepts valid structured money and location facts', function () {
+
+test('restore accepts every supported entry field with valid values', function () {
   const w = boot(stored());
 
   w.Mopapa.store.load();
@@ -7424,27 +7425,33 @@ test('restore accepts valid structured money and location facts', function () {
 
   let result = null;
 
+  const entry = {
+    id: 'complete-entry',
+    text: 'Keys are in the kitchen drawer and cost £12.50',
+    room: 'notes',
+    when: '2026-11-20T14:30:00.000Z',
+    hasTime: true,
+    done: true,
+    pinned: true,
+    created: '2026-11-13T09:15:00.000Z',
+    tags: ['home', 'important'],
+    amount: 12.5,
+    amounts: [12.5, 30],
+    fact: {
+      attr: 'location',
+      items: ['keys'],
+      prep: 'in',
+      where: 'the kitchen drawer',
+      value: 'in the kitchen drawer',
+      plural: false
+    }
+  };
+
   w.Mopapa.store.importJSON(
     {
-      size: 300,
+      size: 500,
       content: JSON.stringify({
-        entries: [
-          {
-            id: 'structured-entry',
-            text: 'Keys are in the kitchen drawer and cost £12.50',
-            room: 'notes',
-            amount: 12.5,
-            amounts: [12.5],
-            fact: {
-              attr: 'location',
-              items: ['keys'],
-              prep: 'in',
-              where: 'the kitchen drawer',
-              value: 'in the kitchen drawer',
-              plural: false
-            }
-          }
-        ]
+        entries: [entry]
       })
     },
     function (ok) {
@@ -7454,14 +7461,47 @@ test('restore accepts valid structured money and location facts', function () {
 
   assert.strictEqual(result, true);
 
-  const entry = w.Mopapa.store.data().entries[0];
+  const restored = w.Mopapa.store.data().entries[0];
 
-  assert.strictEqual(entry.amount, 12.5);
+  assert.strictEqual(restored.id, entry.id);
+  assert.strictEqual(restored.text, entry.text);
+  assert.strictEqual(restored.room, entry.room);
+  assert.strictEqual(restored.when, entry.when);
+  assert.strictEqual(restored.hasTime, true);
+  assert.strictEqual(restored.done, true);
+  assert.strictEqual(restored.pinned, true);
+  assert.strictEqual(restored.created, entry.created);
+
   assert.deepStrictEqual(
-    JSON.parse(JSON.stringify(entry.amounts)),
-    [12.5]
+    JSON.parse(JSON.stringify(restored.tags)),
+    ['home', 'important']
   );
-  assert.strictEqual(entry.fact.value, 'in the kitchen drawer');
+
+  assert.strictEqual(restored.amount, 12.5);
+
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(restored.amounts)),
+    [12.5, 30]
+  );
+
+  assert.strictEqual(restored.fact.attr, 'location');
+  assert.deepStrictEqual(
+    JSON.parse(JSON.stringify(restored.fact.items)),
+    ['keys']
+  );
+  assert.strictEqual(restored.fact.prep, 'in');
+  assert.strictEqual(restored.fact.where, 'the kitchen drawer');
+  assert.strictEqual(restored.fact.value, 'in the kitchen drawer');
+  assert.strictEqual(restored.fact.plural, false);
+
+  const saved = JSON.parse(w.localStorage._['mopapa.v1']);
+
+  assert.strictEqual(saved.entries.length, 1);
+  assert.strictEqual(saved.entries[0].when, entry.when);
+  assert.strictEqual(saved.entries[0].hasTime, true);
+  assert.strictEqual(saved.entries[0].done, true);
+  assert.strictEqual(saved.entries[0].pinned, true);
+  assert.deepStrictEqual(saved.entries[0].tags, entry.tags);
 });
 
 test('restore rejects malformed custom rooms without changing existing data', function () {
