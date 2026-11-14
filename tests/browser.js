@@ -2510,9 +2510,16 @@ async function run() {
       'Original saved memory'
     );
 
+    var saveMessage = await page.locator('#bubble').textContent();
+
     assert.ok(
-      (await page.locator('#bubble').textContent())
-        .includes("couldn't save")
+      saveMessage.includes('storage may be full'),
+      'Quota failures should explain that browser storage may be full'
+    );
+
+    assert.ok(
+      saveMessage.includes('Copy it somewhere safe'),
+      'The user should be told to preserve their unsaved text before retrying'
     );
   });
 

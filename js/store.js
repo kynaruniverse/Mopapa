@@ -1111,7 +1111,12 @@ function load() {
         }
       } catch (restoreError) {}
 
-      saveError = 'storage';
+      saveError = e && (
+        e.name === 'QuotaExceededError' ||
+        e.code === 22 ||
+        e.code === 1014
+      ) ? 'quota' : 'storage';
+
       return false;
     }
   }

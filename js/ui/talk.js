@@ -303,9 +303,13 @@ Mopapa.talk = (function () {
         Mopapa.pet.say(
           "I haven't saved this because some original data could not be preserved. Download the original data, keep it safe, then restore a valid backup. Your text is still in the box."
         );
+      } else if (Mopapa.store.saveError() === 'quota') {
+        Mopapa.pet.say(
+          "Your browser storage may be full. I couldn't save this memory. Your text is still in the box. Copy it somewhere safe before freeing storage space and trying again."
+        );
       } else {
         Mopapa.pet.say(
-          "I couldn't save this on your device. Your text is still in the box. Copy it or try again."
+          "I couldn't save this on your device. Your text is still in the box. Copy it somewhere safe before trying again."
         );
       }
 
