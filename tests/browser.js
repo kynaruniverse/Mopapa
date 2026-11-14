@@ -1742,7 +1742,11 @@ async function run() {
       ],
       ask: {
         aliases: [['gp', 'doctor']],
-        boosts: {},
+        boosts: {
+          'gp doctor': {
+            restored: 2
+          }
+        },
         unanswered: [{ q: 'Who was that?', at: '2026-01-01' }]
       }
     };
@@ -1770,13 +1774,48 @@ async function run() {
     var data = await savedData(page);
 
     assert.strictEqual(data.schemaVersion, 1);
+
     assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].id, 'restored');
     assert.strictEqual(data.entries[0].text, 'Restored memory');
-    assert.strictEqual(data.learned.example, 3);
-    assert.strictEqual(data.customRooms.length, 1);
-    assert.strictEqual(data.customRooms[0].name, 'Books');
-    assert.strictEqual(data.ask.aliases[0][0], 'gp');
-    assert.strictEqual(data.ask.unanswered.length, 1);
+
+    assert.deepStrictEqual(data.learned, {
+      example: 3
+    });
+
+    assert.deepStrictEqual(data.customRooms, [
+      {
+        id: 'custom_books',
+        name: 'Books',
+        icon: 'book'
+      }
+    ]);
+
+    assert.deepStrictEqual(data.ask.aliases, [
+      ['gp', 'doctor']
+    ]);
+
+    assert.strictEqual(
+      data.ask.boosts['gp doctor'].restored,
+      2
+    );
+
+    assert.deepStrictEqual(data.ask.unanswered, [
+      {
+        q: 'Who was that?',
+        at: '2026-01-01'
+      }
+    ]);
+
+    var inMemoryRaw = await page.evaluate(function () {
+      return JSON.stringify(window.Mopapa.store.data());
+    });
+
+    assert.deepStrictEqual(
+      JSON.parse(inMemoryRaw),
+      data,
+      'Complete in-memory state must match the persisted restored state'
+    );
 
     assert.ok(
       await page.locator('#bubble').textContent()
