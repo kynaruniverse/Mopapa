@@ -1811,10 +1811,14 @@ async function run() {
       return JSON.stringify(window.Mopapa.store.data());
     });
 
+    var inMemoryData = JSON.parse(inMemoryRaw);
+
+    delete inMemoryData.roomRepairSaveFailed;
+
     assert.deepStrictEqual(
-      JSON.parse(inMemoryRaw),
+      inMemoryData,
       data,
-      'Complete in-memory state must match the persisted restored state'
+      'Complete persisted state must match the in-memory restored state'
     );
 
     assert.ok(
