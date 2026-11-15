@@ -234,6 +234,33 @@ The warning recommends downloading and verifying copies outside the browser befo
 
 If the inventory cannot be inspected, Mopapa must not display a misleading count or estimate.
 
+### Protected-copy creation ceiling
+
+Mopapa applies a creation ceiling to protected recovery storage:
+
+- Maximum 10 protected copies.
+- Maximum estimated combined size of 10 MiB.
+- Both limits include corrupt-data copies and undated legacy recovery copies.
+- An existing identical corrupt-data copy can be reused without creating another copy.
+
+Before creating a new corrupt-data copy, the store inspects the protected
+inventory and checks the projected count and estimated size. If either
+limit would be exceeded, it refuses to create the additional copy.
+
+Existing protected copies are never automatically deleted to enforce
+these limits.
+
+When the limit prevents preservation, the original primary record is
+left unchanged, normal changes remain locked, and the user is directed
+to download the exact original data before attempting recovery.
+
+If the inventory cannot be inspected, creation fails closed.
+
+This is an application-level limit on new protected-copy creation, not
+a browser quota guarantee. It does not retroactively remove copies
+already present above the ceiling. The byte estimate uses two bytes per
+JavaScript string character and is not a measurement of actual browser
+storage consumption.
 
 ### Large-archive evidence and limitations
 

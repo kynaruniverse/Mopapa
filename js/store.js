@@ -3,6 +3,9 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
   var SCHEMA_VERSION = 1;
+
+  var MAX_PROTECTED_RECOVERY_COPIES = 10;
+  var MAX_PROTECTED_RECOVERY_BYTES = 10 * 1024 * 1024;
   var lastKnownRaw = null;
   var saveError = null;
   var data = {
@@ -712,11 +715,81 @@ function hasStoredCopy(prefix, rawData) {
   return false;
 }
 
+function protectedRecoveryUsage() {
+  var recoveryPrefix = KEY + '.recovery.';
+  var corruptPrefix = KEY + '.corrupt.';
+
+  var usage = {
+    count: 0,
+    estimatedBytes: 0
+  };
+
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+
+      if (!key) continue;
+
+      var isCorrupt = key.indexOf(corruptPrefix) === 0;
+      var isRecovery = key.indexOf(recoveryPrefix) === 0;
+
+      if (!isCorrupt && !isRecovery) continue;
+
+      var protectedCopy = isCorrupt;
+
+      if (isRecovery) {
+        var suffix = key.slice(recoveryPrefix.length);
+        var match = suffix.match(/^(\d+)(?:\.(\d+))?$/);
+        var timestamp = match ? Number(match[1]) : null;
+
+        protectedCopy =
+          timestamp === null || !isFinite(timestamp);
+      }
+
+      if (!protectedCopy) continue;
+
+      var raw = localStorage.getItem(key);
+
+      if (raw === null) return null;
+
+      usage.count++;
+      usage.estimatedBytes += raw.length * 2;
+    }
+  } catch (e) {
+    return null;
+  }
+
+  return usage;
+}
+
 function preserveCorruptCopy(rawData) {
   var prefix = KEY + '.corrupt.';
 
-  if (hasStoredCopy(prefix, rawData) === true) {
+  var existing = hasStoredCopy(prefix, rawData);
+
+  if (existing === true) {
     return true;
+  }
+
+  if (existing === null) {
+    return false;
+  }
+
+  var usage = protectedRecoveryUsage();
+
+  if (usage === null) {
+    return false;
+  }
+
+  var newEstimatedBytes = rawData.length * 2;
+
+  if (
+    usage.count >= MAX_PROTECTED_RECOVERY_COPIES ||
+    usage.estimatedBytes + newEstimatedBytes >
+      MAX_PROTECTED_RECOVERY_BYTES
+  ) {
+    data.corruptCopyLimitReached = true;
+    return false;
   }
 
   var base = prefix + Date.now();
@@ -731,7 +804,26 @@ function preserveCorruptCopy(rawData) {
 
     localStorage.setItem(key, rawData);
 
-    return localStorage.getItem(key) === rawData;
+    if (localStorage.getItem(key) !== rawData) {
+      return false;
+    }
+
+    var verifiedUsage = protectedRecoveryUsage();
+
+    if (verifiedUsage === null) {
+      return false;
+    }
+
+    if (
+      verifiedUsage.count > MAX_PROTECTED_RECOVERY_COPIES ||
+      verifiedUsage.estimatedBytes >
+        MAX_PROTECTED_RECOVERY_BYTES
+    ) {
+      data.corruptCopyLimitReached = true;
+      return false;
+    }
+
+    return true;
   } catch (e) {
     return false;
   }

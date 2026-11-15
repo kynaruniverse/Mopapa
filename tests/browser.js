@@ -2579,6 +2579,79 @@ async function run() {
     );
   });
 
+  await check('protected recovery limit preserves original data and offers original download', async function (page) {
+    var originalRaw = '{"entries": [this is deliberately corrupt';
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+
+      for (var i = 1; i <= 9; i++) {
+        localStorage.setItem(
+          'mopapa.v1.corrupt.' + (1000 + i),
+          'existing-corrupt-' + i
+        );
+      }
+
+      localStorage.setItem(
+        'mopapa.v1.recovery.legacy',
+        'legacy-protected-copy'
+      );
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    var notice = await page.locator('.app-dialog-text').textContent();
+
+    assert.ok(notice.includes('protected recovery-copy limit'));
+    assert.ok(notice.includes('Existing copies were not deleted'));
+    assert.ok(notice.includes('Download original data'));
+
+    await page.locator('.app-dialog-ok').click();
+
+    assert.strictEqual(
+      await page.locator('#btn-original-recovery-export').isVisible(),
+      true
+    );
+
+    assert.strictEqual(
+      await page.locator('.recovery-copy-item').count(),
+      10
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+
+    var downloadPromise = page.waitForEvent('download');
+
+    await page.locator('#btn-original-recovery-export').click();
+
+    var download = await downloadPromise;
+    var downloadPath = await download.path();
+
+    assert.ok(downloadPath);
+
+    assert.strictEqual(
+      require('node:fs').readFileSync(downloadPath, 'utf8'),
+      originalRaw
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      originalRaw
+    );
+
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes('protected recovery-copy limit')
+    );
+  });
+  
   await check('partially rejected startup data preserves the exact original recovery copy', async function (page) {
     var originalRaw = JSON.stringify({
       entries: [

@@ -986,6 +986,129 @@ test('different corrupt data still receives a separate recovery copy', function 
   );
 });
 
+test('protected recovery creation stops at the copy-count limit without deleting existing copies', function () {
+  const originalRaw = '{new corrupt data}';
+
+  const storage = {
+    'mopapa.v1': originalRaw,
+    'mopapa.v1.recovery.legacy': 'legacy-protected-copy'
+  };
+
+  for (let i = 1; i <= 9; i++) {
+    storage['mopapa.v1.corrupt.' + (1000 + i)] =
+      'existing-corrupt-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    false
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopyLimitReached,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    10
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.legacy'),
+    'legacy-protected-copy'
+  );
+
+  for (let i = 1; i <= 9; i++) {
+    assert.strictEqual(
+      w.localStorage.getItem(
+        'mopapa.v1.corrupt.' + (1000 + i)
+      ),
+      'existing-corrupt-' + i
+    );
+  }
+});
+
+
+test('protected recovery creation stops before exceeding the estimated byte limit', function () {
+  const originalRaw = '{new corrupt data}';
+  const existingLargeCopy =
+    'x'.repeat(5 * 1024 * 1024);
+
+  const w = boot({
+    'mopapa.v1': originalRaw,
+    'mopapa.v1.corrupt.1000': existingLargeCopy
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    false
+  );
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopyLimitReached,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    1
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.corrupt.1000'),
+    existingLargeCopy
+  );
+});
+
+
+test('an existing identical corrupt copy is reused even at the protected-copy limit', function () {
+  const originalRaw = '{same corrupt data}';
+
+  const storage = {
+    'mopapa.v1': originalRaw,
+    'mopapa.v1.corrupt.1000': originalRaw
+  };
+
+  for (let i = 1; i <= 9; i++) {
+    storage['mopapa.v1.corrupt.' + (2000 + i)] =
+      'existing-' + i;
+  }
+
+  const w = boot(storage);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopySaved,
+    true
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corruptCopyLimitReached,
+    undefined
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    10
+  );
+});
 
 test('reloading unchanged partially rejected data reuses its recovery copy', function () {
   const raw = JSON.stringify({

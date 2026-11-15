@@ -112,9 +112,11 @@
     );
   } else if (M.store.data().corrupt) {
     M.dialog.notice(
-      M.store.data().corruptCopySaved
-        ? 'Your saved data could not be read. A copy was preserved in this browser. Use Download recovery copy to save it to a file.'
-        : 'Your saved data could not be read, and the browser could not preserve a recovery copy. Use Download original data to save the exact original record before restoring a valid backup.'
+      M.store.data().corruptCopyLimitReached
+        ? 'Mopapa reached its protected recovery-copy limit. Existing copies were not deleted. The original saved data remains in this browser. Use Download original data to save it outside this browser before restoring a valid backup.'
+        : M.store.data().corruptCopySaved
+          ? 'Your saved data could not be read. A copy was preserved in this browser. Use Download recovery copy to save it to a file.'
+          : 'Your saved data could not be read, and the browser could not preserve a recovery copy. Use Download original data to save the exact original record before restoring a valid backup.'
     );
 
   } else if (
@@ -164,7 +166,11 @@
   if (M.store.data().storageUnavailable) {
     M.pet.say("I can't access your saved memories right now. Please reload me after checking browser storage. Don't enter new memories until then.");
   } else if (M.store.data().corrupt) {
-    M.pet.say("I couldn't read your saved memories, so I've locked normal changes to protect the original data. Download a recovery copy if available, or restore a valid backup.");
+    M.pet.say(
+      M.store.data().corruptCopyLimitReached
+        ? "I've reached the protected recovery-copy limit. I haven't deleted existing copies, and I've locked changes to protect the original data. Download the original data before restoring a valid backup."
+        : "I couldn't read your saved memories, so I've locked normal changes to protect the original data. Download a recovery copy if available, or restore a valid backup."
+    );
   } else if (M.store.data().recoveryBlocked) {
     M.pet.say("Some saved data was invalid, and I couldn't preserve the original record separately. I've locked changes to protect it. Download the original data before restoring a valid backup.");
   } else {
@@ -252,19 +258,19 @@
 
     var protectionWarning =
       protectedCopies.length >= 3 ||
-      protectedBytes >= 10485760;
-
+      protectedBytes >= 8 * 1048576;
+      
     recoveryProtectionSummary.hidden = copies.length === 0;
     recoveryProtectionSummary.textContent =
       'Protected copies: ' + protectedCopies.length +
       ' · estimated ' + protectedSize +
-      '. This includes corrupt-data and undated legacy copies, which are not automatically pruned.';
+      '. This includes corrupt-data and undated legacy copies. New protected copies stop at 10 copies or an estimated 10 MiB. Existing copies are never automatically deleted.';
 
     recoveryProtectionWarning.hidden =
       copies.length === 0 || !protectionWarning;
 
     recoveryProtectionWarning.textContent = protectionWarning
-      ? 'Protected recovery storage is accumulating. Download and verify copies outside this browser, then consider deleting copies you no longer need. This estimate does not reveal the browser storage quota.'
+      ? 'Protected recovery storage is accumulating. Download and verify copies outside this browser, then consider deleting copies you no longer need. Mopapa will not create more protected copies after 10 copies or an estimated 10 MiB. Existing copies are not automatically deleted. This estimate does not reveal the browser storage quota.'
       : '';
 
     recoveryButton.hidden = copies.length === 0;
