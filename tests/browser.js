@@ -1885,6 +1885,113 @@ async function run() {
     );
   });
 
+  await check('exported full backup restores every saved state domain', async function (page) {
+    var original = {
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'backup-drill-original',
+          text: 'Original memory from exported backup',
+          room: 'notes',
+          created: '2026-10-01T10:00:00.000Z'
+        }
+      ],
+      learned: {
+        example: 3
+      },
+      customRooms: [
+        {
+          id: 'custom_backup_drill',
+          name: 'Backup drill',
+          icon: 'book'
+        }
+      ],
+      ask: {
+        aliases: [['gp', 'doctor']],
+        boosts: {
+          'gp doctor': {
+            backup: 2
+          }
+        },
+        unanswered: [
+          {
+            q: 'Where was the original appointment?',
+            at: '2026-10-01'
+          }
+        ]
+      }
+    };
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, JSON.stringify(original));
+
+    await page.reload({ waitUntil: 'load' });
+
+    var downloadPromise = page.waitForEvent('download');
+
+    await page.locator('#btn-export').click();
+
+    var download = await downloadPromise;
+    var backupPath = await download.path();
+
+    assert.ok(backupPath);
+
+    var exported = JSON.parse(
+      fs.readFileSync(backupPath, 'utf8')
+    );
+
+    assert.strictEqual(exported.schemaVersion, 1);
+    assert.strictEqual(exported.entries.length, 1);
+    assert.strictEqual(
+      exported.entries[0].id,
+      'backup-drill-original'
+    );
+    assert.deepStrictEqual(exported.learned, original.learned);
+    assert.deepStrictEqual(exported.customRooms, original.customRooms);
+    assert.deepStrictEqual(exported.ask.aliases, original.ask.aliases);
+    assert.deepStrictEqual(exported.ask.boosts, original.ask.boosts);
+    assert.deepStrictEqual(
+      exported.ask.unanswered,
+      original.ask.unanswered
+    );
+
+    await saveText(page, 'Temporary replacement memory');
+
+    var changed = await savedData(page);
+
+    assert.strictEqual(changed.entries.length, 2);
+
+    await page.locator('#file-import').setInputFiles(backupPath);
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    await page.waitForFunction(function () {
+      var data = JSON.parse(localStorage.getItem('mopapa.v1') || '{}');
+
+      return data.entries &&
+        data.entries.length === 1 &&
+        data.entries[0].id === 'backup-drill-original';
+    });
+
+    var restored = await savedData(page);
+
+    assert.deepStrictEqual(restored.entries, exported.entries);
+    assert.deepStrictEqual(restored.learned, exported.learned);
+    assert.deepStrictEqual(restored.customRooms, exported.customRooms);
+    assert.deepStrictEqual(restored.ask.aliases, exported.ask.aliases);
+    assert.deepStrictEqual(restored.ask.boosts, exported.ask.boosts);
+    assert.deepStrictEqual(
+      restored.ask.unanswered,
+      exported.ask.unanswered
+    );
+  });
+
   await check('downloaded recovery copy can restore the complete previous state', async function (page) {
     var original = {
       schemaVersion: 1,

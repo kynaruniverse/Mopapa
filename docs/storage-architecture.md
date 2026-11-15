@@ -181,6 +181,50 @@ Recovery copies remain in the same browser storage environment as the primary re
 
 A successful persistence request can reduce the risk of automatic browser eviction, but it is not an external backup and cannot guarantee permanent retention.
 
+## Repeatable backup and recovery drill
+
+The browser test suite includes a repeatable normal-backup round-trip:
+
+1. Seed a known state containing a saved entry, learned data, a custom room and Ask learning.
+2. Reload Mopapa and use the normal Back up data control.
+3. Capture the downloaded JSON file and verify that every expected state domain is present.
+4. Add a temporary replacement memory.
+5. Restore the downloaded backup through the normal Restore backup control.
+6. Verify that the original entry and all exported state domains have been restored.
+7. Verify that the temporary replacement memory is no longer present.
+
+The test is named `exported full backup restores every saved state domain`.
+
+A separate browser test, `downloaded recovery copy can restore the complete previous state`, verifies the recovery-copy route after replacement data has been imported.
+
+Invalid-backup preservation and failed-restore recovery export are covered by separate browser tests.
+
+### Manual browser drill
+
+For a real browser download and recovery check, use non-critical test data:
+
+1. Create a test memory and a custom room. Include representative Ask learning data if available.
+2. Select Back up data.
+3. Locate the downloaded JSON file and confirm that it exists, has non-zero size and contains valid JSON.
+4. Keep the file somewhere independent of Mopapa's browser storage.
+5. Change or remove the test memory in Mopapa.
+6. Select Restore backup and choose the downloaded file.
+7. Confirm the replacement operation.
+8. Check that the original memory, custom room and other included state have returned.
+9. Create another backup and verify that it contains the restored state.
+
+Do not clear browser storage until the restored data has been checked.
+
+### What the drill proves and does not prove
+
+The automated browser test verifies that the application can generate a readable backup file and restore it successfully in the test browser.
+
+The manual drill checks the actual browser download and file-handling experience.
+
+Neither a successful download event nor a successful automated test proves that a user has retained a backup in a safe, independent location. The user must check the downloaded file and keep it separately.
+
+The drill does not simulate device loss, operating-system failure, browser-profile deletion or every possible storage interruption.
+
 ## Why IndexedDB is not being adopted yet
 
 IndexedDB offers asynchronous operations, structured records, indexes and more flexibility for larger datasets.
