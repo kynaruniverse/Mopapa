@@ -1214,6 +1214,46 @@ async function run() {
     );
   });
 
+  await check('saved memories survive page interruption while an unsaved draft does not', async function (page) {
+    var savedText = 'Original memory before page interruption';
+    var draftText = 'Unsubmitted draft interrupted before saving';
+
+    await saveText(page, savedText);
+    await page.locator('#talk-input').fill(draftText);
+
+    var context = page.context();
+
+    await page.close();
+
+    var reopenedPage = await context.newPage();
+    var pageErrors = [];
+
+    reopenedPage.on('pageerror', function (error) {
+      pageErrors.push(error.message);
+    });
+
+    await reopenedPage.route(
+      /^https:\/\/fonts\.(googleapis|gstatic)\.com\//,
+      function (route) {
+        return route.abort();
+      }
+    );
+
+    await reopenedPage.goto(baseUrl, { waitUntil: 'load' });
+
+    var data = await savedData(reopenedPage);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, savedText);
+
+    assert.strictEqual(
+      await reopenedPage.locator('#talk-input').inputValue(),
+      ''
+    );
+
+    assert.deepStrictEqual(pageErrors, []);
+  });
+  
   await check('Ask mode does not file an unanswered question as a memory', async function (page) {
     await page.locator('#talk-mode-ask').click();
 
