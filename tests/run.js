@@ -6820,7 +6820,7 @@ test('backup interface supports export and restore without claiming a backup tim
   assert.ok(main.includes('Backup restored successfully.'));
   assert.ok(main.includes('file.size > 5 * 1024 * 1024'));
   assert.ok(!main.includes('mopapa.lastBackup'));
-  assert.ok(main.includes('Backup download started. Check your Downloads folder before relying on it.'));
+  assert.ok(main.includes("Download started. I can't confirm the file was saved."));
 });
 
 test('restore imports entries, room-learning data and Ask learning data', function () {
