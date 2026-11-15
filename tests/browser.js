@@ -1901,7 +1901,7 @@ async function run() {
       },
       customRooms: [
         {
-          id: 'custom_backup_drill',
+          id: 'custom_backupdrill',
           name: 'Backup drill',
           icon: 'book'
         }
@@ -2000,7 +2000,11 @@ async function run() {
           id: 'drill-original',
           text: 'Original memory must return',
           room: 'notes',
-          created: '2026-10-01T10:00:00.000Z'
+          created: '2026-10-01T10:00:00.000Z',
+          hasTime: false,
+          done: false,
+          pinned: false,
+          tags: []
         }
       ],
       learned: {
