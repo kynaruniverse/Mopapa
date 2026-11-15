@@ -581,8 +581,21 @@ async function run() {
 
     assert.strictEqual(await items.count(), 5);
 
+
     var labels = await items.locator('.recovery-copy-label').allTextContents();
 
+    assert.deepStrictEqual(labels, [
+      'Corrupt-data copy',
+      'Corrupt-data copy',
+      'Saved-data recovery copy',
+      'Saved-data recovery copy',
+      'Saved-data recovery copy'
+    ]);
+
+    var dates = await items.locator('.recovery-copy-date').allTextContents();
+
+    assert.ok(dates[0].includes('Copy 11'));
+    assert.ok(dates[1].includes('Copy 10'));
     assert.ok(dates[4].includes('Date unavailable'));
 
     var protectionSummary = page.locator(
@@ -606,11 +619,6 @@ async function run() {
       (await protectionWarning.textContent())
         .includes('does not reveal the browser storage quota')
     );
-
-    var dates = await items.locator('.recovery-copy-date').allTextContents();
-
-    assert.ok(dates[0].includes('Copy 11'));
-    assert.ok(dates[1].includes('Copy 10'));
 
     assert.strictEqual(
       await page.locator('.recovery-copy-download').count(),
