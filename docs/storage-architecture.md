@@ -109,8 +109,30 @@ The browser interruption test verifies that a previously saved memory
 survives closing and reopening the page. It does not simulate an
 operating-system crash or power loss during a write.
 
+
 Quota failures are simulated in tests. Real quota behaviour can vary
 between browsers, devices and available storage conditions.
+
+### Storage failure outcome matrix
+
+| Scenario | Application behaviour | User-facing outcome and safe action | Verification boundary |
+|---|---|---|---|
+| Storage cannot be read during startup | Mopapa marks storage unavailable, does not load existing memories into the working state, and blocks normal saves and restores. | The user is told not to add or restore data, to check browser storage permissions and reload. | Unit and browser tests simulate primary-record read failure. |
+| Storage becomes unreadable during a save or restore | The operation is rejected before replacing the primary record. | The user is told that storage could not be accessed and the operation did not proceed. | Unit tests cover failed reads during save and restore. Browser tests cover inaccessible storage and blocked writes. |
+| A write fails because storage is full | Mopapa attempts best-effort restoration of the previous primary record. The operation reports a quota failure. | The user is told storage may be full. Unsaved text should be copied somewhere safe before freeing space and retrying. | Quota exceptions are simulated in browser tests. Actual device quota behaviour remains unverified. |
+| A write fails for another reason | Mopapa attempts best-effort restoration. The save is rejected and the affected application operation must revert its in-memory change. | The user is told the operation failed. Original saved data must not be described as changed successfully. | Unit tests cover failed writes, readback mismatch and operation rollback. |
+| Readback does not match the attempted write | Mopapa treats the save as failed and attempts to restore the previous primary value. | The user receives a save-failure outcome, not a success confirmation. | Unit tests simulate altered readback content. |
+| The primary record changes in another tab | Mopapa rejects the stale write or restore rather than overwriting newer data. | The user is told to reload Mopapa and review the current memories before retrying. | Unit and browser conflict tests. |
+| The tab is read-only | Save and restore operations are rejected. | The user is told to close the other writable tab and reload before editing or restoring. | Unit and browser tests cover write ownership and restore rejection. |
+| A backup is invalid or cannot be read | The import is rejected before replacing existing data. | The user is told the restore failed and existing saved data was kept. They should choose a valid backup. | Unit and browser tests cover malformed JSON, invalid records, unsupported schemas, oversized files and file-reading failures. |
+| A recovery copy cannot be secured before restore | The restore is cancelled before replacement. | The user is told that the existing data was not replaced. They should not retry by bypassing recovery protection. | Unit tests cover recovery-copy creation failure. |
+| Recovery inventory cannot be inspected | Mopapa keeps the recovery panel visible, hides unavailable download controls and does not delete copies. | The user is told that copies may still exist, to keep browser storage intact and try again later. | Unit and browser tests simulate enumeration failure. |
+| The page closes or reloads after a successful save | Previously saved memories remain available after reopening. An unsaved composer draft is not guaranteed to survive. | The user must save a memory before relying on it being retained. | Browser test covers page close and reopen, not an operating-system crash or power loss during a write. |
+
+These outcomes describe the implemented and tested behaviour, not an
+absolute guarantee against data loss. In particular, best-effort rollback
+can itself fail if the browser rejects the restoration write.
+
 
 The guarantees in this document are limited to the implemented
 behaviour and tested scenarios. They must not be presented as a
