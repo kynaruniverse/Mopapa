@@ -185,6 +185,37 @@ The current retention policy is count-based, not size-based.
 - Cleanup failure does not invalidate an already verified recovery copy.
 - Legacy copies with unrecognisable timestamps are retained rather than automatically pruned.
 
+### User-controlled recovery-copy deletion
+
+Ordinary timestamped recovery copies are automatically retained according
+to the existing newest-20 policy, with a protected current-data copy where
+required.
+
+Corrupt-data copies and legacy copies with unrecognisable timestamps are
+never automatically deleted.
+
+The recovery inventory provides individual deletion controls. Deletion
+requires the user to download the copy, open and verify the external file,
+and enter the exact confirmation phrase:
+
+`VERIFIED EXTERNAL COPY`
+
+This is an explicit user attestation. Mopapa cannot independently verify
+that the external file was retained or is usable.
+
+Deletion is restricted to keys present in the currently inspectable
+recovery inventory. The store verifies that the key is absent after
+removal. If inventory inspection, removal or verification fails, deletion
+is not reported as successful.
+
+When the recovery inventory cannot be inspected, deletion controls are
+not available.
+
+This policy permits deliberate cleanup while avoiding silent deletion of
+potentially recoverable data. It does not create a hard byte-size limit:
+protected copies can accumulate until the user verifies external copies
+and deliberately removes them.
+
 ### Large-archive evidence and limitations
 
 The CI browser benchmark measured a synthetic archive of 3,000 entries, each containing 1,000 characters. Its JSON representation was approximately 3,533,000 characters, or 7,066,000 bytes using a rough two-bytes-per-character estimate.

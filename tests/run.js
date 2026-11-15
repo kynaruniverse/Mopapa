@@ -1211,6 +1211,105 @@ test('recovery copies are ordered by numeric timestamp and collision suffix', fu
   assert.strictEqual(copies[2].sequence, 0);
 });
 
+test('recovery deletion requires external verification and a listed copy', function () {
+  const w = boot({
+    'mopapa.v1': 'primary-data',
+    'mopapa.v1.recovery.1000': 'recovery-data',
+    'mopapa.v1.corrupt.2000': 'corrupt-data'
+  });
+
+  const key = 'mopapa.v1.recovery.1000';
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy(key, ''),
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy(key, 'wrong phrase'),
+    false
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy('mopapa.v1', 'VERIFIED EXTERNAL COPY'),
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem(key),
+    'recovery-data'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy(key, 'VERIFIED EXTERNAL COPY'),
+    true
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem(key),
+    null
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    'primary-data'
+  );
+});
+
+test('recovery deletion fails closed when inventory cannot be inspected', function () {
+  const w = boot({
+    'mopapa.v1.recovery.1000': 'preserved-data'
+  });
+
+  Object.defineProperty(w.localStorage, 'length', {
+    get: function () {
+      throw new Error('simulated inventory failure');
+    }
+  });
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy(
+      'mopapa.v1.recovery.1000',
+      'VERIFIED EXTERNAL COPY'
+    ),
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1.recovery.1000'],
+    'preserved-data'
+  );
+});
+
+test('recovery deletion reports failure when browser refuses removal', function () {
+  const w = boot({
+    'mopapa.v1.recovery.1000': 'preserved-data'
+  });
+
+  const originalRemove = w.localStorage.removeItem;
+
+  w.localStorage.removeItem = function (key) {
+    if (key === 'mopapa.v1.recovery.1000') {
+      throw new Error('simulated removal failure');
+    }
+
+    return originalRemove.call(this, key);
+  };
+
+  assert.strictEqual(
+    w.Mopapa.store.deleteRecoveryCopy(
+      'mopapa.v1.recovery.1000',
+      'VERIFIED EXTERNAL COPY'
+    ),
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1.recovery.1000'),
+    'preserved-data'
+  );
+});
+
 test('recovery retention keeps the 20 newest ordinary copies', function () {
   const storage = {
     'mopapa.v1': JSON.stringify({

@@ -600,6 +600,63 @@ async function run() {
     );
   });
   
+  await check('recovery deletion requires explicit external verification', async function (page) {
+    await page.evaluate(function () {
+      localStorage.setItem(
+        'mopapa.v1.corrupt.7000',
+        'original-corrupt-data'
+      );
+    });
+
+    await page.reload({ waitUntil: 'load' });
+
+    var deleteButton = page.locator('.recovery-copy-delete');
+
+    assert.strictEqual(await deleteButton.count(), 1);
+
+    await deleteButton.click();
+
+    assert.strictEqual(
+      await page.locator('.app-dialog').isVisible(),
+      true
+    );
+
+    var warning = await page.locator('.app-dialog-text').textContent();
+
+    assert.ok(warning.includes('only preserved version'));
+    assert.ok(warning.includes('cannot confirm'));
+    assert.ok(warning.includes('VERIFIED EXTERNAL COPY'));
+
+    await page.locator('.app-dialog-cancel').click();
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1.corrupt.7000');
+      }),
+      'original-corrupt-data'
+    );
+
+    await page.locator('.recovery-copy-delete').click();
+
+    await page.locator('.app-dialog-field').fill(
+      'VERIFIED EXTERNAL COPY'
+    );
+
+    await page.locator('.app-dialog-ok').click();
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1.corrupt.7000');
+      }),
+      null
+    );
+
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes('deleted from this browser')
+    );
+  });
+  
   await check('recovery downloads have distinct filenames and preserve exact contents', async function (page) {
     await page.evaluate(function () {
       localStorage.setItem(
@@ -745,6 +802,11 @@ async function run() {
       0
     );
 
+    assert.strictEqual(
+      await page.locator('.recovery-copy-delete').count(),
+      0
+    );
+    
     assert.strictEqual(
       await page.locator('#btn-recovery-export').isVisible(),
       false

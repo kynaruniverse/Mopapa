@@ -227,11 +227,30 @@ button:disabled{cursor:not-allowed;opacity:.55}
   background:var(--raised);
   color:var(--text)
 }
+
+.recovery-copy-actions{
+  display:flex;
+  flex:none;
+  gap:8px;
+  flex-wrap:wrap
+}
+.recovery-copy-delete{
+  flex:none;
+  min-height:44px;
+  padding:8px 12px;
+  border:1px solid var(--line);
+  border-radius:var(--r);
+  background:var(--raised);
+  color:var(--text)
+}
 @media(max-width:360px){
   .recovery-copy-item{
     align-items:flex-start;
     flex-direction:column
   }
+  .recovery-copy-actions{
+    width:100%
+  }  
 }
 
 /* Browser storage protection */

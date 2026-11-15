@@ -1279,6 +1279,41 @@ function load() {
     return copies;
   }
 
+  function deleteRecoveryCopy(key, confirmation) {
+    if (confirmation !== 'VERIFIED EXTERNAL COPY') {
+      return false;
+    }
+
+    var copies = recoveryCopies();
+
+    if (copies === null || typeof key !== 'string') {
+      return false;
+    }
+
+    var found = false;
+
+    for (var i = 0; i < copies.length; i++) {
+      if (copies[i].key === key) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) return false;
+
+    try {
+      if (localStorage.getItem(key) === null) {
+        return false;
+      }
+
+      localStorage.removeItem(key);
+
+      return localStorage.getItem(key) === null;
+    } catch (e) {
+      return false;
+    }
+  }
+  
   function exportRecoveryCopy(key) {
     var copies = recoveryCopies();
 
@@ -1544,6 +1579,7 @@ function load() {
     exportJSON: exportJSON,
     exportOriginalRecoveryCopy: exportOriginalRecoveryCopy,
     recoveryCopies: recoveryCopies,
+    deleteRecoveryCopy: deleteRecoveryCopy,
     exportRecoveryCopy: exportRecoveryCopy,
     importJSON: importJSON
   };

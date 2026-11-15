@@ -236,12 +236,15 @@
       var details = document.createElement('div');
       var label = document.createElement('p');
       var date = document.createElement('p');
+      var actions = document.createElement('div');
       var button = document.createElement('button');
+      var deleteButton = document.createElement('button');
 
       item.className = 'recovery-copy-item';
       details.className = 'recovery-copy-details';
       label.className = 'recovery-copy-label';
       date.className = 'recovery-copy-date';
+      actions.className = 'recovery-copy-actions';
 
       label.textContent = copy.kind === 'corrupt'
         ? 'Corrupt-data copy'
@@ -273,10 +276,48 @@
         }
       });
 
+      deleteButton.type = 'button';
+      deleteButton.className = 'recovery-copy-delete';
+      deleteButton.textContent = 'Delete copy';
+
+      deleteButton.addEventListener('click', function () {
+        var warning = copy.kind === 'corrupt'
+          ? 'This is a corrupt-data copy. It may be the only preserved version of data Mopapa could not read. '
+          : 'This recovery copy may contain memories no longer present in your current saved data. ';
+
+        warning +=
+          'Download it, open the file and verify its contents outside Mopapa first. ' +
+          'Mopapa cannot confirm that a downloaded file was retained or is usable. ' +
+          'Deleting this copy removes it permanently from this browser. ' +
+          'If you have verified an external copy, type exactly: VERIFIED EXTERNAL COPY. Otherwise cancel.';
+
+        M.dialog.prompt(
+          warning,
+          '',
+          'Delete copy',
+          function (confirmation) {
+            if (confirmation !== 'VERIFIED EXTERNAL COPY') {
+              M.pet.say('Nothing was deleted. The confirmation phrase did not match.');
+              return;
+            }
+
+            if (M.store.deleteRecoveryCopy(copy.key, confirmation)) {
+              renderRecoveryCopies();
+              M.pet.say('Recovery copy deleted from this browser. Mopapa cannot restore it from this browser.');
+            } else {
+              renderRecoveryCopies();
+              M.pet.say("I couldn't confirm that the recovery copy was deleted. Keep browser storage intact and check the recovery inventory again.");
+            }
+          }
+        );
+      });
+
       details.appendChild(label);
       details.appendChild(date);
+      actions.appendChild(button);
+      actions.appendChild(deleteButton);
       item.appendChild(details);
-      item.appendChild(button);
+      item.appendChild(actions);
       recoveryList.appendChild(item);
     });
   }
