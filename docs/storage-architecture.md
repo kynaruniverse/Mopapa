@@ -152,14 +152,28 @@ Data stored in one browser profile is not automatically synchronised to another 
 
 Recovery copies are stored separately from the main record and consume additional browser storage.
 
-The current retention policy allows a maximum of 20 ordinary recovery copies.
+The current retention policy is count-based, not size-based.
 
-- Corrupt-data recovery copies are never automatically pruned.
-- The copy matching the current saved data is protected.
+- The 20 newest timestamped ordinary recovery copies are retained.
+- The copy matching the current saved data is additionally protected, even when it is older than those 20 copies. The inventory can therefore contain 21 ordinary copies.
+- Recovery copies contain the full original JSON record. Their storage cost grows with both archive size and the number of retained copies.
+- Corrupt-data recovery copies are never automatically pruned and can accumulate without a fixed limit.
 - A new recovery copy must be written and read back successfully before pruning begins.
 - If the recovery inventory cannot be inspected, no copies are deleted.
 - Cleanup failure does not invalidate an already verified recovery copy.
 - Legacy copies with unrecognisable timestamps are retained rather than automatically pruned.
+
+### Large-archive evidence and limitations
+
+The CI browser benchmark measured a synthetic archive of 3,000 entries, each containing 1,000 characters. Its JSON representation was approximately 3,533,000 characters, or 7,066,000 bytes using a rough two-bytes-per-character estimate.
+
+At that size, 20 full copies would represent approximately 141 MB of estimated data, or approximately 148 MB if the additional protected current-data copy is retained.
+
+These figures are projections, not measured browser storage consumption or guaranteed quota requirements. Browser storage accounting and available quotas vary.
+
+The existing retention tests verify copy counts, ordering, protected-copy behaviour and cleanup failures using small synthetic copies. They do not demonstrate that 20 full-size archives can be retained within realistic mobile browser storage limits.
+
+The current policy therefore provides a count limit for ordinary copies, not a reliable storage-size limit. Large-archive quota behaviour remains an explicit testing gap.
 
 Recovery copies remain in the same browser storage environment as the primary record. They are not a substitute for exporting a backup to another location.
 
