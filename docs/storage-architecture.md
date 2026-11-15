@@ -37,6 +37,85 @@ The current implementation:
 
 The persistence request is best-effort. Browser storage protection is not a guarantee against manual clearing, browser failure, device loss or other data-loss events.
 
+## Write and rollback guarantees
+
+Mopapa uses a verified, best-effort write process. It does not provide an
+atomic database transaction or an absolute guarantee that a failed write
+can always be reversed.
+
+### What a normal save does
+
+1. Check that the current stored primary record matches the last-known
+   record. If it differs, reject the save as a conflict.
+2. Serialise the current application state.
+3. Write the new JSON value to `mopapa.v1`.
+4. Read the value back and compare it with the exact attempted value.
+5. Report success and update the last-known record only after that
+   comparison succeeds.
+
+A write exception or failed readback is treated as a failed save.
+
+### What happens when a write fails
+
+Mopapa attempts to restore the previous primary storage value. If no
+previous value existed, it attempts to remove the newly written value.
+
+This restoration is best-effort. If the browser also rejects the
+restoration operation, Mopapa cannot guarantee that the previous
+primary value has been recovered.
+
+The application does not update its last-known conflict baseline after
+a failed save.
+
+### In-memory rollback
+
+The storage layer does not automatically reverse every change made to
+the in-memory application state.
+
+Individual operations are responsible for reverting their own changes
+when persistence fails. The current entry operations explicitly restore
+the affected fields. Tests cover failed edits, tag changes, completion
+changes, pin changes, room moves and deletion.
+
+Restore operations have their own rollback handling for the application
+state domains covered by the restore tests.
+
+A future operation that changes application state must implement and
+test its own rollback behaviour. A failed call to `store.save()` alone
+must not be treated as proof that in-memory state was reverted.
+
+### What these checks do not guarantee
+
+- They do not make localStorage writes transactional across all
+  application state.
+- They do not guarantee rollback if the browser rejects the rollback
+  write.
+- They do not protect against browser profile deletion, manual storage
+  clearing, device loss or physical failure.
+- They do not provide synchronisation between devices.
+- They do not replace an exported backup stored somewhere independent
+  of the browser profile.
+- They do not prove that a download was retained by the user.
+- They do not simulate every possible interruption during a storage
+  operation.
+
+### Evidence and test boundaries
+
+The automated tests cover failed writes, silent write failures,
+altered readback content, retry after failure, conflict protection,
+entry-operation rollback and restore rollback.
+
+The browser interruption test verifies that a previously saved memory
+survives closing and reopening the page. It does not simulate an
+operating-system crash or power loss during a write.
+
+Quota failures are simulated in tests. Real quota behaviour can vary
+between browsers, devices and available storage conditions.
+
+The guarantees in this document are limited to the implemented
+behaviour and tested scenarios. They must not be presented as a
+guarantee against all forms of data loss.
+
 ## Why localStorage remains appropriate for now
 
 The current application is relatively small and has no demonstrated need for database-level querying, large binary attachments or complex transactions.
