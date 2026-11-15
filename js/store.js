@@ -1219,6 +1219,7 @@ function load() {
     }
   }
 
+
   function recoveryCopies() {
     var copies = [];
     var recoveryPrefix = KEY + '.recovery.';
@@ -1242,6 +1243,7 @@ function load() {
 
         if (!kind) continue;
 
+        var raw = localStorage.getItem(key);
         var match = suffix.match(/^(\d+)(?:\.(\d+))?$/);
         var timestamp = match ? Number(match[1]) : null;
         var sequence = match && match[2]
@@ -1254,7 +1256,9 @@ function load() {
           timestamp: timestamp !== null && isFinite(timestamp)
             ? timestamp
             : null,
-          sequence: isFinite(sequence) ? sequence : 0
+          sequence: isFinite(sequence) ? sequence : 0,
+          protected: kind === 'corrupt' || timestamp === null,
+          estimatedBytes: raw === null ? 0 : raw.length * 2
         });
       }
     } catch (e) {

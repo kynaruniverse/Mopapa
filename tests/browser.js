@@ -567,6 +567,7 @@ async function run() {
       localStorage.setItem('mopapa.v1.recovery.2000', 'newer');
       localStorage.setItem('mopapa.v1.corrupt.2000.9', 'ninth');
       localStorage.setItem('mopapa.v1.corrupt.2000.10', 'tenth');
+      localStorage.setItem('mopapa.v1.recovery.not-a-date', 'legacy');
     });
 
     await page.reload({ waitUntil: 'load' });
@@ -578,16 +579,33 @@ async function run() {
 
     var items = page.locator('.recovery-copy-item');
 
-    assert.strictEqual(await items.count(), 4);
+    assert.strictEqual(await items.count(), 5);
 
     var labels = await items.locator('.recovery-copy-label').allTextContents();
 
-    assert.deepStrictEqual(labels, [
-      'Corrupt-data copy',
-      'Corrupt-data copy',
-      'Saved-data recovery copy',
-      'Saved-data recovery copy'
-    ]);
+    assert.ok(dates[4].includes('Date unavailable'));
+
+    var protectionSummary = page.locator(
+      '#recovery-protection-summary'
+    );
+
+    assert.strictEqual(await protectionSummary.isVisible(), true);
+
+    assert.ok(
+      (await protectionSummary.textContent())
+        .includes('Protected copies: 3')
+    );
+
+    var protectionWarning = page.locator(
+      '#recovery-protection-warning'
+    );
+
+    assert.strictEqual(await protectionWarning.isVisible(), true);
+
+    assert.ok(
+      (await protectionWarning.textContent())
+        .includes('does not reveal the browser storage quota')
+    );
 
     var dates = await items.locator('.recovery-copy-date').allTextContents();
 
@@ -596,7 +614,7 @@ async function run() {
 
     assert.strictEqual(
       await page.locator('.recovery-copy-download').count(),
-      4
+      5
     );
   });
   

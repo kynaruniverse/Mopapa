@@ -1593,6 +1593,55 @@ test('recovery inventory retains malformed legacy keys without misdating them', 
   assert.strictEqual(copies[1].key, 'mopapa.v1.recovery.not-a-date');
 });
 
+
+test('recovery inventory estimates protected copy storage without counting ordinary copies', function () {
+  const w = boot({
+    'mopapa.v1.corrupt.2000': 'bad',
+    'mopapa.v1.recovery.not-a-date': 'legacy-data',
+    'mopapa.v1.recovery.1000': 'ordinary'
+  });
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 3);
+
+  const protectedCopies = copies.filter(function (copy) {
+    return copy.protected;
+  });
+
+  assert.strictEqual(protectedCopies.length, 2);
+
+  assert.strictEqual(
+    protectedCopies.reduce(function (total, copy) {
+      return total + copy.estimatedBytes;
+    }, 0),
+    28
+  );
+
+  assert.strictEqual(copies[0].protected, true);
+  assert.strictEqual(copies[0].estimatedBytes, 6);
+  assert.strictEqual(copies[1].protected, false);
+  assert.strictEqual(copies[1].estimatedBytes, 16);
+  assert.strictEqual(copies[2].protected, true);
+  assert.strictEqual(copies[2].estimatedBytes, 22);
+});
+
+test('recovery inventory fails closed when a copy cannot be read', function () {
+  const w = boot({
+    'mopapa.v1.corrupt.2000': 'preserved data'
+  });
+
+  w.localStorage.getItem = function () {
+    throw new Error('simulated recovery-copy read failure');
+  };
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies(),
+    null
+  );
+});
+
+
 test('recovery discovery reports an unavailable inventory when storage enumeration fails', function () {
   const w = boot({
     'mopapa.v1.recovery.100': 'preserved data'

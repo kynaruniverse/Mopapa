@@ -200,6 +200,12 @@
   var recoveryInventoryStatus = document.getElementById(
     'recovery-inventory-status'
   );
+  var recoveryProtectionSummary = document.getElementById(
+    'recovery-protection-summary'
+  );
+  var recoveryProtectionWarning = document.getElementById(
+    'recovery-protection-warning'
+  );
 
   originalRecoveryButton.hidden = !(
     M.store.data().recoveryBlocked ||
@@ -222,11 +228,44 @@
       recoveryInventoryStatus.hidden = false;
       recoveryInventoryStatus.textContent =
         'Mopapa could not inspect the recovery-copy inventory. Existing copies may still be stored in this browser. No copies have been deleted. Keep browser storage intact and try again later.';
+      recoveryProtectionSummary.hidden = true;
+      recoveryProtectionWarning.hidden = true;
       return;
     }
 
     recoveryInventoryStatus.hidden = true;
     recoveryInventoryStatus.textContent = '';
+
+    var protectedCopies = copies.filter(function (copy) {
+      return copy.protected;
+    });
+
+    var protectedBytes = protectedCopies.reduce(function (total, copy) {
+      return total + copy.estimatedBytes;
+    }, 0);
+
+    var protectedSize = protectedBytes >= 1048576
+      ? (protectedBytes / 1048576).toFixed(1) + ' MB'
+      : protectedBytes >= 1024
+        ? (protectedBytes / 1024).toFixed(1) + ' KB'
+        : protectedBytes + ' bytes';
+
+    var protectionWarning =
+      protectedCopies.length >= 3 ||
+      protectedBytes >= 10485760;
+
+    recoveryProtectionSummary.hidden = copies.length === 0;
+    recoveryProtectionSummary.textContent =
+      'Protected copies: ' + protectedCopies.length +
+      ' · estimated ' + protectedSize +
+      '. This includes corrupt-data and undated legacy copies, which are not automatically pruned.';
+
+    recoveryProtectionWarning.hidden =
+      copies.length === 0 || !protectionWarning;
+
+    recoveryProtectionWarning.textContent = protectionWarning
+      ? 'Protected recovery storage is accumulating. Download and verify copies outside this browser, then consider deleting copies you no longer need. This estimate does not reveal the browser storage quota.'
+      : '';
 
     recoveryButton.hidden = copies.length === 0;
     recoveryPanel.hidden = copies.length === 0;

@@ -216,6 +216,25 @@ potentially recoverable data. It does not create a hard byte-size limit:
 protected copies can accumulate until the user verifies external copies
 and deliberately removes them.
 
+
+### Protected recovery-storage visibility
+
+The recovery inventory identifies protected copies as:
+
+- All corrupt-data copies.
+- Legacy recovery copies whose timestamps cannot be recognised.
+
+These copies are excluded from automatic pruning.
+
+The inventory displays their count and an approximate combined storage size. The estimate uses two bytes per JavaScript string character. It is an indicator of accumulation, not a measurement of browser storage consumption or available quota.
+
+Mopapa displays an accumulation warning when there are at least three protected copies or their estimated combined size reaches 10 MiB.
+
+The warning recommends downloading and verifying copies outside the browser before considering manual deletion. It does not delete copies, impose a hard limit or claim that the browser is running out of quota.
+
+If the inventory cannot be inspected, Mopapa must not display a misleading count or estimate.
+
+
 ### Large-archive evidence and limitations
 
 The CI browser benchmark measured a synthetic archive of 3,000 entries, each containing 1,000 characters. Its JSON representation was approximately 3,533,000 characters, or 7,066,000 bytes using a rough two-bytes-per-character estimate.
