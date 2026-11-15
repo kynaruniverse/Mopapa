@@ -2563,6 +2563,70 @@ async function run() {
     );
   });
 
+  await check('quota-style entry edit failure preserves the original memory and explains the problem', async function (page) {
+    await saveText(page, 'Original saved memory');
+
+    var before = await page.evaluate(function () {
+      return localStorage.getItem('mopapa.v1');
+    });
+
+    await page.evaluate(function () {
+      var originalSetItem = Storage.prototype.setItem;
+
+      Storage.prototype.setItem = function (key, value) {
+        if (key === 'mopapa.v1') {
+          throw new DOMException(
+            'Simulated storage quota exceeded',
+            'QuotaExceededError'
+          );
+        }
+
+        return originalSetItem.call(this, key, value);
+      };
+
+      window.Mopapa.room.open('notes');
+    });
+
+    await page.locator('.edit-entry').click();
+
+    await page.locator('#edit-text-' + await page.locator('#room-list li').first().getAttribute('id').then(function (id) {
+      return id.replace('mopapa-entry-', '');
+    })).fill('This edit must not be saved');
+
+    await page.locator('.edit-save').click();
+
+    var message = await page.locator('.edit-status').textContent();
+
+    assert.ok(
+      message.includes('storage may be full'),
+      'Entry edits should explain quota failures'
+    );
+
+    assert.ok(
+      message.includes('original data is unchanged'),
+      'Entry edits should explain that the original data remains unchanged'
+    );
+
+    assert.strictEqual(
+      await page.evaluate(function () {
+        return localStorage.getItem('mopapa.v1');
+      }),
+      before
+    );
+
+    var data = await savedData(page);
+
+    assert.strictEqual(data.entries.length, 1);
+    assert.strictEqual(data.entries[0].text, 'Original saved memory');
+
+    assert.strictEqual(
+      await page.locator('#edit-text-' + await page.locator('#room-list li').first().getAttribute('id').then(function (id) {
+        return id.replace('mopapa-entry-', '');
+      })).inputValue(),
+      'This edit must not be saved'
+    );
+  });
+  
   await check('quota-style restore failure preserves existing saved and in-memory data', async function (page) {
     await saveText(page, 'Original memory before restore');
 

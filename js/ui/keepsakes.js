@@ -70,7 +70,14 @@ Mopapa.keepsakesUI = (function () {
       unpinButton.addEventListener('click', function () {
         var result = Mopapa.entries.togglePinned(entry.id);
         if (result === null) {
-          if (Mopapa.pet && Mopapa.pet.say) Mopapa.pet.say('I could not save that change on this device.');
+          var message = Mopapa.room && Mopapa.room.entrySaveFailure
+            ? Mopapa.room.entrySaveFailure(
+                'unpinning this memory',
+                'I could not save that change on this device.'
+              )
+            : 'I could not save that change on this device.';
+
+          if (Mopapa.pet && Mopapa.pet.say) Mopapa.pet.say(message);
           return;
         }
         render();

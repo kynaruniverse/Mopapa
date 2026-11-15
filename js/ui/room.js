@@ -34,6 +34,11 @@ Mopapa.room = (function () {
       return 'The saved data is unreadable. Recover it before making changes.';
     }
 
+    if (error === 'quota') {
+      return 'Your browser storage may be full. Mopapa could not save this change. ' +
+        'Your original data is unchanged. Free storage space and try again.';
+    }
+
     return fallback;
   }
   
