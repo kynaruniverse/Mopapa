@@ -182,7 +182,7 @@
     document.getElementById('btn-export').addEventListener('click', function () {
     try {
       M.store.exportJSON();
-      M.pet.say('Backup download started. Check your Downloads folder before relying on it.');
+      M.pet.say("Download started. I can't confirm the file was saved. Check your Downloads folder, open the file, and keep a copy outside this browser.");
     } catch (e) {
       if (M.store.saveError() === 'conflict') {
         M.pet.say("Your saved data changed in another tab. I didn't create an outdated backup. Reload Mopapa, check your memories, then try again.");
@@ -266,7 +266,7 @@
 
       button.addEventListener('click', function () {
         if (M.store.exportRecoveryCopy(copy.key)) {
-          M.pet.say('Recovery download started. Check your Downloads folder before relying on it.');
+          M.pet.say("Download started. I can't confirm the file was saved. Check your Downloads folder, open the file, and keep a copy outside this browser.");
         } else {
           renderRecoveryCopies();
           M.pet.say("I couldn't export that recovery copy. The inventory has been refreshed because the copy may no longer be available.");
@@ -284,7 +284,7 @@
   recoveryButton.addEventListener('click', function () {
     try {
       if (M.store.exportRecoveryCopy()) {
-        M.pet.say('Newest recovery download started. Check your Downloads folder before relying on it.');
+        M.pet.say("Download started. I can't confirm the file was saved. Check your Downloads folder, open the file, and keep a copy outside this browser.");
       } else {
         renderRecoveryCopies();
         M.pet.say("I couldn't export a recovery copy. The original saved data may still be in this browser.");
@@ -296,7 +296,7 @@
 
   originalRecoveryButton.addEventListener('click', function () {
     if (M.store.exportOriginalRecoveryCopy()) {
-      M.pet.say('The original saved data download has started. Check your Downloads folder and keep that file safe.');
+      M.pet.say("Original-data download started. I can't confirm the file was saved. Check your Downloads folder, open the file, and keep it somewhere outside this browser.");
     } else {
       M.pet.say("I couldn't download the original data. It remains unchanged in this browser. Do not clear browser storage.");
     }

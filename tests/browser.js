@@ -519,6 +519,11 @@ async function run() {
 
     assert.ok(originalPath);
 
+    var originalMessage = await page.locator('#bubble').textContent();
+
+    assert.ok(originalMessage.includes("can't confirm the file was saved"));
+    assert.ok(originalMessage.includes('somewhere outside this browser'));
+
     assert.strictEqual(
       fs.readFileSync(originalPath, 'utf8'),
       originalRaw
@@ -532,6 +537,11 @@ async function run() {
     var readablePath = await readableBackup.path();
 
     assert.ok(readablePath);
+
+    var backupMessage = await page.locator('#bubble').textContent();
+
+    assert.ok(backupMessage.includes("can't confirm the file was saved"));
+    assert.ok(backupMessage.includes('keep a copy outside this browser'));
 
     var readableData = JSON.parse(
       fs.readFileSync(readablePath, 'utf8')
@@ -635,6 +645,11 @@ async function run() {
       await buttons.nth(i).click();
 
       var download = await downloadPromise;
+
+      var recoveryMessage = await page.locator('#bubble').textContent();
+
+      assert.ok(recoveryMessage.includes("can't confirm the file was saved"));
+      assert.ok(recoveryMessage.includes('keep a copy outside this browser'));
 
       assert.strictEqual(
         download.suggestedFilename(),
@@ -2457,6 +2472,11 @@ async function run() {
     var downloadPath = await download.path();
 
     assert.ok(downloadPath);
+
+    var recoveryMessage = await page.locator('#bubble').textContent();
+
+    assert.ok(recoveryMessage.includes("can't confirm the file was saved"));
+    assert.ok(recoveryMessage.includes('keep a copy outside this browser'));
 
     assert.strictEqual(
       require('node:fs').readFileSync(downloadPath, 'utf8'),
