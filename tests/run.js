@@ -1198,7 +1198,8 @@ test('partially rejected data is preserved when recovery inventory inspection fa
   );
 });
 
-test('corrupt data is preserved when corrupt-copy inspection fails', function () {
+
+test('corrupt-copy creation fails closed when inventory inspection fails', function () {
   const raw = '{broken json';
 
   const w = boot({
@@ -1226,7 +1227,12 @@ test('corrupt data is preserved when corrupt-copy inspection fails', function ()
 
   assert.strictEqual(
     w.Mopapa.store.data().corruptCopySaved,
-    true
+    false
+  );
+
+  assert.strictEqual(
+    w.localStorage._['mopapa.v1'],
+    raw
   );
 
   assert.strictEqual(
@@ -1236,7 +1242,7 @@ test('corrupt data is preserved when corrupt-copy inspection fails', function ()
 
   assert.strictEqual(
     w.localStorage._['mopapa.v1.corrupt.123456'],
-    raw
+    undefined
   );
 });
 
