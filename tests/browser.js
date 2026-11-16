@@ -2608,6 +2608,11 @@ async function run() {
 
     await page.locator('.app-dialog-ok').click();
 
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes('protected recovery-copy limit')
+    );
+
     assert.strictEqual(
       await page.locator('#btn-original-recovery-export').isVisible(),
       true
@@ -2671,11 +2676,6 @@ async function run() {
     );
 
     await page.locator('.app-dialog-ok').click();
-
-    assert.ok(
-      (await page.locator('#bubble').textContent())
-        .includes('protected recovery-copy limit')
-    );
     
     var data = await page.evaluate(function () {
       return window.Mopapa.store.data();
