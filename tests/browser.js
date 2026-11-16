@@ -2645,11 +2645,6 @@ async function run() {
       }),
       originalRaw
     );
-
-    assert.ok(
-      (await page.locator('#bubble').textContent())
-        .includes('protected recovery-copy limit')
-    );
   });
   
   await check('partially rejected startup data preserves the exact original recovery copy', async function (page) {
@@ -2677,6 +2672,11 @@ async function run() {
 
     await page.locator('.app-dialog-ok').click();
 
+    assert.ok(
+      (await page.locator('#bubble').textContent())
+        .includes('protected recovery-copy limit')
+    );
+    
     var data = await page.evaluate(function () {
       return window.Mopapa.store.data();
     });
