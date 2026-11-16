@@ -630,10 +630,61 @@ This decision does not authorise:
 - Automatic deletion of recovery copies.
 - A database migration without a demonstrated need.
 
-## Review outcome
 
-**Current choice: retain localStorage.**
+## Final evidence-based storage decision
 
-Continue improving validation, recovery, backup clarity, failure handling and mobile-device testing.
+**Review date:** 16 November 2026
 
-Revisit IndexedDB when actual product requirements or measured limitations justify the additional complexity.
+**Decision: retain browser `localStorage` as Mopapa's primary persistence mechanism. Do not begin an IndexedDB migration at this stage.**
+
+This decision is based on the current implementation, measured benchmark results, documented limitations and provisional latency targets.
+
+### Evidence supporting the decision
+
+- The current implementation successfully saves the tested archive sizes, including 5,000 short entries and 3,000 entries containing up to 1,000 characters each.
+- The latest recorded long-text CI save measurement is approximately 24.9 ms for a dataset containing approximately 3.53 million JSON characters.
+- The application already has validation, verified writes, best-effort rollback, recovery copies, backup export and restore handling.
+- No measured result currently demonstrates that IndexedDB would materially improve the application's actual storage performance or reliability.
+- Introducing IndexedDB would add asynchronous storage operations, migration logic, compatibility requirements and additional failure scenarios that would themselves need extensive testing.
+
+### How the latency targets affect this decision
+
+The provisional targets are:
+
+- Successful save: 100 ms or less at p95.
+- Search engine execution: 100 ms or less at p95.
+- Search submission through visible results: 200 ms or less at p95.
+- Normal-operation warning threshold: 250 ms.
+
+The current save benchmark is encouraging but does not establish p95 performance. Its three repetitions and median measurement are insufficient for that conclusion.
+
+Search latency has not yet been benchmarked against the reference archive. Therefore, neither the save nor search targets can currently be considered fully verified.
+
+This uncertainty is a reason to collect better measurements, not sufficient evidence to justify a database migration.
+
+### Conditions for reconsidering the decision
+
+Review the storage architecture when:
+
+1. Representative device measurements show sustained save latency above the provisional target.
+2. Search measurements show sustained performance problems against the documented targets.
+3. Normal expected use produces recurring storage quota failures.
+4. The application requires capabilities that the current whole-record storage model cannot reasonably support.
+5. A tested alternative demonstrates a material improvement in reliability or user experience.
+
+A single slow measurement should trigger investigation, not an automatic migration.
+
+Any proposed migration must include a verified migration path, preservation of the original data, interruption handling, rollback, backup compatibility and tests against realistic mobile browser conditions.
+
+### Ongoing requirements
+
+Until the decision changes:
+
+- Keep `localStorage` as the primary persistence mechanism.
+- Continue improving validation, recovery, backup clarity and failure handling.
+- Benchmark save and search performance using the documented measurement requirements.
+- Test on real mobile devices and additional browser engines.
+- Keep independent backups. Browser storage and recovery copies are not substitutes for an external backup.
+- Do not present provisional performance targets as proven guarantees.
+
+**Final outcome: retain `localStorage` for the current development phase. Reconsider only when measured evidence or a genuine product requirement justifies the additional complexity of IndexedDB.**
