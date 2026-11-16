@@ -292,7 +292,7 @@ The latest browser benchmark results provide useful evidence:
 | 1,000 short entries | Successful | 2.5 ms |
 | 3,000 short entries | Successful | 7.6 ms |
 | 5,000 short entries | Successful | 14.1 ms |
-| 3,000 entries of 1,000 characters | Successful | 24.1 ms |
+| 3,000 entries of 1,000 characters | Successful | 24.9 ms |
 
 These are measurements from the current test environment, not guarantees for every device or browser.
 
@@ -347,6 +347,62 @@ The application cannot guarantee that:
 The 5 MiB import limit, benchmark results and protected recovery-copy ceiling address different constraints. None of them represents a guaranteed browser storage quota.
 
 Real-device and additional browser-engine testing remains necessary before making stronger archive-size or reliability claims.
+
+
+## Acceptable save and search latency targets
+
+These are provisional engineering targets for the current local-first implementation. They are intended to keep ordinary interactions responsive as the archive grows. They are not measured guarantees or claims about every supported device.
+
+### Reference workload
+
+Use the existing largest long-text benchmark as the principal reference workload:
+
+- 3,000 saved entries.
+- Up to 1,000 characters per entry.
+- Approximately 3.53 million JSON characters in the tested dataset.
+- Search across all entries, without restricting the search to a room.
+
+The 5,000 short-entry benchmark remains useful as a separate storage and save-performance reference.
+
+### Target latency
+
+| Operation | Target |
+|---|---:|
+| Successful save, including serialisation, storage write and readback verification | 100 ms or less at p95 |
+| Search engine execution, including matching and ranking | 100 ms or less at p95 |
+| Search submission through to visible results | 200 ms or less at p95 |
+| Normal-operation warning threshold | 250 ms |
+
+The p95 target means that at least 95% of measured operations should complete within the stated time under the defined test conditions.
+
+A failed save must never be treated as acceptable merely because it completes quickly. Correct persistence and truthful failure handling take priority over latency.
+
+### Measurement requirements
+
+- Measure successful saves using the complete `store.save()` operation, not JSON serialisation alone.
+- Measure search-engine execution separately from DOM rendering.
+- Also measure the complete user-visible search interaction.
+- Include exact-phrase, partial-word, multi-term and no-match searches.
+- Use the same reference dataset when comparing changes.
+- Warm up the code before collecting measurements.
+- Collect at least 30 measured repetitions and report the median and p95.
+- Record the browser, device, archive size and query type alongside results.
+- Keep CI measurements separate from real-device measurements.
+
+The current storage benchmark uses only three repetitions and reports a median. It is not sufficient to establish p95 performance.
+
+### Current evidence and limitations
+
+The existing CI benchmark demonstrates successful saves at the tested archive sizes. The latest recorded long-text save measurement is approximately 24.9 ms in headless Chromium.
+
+There is currently no recorded search-latency measurement for the same dataset. Existing search tests establish functional behaviour and ranking, not execution time.
+
+The targets above therefore remain provisional until search is benchmarked and the save measurements are repeated using a suitable sample size.
+
+CI timing should initially be treated as diagnostic evidence rather than a strict pass/fail performance gate. Real-device measurements are necessary before making claims about Android responsiveness.
+
+A sustained breach of these targets should trigger profiling and investigation before introducing an index or changing the storage architecture.
+
 
 ## Known limitations and risks
 
