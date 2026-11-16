@@ -298,6 +298,56 @@ These are measurements from the current test environment, not guarantees for eve
 
 They do not establish that localStorage will remain suitable indefinitely. They do establish that a migration is not currently justified by the measured save performance alone.
 
+
+## Practical archive-size assumptions
+
+The current benchmark results establish a tested performance envelope, not a guaranteed maximum archive size.
+
+The following assumptions apply to the current implementation:
+
+| Archive shape | Evidence | Interpretation |
+|---|---|---|
+| 250 short entries | Saved successfully in CI Chromium. | Small benchmark baseline. |
+| 1,000 short entries | Saved successfully in CI Chromium. | Intermediate benchmark. |
+| 3,000 short entries | Saved successfully in CI Chromium. | Larger short-entry benchmark. |
+| 5,000 short entries | Saved successfully in CI Chromium. | Largest short-entry benchmark completed. |
+| 3,000 entries with 1,000-character text | Saved successfully in CI Chromium. | Largest long-text benchmark completed. |
+
+The 3,000-entry long-text dataset produced approximately 3.53 million JSON characters. The latest recorded CI run measured a save time of approximately 24.9 ms and an application load time of approximately 10.6 ms.
+
+These measurements were taken in headless Chromium on a CI runner. They are not mobile-device performance guarantees. They do not establish performance for every browser, device, operating-system version or storage condition.
+
+### Practical limits and interpretation
+
+- Mopapa does not currently define a guaranteed maximum number of saved entries.
+- The benchmark sizes are evidence of successful operations in the test environment, not recommended targets or hard application limits.
+- Individual entry text is limited to 1,000 characters by the current validation rules.
+- Backup imports have a separate maximum file size of 5 MiB. This is an application-level import restriction, not the browser's localStorage quota.
+- The long-text benchmark measures saving and loading application data. It does not establish that every large archive can be exported, transferred between devices and restored successfully under all browser conditions.
+- Recovery copies consume additional storage because they contain full saved records. A large primary archive can therefore create substantial additional storage demand.
+- The protected-copy ceiling does not impose a total storage ceiling across ordinary recovery copies, the primary record and other browser data.
+
+There is no evidence-based universal safe archive size for all supported devices. Users should keep independent backups rather than relying on the browser profile as the only copy.
+
+### Browser storage limitations
+
+`localStorage` is synchronous and stores the application record as a whole JSON value. Larger records increase the amount of data that must be serialised, written and read back.
+
+Available browser storage is not a fixed amount that Mopapa can promise. It varies with browser implementation, device conditions, origin storage usage and browser policies.
+
+The application cannot guarantee that:
+
+- A particular archive size will always fit.
+- A successful save will remain available indefinitely.
+- Browser storage will not be cleared by the user, browser settings or profile removal.
+- Data will survive device loss or physical failure.
+- Recovery copies stored in the same browser profile will remain available if that profile is lost.
+- A successful browser download means an independent backup has been retained.
+
+The 5 MiB import limit, benchmark results and protected recovery-copy ceiling address different constraints. None of them represents a guaranteed browser storage quota.
+
+Real-device and additional browser-engine testing remains necessary before making stronger archive-size or reliability claims.
+
 ## Known limitations and risks
 
 ### Synchronous whole-record writes
