@@ -37,6 +37,148 @@ The current implementation:
 
 The persistence request is best-effort. Browser storage protection is not a guarantee against manual clearing, browser failure, device loss or other data-loss events.
 
+
+## Current saved-record schema and field semantics
+
+The primary record is stored as JSON under `mopapa.v1`. Its current schema version is `1`.
+
+The canonical application data contains these top-level fields:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `schemaVersion` | number | Current schema version, `1`. |
+| `entries` | array | Saved personal memories, tasks and appointments. |
+| `learned` | object | Legacy room-sorter learning data. |
+| `customRooms` | array | User-created rooms. |
+| `ask` | object | Ask-specific aliases, confirmed source choices and unanswered questions. |
+
+A backup must contain an `entries` array. The other data domains are optional when importing older supported records and are normalised to their current defaults.
+
+### Saved entry fields
+
+Each entry represents one saved memory.
+
+| Field | Type | Meaning and validation |
+|---|---|---|
+| `id` | string | Required unique identifier. Must be non-empty, trimmed and no longer than 100 characters. |
+| `text` | string | Required original memory text. Must contain non-whitespace text and be no longer than 1,000 characters. |
+| `room` | string | Required room identifier. Must be non-empty, trimmed and no longer than 50 characters. |
+| `when` | string or null | Optional date or date-time value. Empty string and null are accepted. Other values must parse as valid dates. |
+| `hasTime` | boolean | Optional flag indicating that `when` includes a time. When true, `when` must contain a recognised hour-and-minute component. |
+| `created` | string | Optional creation timestamp. When present, it must be a valid date value. |
+| `done` | boolean | Optional completion state, primarily used by dated tasks. |
+| `pinned` | boolean | Optional pinned-keepsake state. |
+| `tags` | array of strings | Optional tags. Maximum eight tags, each non-empty and no longer than 24 characters. |
+| `amount` | number or null | Optional first monetary amount extracted from the memory text. A non-null value must be finite. |
+| `amounts` | array of numbers or null | Optional list of monetary amounts extracted from the memory text. Every value must be finite. |
+| `fact` | object or null | Optional structured location fact extracted from the memory text. |
+
+The `fact` object currently has these fields:
+
+| Field | Meaning |
+|---|---|
+| `attr` | Must be `location`. |
+| `items` | Non-empty array of subject names or items. |
+| `prep` | Location preposition, restricted to `in`, `inside`, `on`, `under`, `behind`, `beside`, `next to`, `within` or `at`. |
+| `where` | Non-empty location description. |
+| `value` | Combined preposition and location, matching `prep + " " + where`, ignoring case. |
+| `plural` | Boolean indicating plural subject wording. |
+
+`amount` represents the first extracted amount. `amounts` represents all extracted amounts. Both are derived from the saved text when an entry is created or its text is edited.
+
+`fact` is only populated when the deterministic location extractor recognises a supported sentence structure. It is not a general-purpose description of every memory.
+
+### Entry compatibility and optional fields
+
+Older entries may omit optional fields. The current validator accepts those omissions.
+
+The validator checks the supported fields described above, but does not reject every unknown property on an entry. Existing unknown entry properties can therefore remain in the cleaned entry object.
+
+Do not assume that every entry has every optional field, or that the current validator enforces a completely closed set of entry properties.
+
+The `room` field is validated as a string, but entry validation does not itself require that the room identifier currently exists. Missing-room repair is handled separately.
+
+### Custom rooms
+
+`customRooms` is an array containing up to ten user-created rooms.
+
+Each room has:
+
+| Field | Type | Meaning and validation |
+|---|---|---|
+| `id` | string | Must match `custom_[a-z0-9]+`. |
+| `name` | string | Whitespace is normalised. Must be between 2 and 20 characters. |
+| `icon` | string | Must be one of the supported room icon identifiers. |
+
+Room IDs and normalised room names must be unique. Names must not duplicate built-in room names.
+
+The supported icon identifiers are `book`, `sprout`, `palette`, `paw`, `music`, `plane`, `home`, `briefcase`, `telescope` and `star`. Recognised legacy emoji icons are converted to their corresponding identifiers.
+
+### Legacy room-sorter learning
+
+`learned` stores legacy room-sorter learning data as a mapping from terms to scores.
+
+The current cleaner accepts either:
+
+- A finite numeric score between 1 and 1,000 for a term.
+- An object mapping room identifiers to finite scores between 1 and 1,000.
+
+The cleaned structure is limited to 500 terms and 20 room scores per term. Scores are stored as integers.
+
+This is distinct from `ask`, which stores Ask-specific learning.
+
+### Ask learning
+
+`ask` contains three fields:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `aliases` | array | User-taught pairs of equivalent words. |
+| `boosts` | object | Confirmed source-entry choices, grouped by deterministic question signature. |
+| `unanswered` | array | Recent questions for which Ask did not provide an answer. |
+
+**Aliases**
+
+- Maximum 50 pairs.
+- Each pair contains two distinct, non-empty single words.
+- Each word is trimmed and limited to 30 characters.
+- Comparisons are case-insensitive.
+- Learned aliases are applied in both directions.
+
+**Confirmed source boosts**
+
+- Maximum 200 question signatures.
+- Each signature is limited to 500 characters.
+- Each signature can contain up to ten entry identifiers.
+- Entry identifiers must be non-empty and no longer than 100 characters.
+- Counts must be finite positive numbers and are stored as integers capped at 1,000.
+
+A boost records a person's previous confirmation of which saved entry answered a particular question. It does not independently establish that an answer is correct.
+
+**Unanswered questions**
+
+- Maximum 30 records.
+- Each record contains `q` and `at`.
+- `q` is trimmed, non-empty and limited to 200 characters.
+- `at` is a string limited to 40 characters.
+- Duplicate questions are removed case-insensitively.
+- New unanswered questions are placed first.
+
+### Schema version and import normalisation
+
+The current schema version is `1`.
+
+A record without `schemaVersion` is treated as legacy version `0`. Supported integer versions from `0` through `1` are accepted. Unsupported, negative, non-integer or non-numeric versions are rejected.
+
+On loading saved data, Mopapa cleans and normalises entries, room-learning data, custom rooms and Ask learning before using them.
+
+On import, invalid supported fields or malformed learning structures cause the backup to be rejected rather than silently accepted as a valid restore.
+
+Legacy monetary values beginning with a pound sign can be converted to numeric values using the associated memory text.
+
+This section describes the current implementation. It is not a promise that future schema changes will preserve every field without an explicit migration and compatibility test.
+
+
 ## Write and rollback guarantees
 
 Mopapa uses a verified, best-effort write process. It does not provide an
