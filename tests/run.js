@@ -12632,6 +12632,40 @@ test('ask: location verbs and generic words do not block a match', function () {
   assert.ok(/kitchen drawer/.test(r.answer), r.answer);
 });
 
+test('ask evaluation: punctuation and casing preserve equivalent grounded answers', function () {
+  const entries = [{
+    id: 'eval-normalisation-key',
+    text: 'Spare keys are in the blue tin',
+    room: 'notes',
+    created: ago(1)
+  }];
+
+  const supports = function (entry) {
+    return entry.id === 'eval-normalisation-key' &&
+      /Spare keys are in the blue tin/i.test(entry.text);
+  };
+
+  const ordinary = askWith(
+    entries,
+    'Where are my spare keys?',
+    supports
+  );
+
+  const varied = askWith(
+    entries,
+    'WHERE ARE MY SPARE KEYS?!',
+    supports
+  );
+
+  assert.ok(/blue tin/i.test(ordinary.answer), ordinary.answer);
+  assert.ok(/blue tin/i.test(varied.answer), varied.answer);
+
+  assert.deepStrictEqual(
+    ordinary.sources.map(function (entry) { return entry.id; }),
+    varied.sources.map(function (entry) { return entry.id; }),
+    'Equivalent questions should return the same supporting source IDs'
+  );
+});
 
 test('ask evaluation: realistic answers are grounded in their supporting memories', function () {
   const dentistWhen = new Date(Date.now() + 5 * 86400000).toISOString();
