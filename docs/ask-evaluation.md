@@ -47,7 +47,7 @@ Source expectation modes:
 
 The shared runner checks the answer, expected behaviour category, source expectations and optional missed-question state. A `supports` predicate can additionally verify that each returned source genuinely supports the answer.
 
-The initial adoption covers grouped grounded-answer, clarification, abstention and typo-suggestion scenarios. Other specialist regression tests retain their existing direct assertions until they are migrated. This does not mean all 31 existing evaluation tests have been converted.
+The initial adoption covers grouped grounded-answer, clarification, abstention and typo-suggestion scenarios. Other Specialist regression tests retain their existing direct answer and source-ID assertions. The source-support audit is applied in addition, without duplicating or replacing those tests.
 
 The following cases already exist in `tests/run.js`. Do not recreate them under different names or add equivalent tests without identifying a specific uncovered behaviour.
 
@@ -164,7 +164,7 @@ The summary reports:
 Important limitations:
 
 - The 10 structured scenarios are not the complete 31-test evaluation set.
-- Only 4 of the 10 structured scenarios currently have semantic `supports` predicates.
+- Every structured scenario that returns sources has an explicit semantic support predicate. The source-free unknown-location case has no source to assess. All 31 named tests are included in the source-support audit.
 - Source-ID matching does not prove that a source semantically supports the answer.
 - The expected-answer regular expressions are regression assertions, not a complete measure of factual correctness.
 - The two expected-abstention scenarios describe the composition of this curated test set, not the rate at which real users receive abstentions.
@@ -185,7 +185,7 @@ Do not describe the current results as general Ask accuracy.
 | Source precision | Not measured globally. Explicit semantic support checks cover only scenarios with a `supports` predicate. |
 | Clarification correctness | Reports passing expected-clarification scenarios. This is limited to the selected cases. |
 
-Source-ID expectations and semantic source support are different checks. Passing an expected source-ID assertion does not, by itself, establish source precision.
+Curated-set semantic source support is reported across all 31 named tests. Global source precision remains unmeasured; the fixtures are not a representative sample of real user questions.
 
 Do not optimise answer rate at the expense of unsupported answers. A justified abstention is preferable to an invented fact.
 
@@ -210,7 +210,7 @@ The next steps, in order:
 
 1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
 2. [x] Establish a structured case format with expected answer behaviour and expected sources.
-3. Add an evaluation summary that reports the metrics above.
+3. [x] Add an evaluation summary that reports the metrics above.
 4. Audit source precision across the complete evaluation set.
 5. Expand only where a genuine coverage gap is demonstrated.
 

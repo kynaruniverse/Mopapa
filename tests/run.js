@@ -2,6 +2,7 @@ const fs = require('fs'), vm = require('vm'), assert = require('assert');
 
 const ASK_EVALUATION_NOW = Date.UTC(2026, 10, 17, 12, 0, 0, 0);
 let activeTestNow = null;
+let activeAskEvaluationTest = null;
 
 function boot(storage, storageApi) {
   const ls = {
@@ -315,21 +316,25 @@ function test(name, fn) {
     return;
   }
 
-  tests.push([name, async function () {
-    const originalDateNow = Date.now;
+tests.push([name, async function () {
+  const originalDateNow = Date.now;
+  const previousEvaluationTest = activeAskEvaluationTest;
 
-    activeTestNow = ASK_EVALUATION_NOW;
-    Date.now = function () {
-      return ASK_EVALUATION_NOW;
-    };
+  activeAskEvaluationTest = name;
+  activeTestNow = ASK_EVALUATION_NOW;
 
-    try {
-      await fn();
-    } finally {
-      Date.now = originalDateNow;
-      activeTestNow = null;
-    }
-  }]);
+  Date.now = function () {
+    return ASK_EVALUATION_NOW;
+  };
+
+  try {
+    await fn();
+  } finally {
+    Date.now = originalDateNow;
+    activeTestNow = null;
+    activeAskEvaluationTest = previousEvaluationTest;
+  }
+}]);
 }
 
 test('talk interface loads and attaches its submit handler', function () {
@@ -10836,10 +10841,262 @@ test('capture code preserves text after failed save and does not ask for a room 
   assert.ok(!talk.includes('Mopapa.sorter.learn'));
 });
 
-function askWith(entries, question) {
+const askEvaluationSourceAudit = [];
+const askEvaluationSourceAuditByResult = new WeakMap();
+
+function assertAskSourceSupport(result, supports, label) {
+  const sources = Array.from(result.sources || []);
+
+  const record = {
+    test: activeAskEvaluationTest || label,
+    checked: sources.length,
+    passed: 0
+  };
+
+  askEvaluationSourceAudit.push(record);
+
+  if (sources.length && typeof supports !== 'function') {
+    assert.fail(
+      label + ' returned sources without a semantic support predicate'
+    );
+  }
+
+  sources.forEach(function (entry) {
+    assert.ok(
+      supports(entry),
+      label + ' returned a source that does not support its answer: ' +
+        entry.id
+    );
+
+    record.passed++;
+  });
+
+  return record;
+}
+
+function getAskEvaluationSourceSupport(testName, question) {
+  switch (testName) {
+    case 'ask evaluation: direct cost questions exclude quotes, estimates, refunds and money received':
+      return function (entry) {
+        return /boiler service/i.test(entry.text) &&
+          /(quote|estimate|refund|received|sold)/i.test(entry.text);
+      };
+
+    case 'ask evaluation: latest, previous and original costs ignore quotes and estimates':
+      return function (entry) {
+        if (/latest/i.test(question)) {
+          return /boiler service £150/i.test(entry.text);
+        }
+
+        if (/previous/i.test(question)) {
+          return /boiler service £120/i.test(entry.text);
+        }
+
+        if (/original/i.test(question)) {
+          return /boiler service £90/i.test(entry.text);
+        }
+
+        return false;
+      };
+
+    case 'ask evaluation: excluded quotes do not create false ambiguity between actual costs':
+      return function (entry) {
+        return /car service £(?:175|125)/i.test(entry.text);
+      };
+
+    case 'ask evaluation: two dentist appointments at different times require clarification':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist/i.test(entry.text) &&
+          entry.hasTime === true &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: specific appointment questions select the correct overlapping subject':
+      return function (entry) {
+        if (question === 'When is my dentist check-up?') {
+          return /dentist check-up/i.test(entry.text);
+        }
+
+        if (question === 'When is my dentist hygiene appointment?') {
+          return /dentist hygiene appointment/i.test(entry.text);
+        }
+
+        if (question === 'When is my dentist follow-up?') {
+          return /dentist follow-up appointment/i.test(entry.text);
+        }
+
+        return false;
+      };
+
+    case 'ask evaluation: a broad dentist question clarifies across three overlapping appointments':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist (check-up|hygiene appointment|follow-up appointment)/i.test(entry.text) &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: separate appointments at the same time are not silently collapsed':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist (check-up|hygiene appointment)/i.test(entry.text) &&
+          entry.hasTime === true &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: duplicate entries for the same appointment do not create false ambiguity':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          entry.hasTime === true &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: completed appointments do not override an upcoming appointment':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist follow-up/i.test(entry.text) &&
+          entry.done === false &&
+          Date.parse(entry.when) > ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: a specific next recurring service selects the earliest upcoming occurrence':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /boiler service/i.test(entry.text) &&
+          entry.done === false &&
+          Date.parse(entry.when) > ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: past-tense questions clarify between separate past occurrences of the same appointment':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist appointment/i.test(entry.text) &&
+          entry.done === true &&
+          Date.parse(entry.when) < ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: a rescheduled appointment uses its upcoming date':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          entry.done === false &&
+          Date.parse(entry.when) > ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: past-tense appointment questions return completed appointment dates':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          entry.done === true &&
+          Date.parse(entry.when) < ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: past-tense appointment questions do not return future dates':
+      return function () {
+        return false;
+      };
+
+    case 'ask evaluation: past-tense appointment questions select the old date after rescheduling':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          Date.parse(entry.when) < ASK_EVALUATION_NOW;
+      };
+
+    case 'ask evaluation: latest cost questions use the newest corrected amount':
+      return function (entry) {
+        return /car service £175/i.test(entry.text);
+      };
+
+    case 'ask evaluation: unqualified questions do not silently choose between changed costs':
+      return function (entry) {
+        return /car service £(?:175|125)/i.test(entry.text);
+      };
+
+    case 'ask evaluation: newest location is determined by saved timestamp, not storage order':
+      return function (entry) {
+        return /spare keys are in the blue tin/i.test(entry.text);
+      };
+
+    case 'ask evaluation: a newer location replaces the old location for the same item':
+      return function (entry) {
+        return /spare keys are in the blue tin/i.test(entry.text);
+      };
+
+    case 'ask evaluation: explicit previous-location questions retrieve the older location':
+      return function (entry) {
+        return /spare keys are in the kitchen drawer/i.test(entry.text);
+      };
+
+    case 'ask evaluation: original-cost questions retrieve the earlier amount':
+      return function (entry) {
+        return /car service £125/i.test(entry.text);
+      };
+
+    case 'ask evaluation: original appointment questions retrieve the earlier scheduled date':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: original appointment follows saved revision chronology when rescheduled earlier':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          !isNaN(Date.parse(entry.when)) &&
+          !isNaN(Date.parse(entry.created));
+      };
+
+    case 'ask evaluation: previous cost retrieves the immediately preceding amount':
+      return function (entry) {
+        return /car service £150/i.test(entry.text);
+      };
+
+    case 'ask evaluation: previous appointment retrieves the immediately preceding schedule':
+      return function (entry) {
+        return entry.room === 'appointments' &&
+          /dentist check-up/i.test(entry.text) &&
+          entry.hasTime === true &&
+          !isNaN(Date.parse(entry.when));
+      };
+
+    case 'ask evaluation: previous location selects the second-newest saved version':
+      return function (entry) {
+        return /spare keys are in the kitchen drawer/i.test(entry.text);
+      };
+
+    case 'ask evaluation: original cost selects the oldest saved version':
+      return function (entry) {
+        return /car service £125/i.test(entry.text);
+      };
+  }
+
+  return null;
+}
+
+function askWith(entries, question, supports) {
   const w = boot(stored(entries));
   w.Mopapa.store.load();
-  return w.Mopapa.ask.answer(question);
+
+  const result = w.Mopapa.ask.answer(question);
+
+  if (activeAskEvaluationTest !== null) {
+    const predicate = typeof supports === 'function'
+      ? supports
+      : getAskEvaluationSourceSupport(activeAskEvaluationTest, question);
+
+    const audit = assertAskSourceSupport(
+      result,
+      predicate,
+      activeAskEvaluationTest
+    );
+
+    askEvaluationSourceAuditByResult.set(result, audit);
+  }
+
+  return result;
 }
 
 const askEvaluationResults = [];
@@ -10895,7 +11152,7 @@ function runAskEvaluationCase(item) {
       item.id + ' needs an expected source definition'
     );
 
-    const result = askWith(item.entries, item.question);
+    const result = askWith(item.entries, item.question, item.supports);
 
     record.answerChecked = true;
 
@@ -10948,17 +11205,11 @@ function runAskEvaluationCase(item) {
       record.missedPassed = true;
     }
 
-    if (typeof item.supports === 'function') {
-      result.sources.forEach(function (entry) {
-        record.supportChecks++;
+    const sourceAudit = askEvaluationSourceAuditByResult.get(result);
 
-        assert.ok(
-          item.supports(entry),
-          item.id + ' returned a source that does not support its answer'
-        );
-
-        record.supportPassed++;
-      });
+    if (sourceAudit) {
+      record.supportChecks = sourceAudit.checked;
+      record.supportPassed = sourceAudit.passed;
     }
 
     record.passed = true;
@@ -11068,6 +11319,36 @@ function summariseAskEvaluationCases(cases) {
   return summary;
 }
 
+function summariseAskEvaluationSourceAudit(records) {
+  const summary = {
+    results: records.length,
+    tests: 0,
+    checked: 0,
+    passed: 0,
+    emptyResults: 0
+  };
+
+  const seen = Object.create(null);
+
+  records.forEach(function (record) {
+    const name = record.test || 'unknown';
+
+    if (!seen[name]) {
+      seen[name] = true;
+      summary.tests++;
+    }
+
+    summary.checked += record.checked;
+    summary.passed += record.passed;
+
+    if (record.checked === 0) {
+      summary.emptyResults++;
+    }
+  });
+
+  return summary;
+}
+
 test('evaluation summary aggregates structured scenario checks', function () {
   const summary = summariseAskEvaluationCases([
     {
@@ -11117,6 +11398,19 @@ test('evaluation summary aggregates structured scenario checks', function () {
   assert.strictEqual(summary.sourceSupport.cases, 1);
   assert.strictEqual(summary.sourceSupport.checked, 1);
   assert.strictEqual(summary.sourceSupport.passed, 1);
+  const sourceAudit = summariseAskEvaluationSourceAudit([
+    { test: 'first test', checked: 2, passed: 2 },
+    { test: 'first test', checked: 0, passed: 0 },
+    { test: 'second test', checked: 1, passed: 0 }
+  ]);
+
+  assert.deepStrictEqual(sourceAudit, {
+    results: 3,
+    tests: 2,
+    checked: 3,
+    passed: 2,
+    emptyResults: 1
+  });  
 });
 
 function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
@@ -12406,7 +12700,9 @@ test('ask evaluation: realistic answers are grounded in their supporting memorie
         }
       },
       supports: function (entry) {
-        return entry.when === dentistWhen;
+        return entry.room === 'appointments' &&
+          /Dentist appointment/i.test(entry.text) &&
+          entry.when === dentistWhen;
       }
     },
     {
@@ -12470,7 +12766,12 @@ test('ask evaluation: conflicting dates, recipients and costs require clarificat
           mode: 'exact',
           ids: ['eval-dentist-one', 'eval-dentist-two']
         }
-      }
+      },
+      supports: function (entry) {
+        return entry.room === 'appointments' &&
+          /Dentist (check-up|hygiene visit)/i.test(entry.text) &&
+          (entry.when === soon || entry.when === later);
+      }      
     },
     {
       id: 'different-recipients',
@@ -12496,7 +12797,10 @@ test('ask evaluation: conflicting dates, recipients and costs require clarificat
           mode: 'exact',
           ids: ['eval-parcel-one', 'eval-parcel-two']
         }
-      }
+      },
+      supports: function (entry) {
+        return /The parcel is for (Morgan|Jasmine)/i.test(entry.text);
+      }      
     },
     {
       id: 'different-prices',
@@ -12522,7 +12826,10 @@ test('ask evaluation: conflicting dates, recipients and costs require clarificat
           mode: 'exact',
           ids: ['eval-car-one', 'eval-car-two']
         }
-      }
+      },
+      supports: function (entry) {
+        return /Car service £(?:100|150)/i.test(entry.text);
+      }      
     }
   ];
 
@@ -12566,7 +12873,11 @@ test('ask evaluation: unsupported answers are not invented', function () {
           mode: 'exact',
           ids: ['eval-no-price']
         }
-      }
+      },
+      supports: function (entry) {
+        return /Boiler service booked for Friday/i.test(entry.text) &&
+          !/£\s*\d/.test(entry.text);
+      }      
     }
   ]);
 });
@@ -12596,7 +12907,10 @@ test('ask evaluation: typo suggestions are clearly labelled and source-backed', 
         mode: 'includes',
         ids: ['eval-typo-passport']
       }
-    }
+    },
+    supports: function (entry) {
+      return /Passport is in the top drawer/i.test(entry.text);
+    }    
   });
 });
 
@@ -16508,13 +16822,22 @@ function printAskEvaluationSummary() {
     'classify every factual claim against a complete ground-truth set.'
   );
 
+  const sourceAudit =
+    summariseAskEvaluationSourceAudit(askEvaluationSourceAudit);
+
   console.log(
-    'Source precision: NOT MEASURED globally; explicit semantic ' +
-    'source checks passed ' +
-    summary.sourceSupport.passed + '/' +
-    summary.sourceSupport.checked + ' returned sources across ' +
-    summary.sourceSupport.cases + '/' +
-    summary.total + ' scenarios.'
+    'Semantic source-support checks: ' +
+    sourceAudit.passed + '/' + sourceAudit.checked +
+    ' returned sources across ' +
+    sourceAudit.tests + '/' + namedEvaluationTests +
+    ' named tests (' + sourceAudit.results +
+    ' Ask results; ' + sourceAudit.emptyResults +
+    ' with no returned sources).'
+  );
+
+  console.log(
+    'Global source precision: NOT MEASURED; the curated regression set ' +
+    'does not represent real user questions or classify every possible claim.'
   );
 
   console.log(
