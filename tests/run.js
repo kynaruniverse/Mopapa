@@ -12935,7 +12935,7 @@ test('ask evaluation: incomplete prompts preserve safe answer, clarification and
       question: 'Dentist?',
       expected: {
         behaviour: 'answer',
-        answer: /1 saved entry matching those words/i,
+        answer: /I found 1 saved entry/i,
         sources: {
           mode: 'exact',
           ids: ['eval-short-dentist']
@@ -13019,7 +13019,7 @@ test('ask evaluation: incomplete prompts preserve safe answer, clarification and
       question: 'My passport',
       expected: {
         behaviour: 'answer',
-        answer: /1 saved entry matching those words/i,
+        answer: /I found 1 saved entry/i,
         sources: {
           mode: 'exact',
           ids: ['eval-short-passport']
