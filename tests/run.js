@@ -12916,6 +12916,139 @@ test('ask evaluation: unsupported answers are not invented', function () {
   ]);
 });
 
+test('ask evaluation: incomplete prompts preserve safe answer, clarification and suggestion behaviour', function () {
+  const soon = new Date(Date.now() + 4 * 86400000).toISOString();
+  const later = new Date(Date.now() + 12 * 86400000).toISOString();
+
+  runAskEvaluationCases([
+    {
+      id: 'short-topic-dentist',
+      entries: [{
+        id: 'eval-short-dentist',
+        text: 'Dentist check-up',
+        room: 'appointments',
+        when: soon,
+        hasTime: false,
+        created: ago(1),
+        done: false
+      }],
+      question: 'Dentist?',
+      expected: {
+        behaviour: 'answer',
+        answer: /1 saved entry matching those words/i,
+        sources: {
+          mode: 'exact',
+          ids: ['eval-short-dentist']
+        }
+      },
+      supports: function (entry) {
+        return entry.id === 'eval-short-dentist' &&
+          /Dentist check-up/i.test(entry.text);
+      }
+    },
+    {
+      id: 'short-location-keys',
+      entries: [{
+        id: 'eval-short-keys',
+        text: 'Spare keys are in the blue tin',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'Where keys?',
+      expected: {
+        behaviour: 'answer',
+        answer: /blue tin/i,
+        sources: {
+          mode: 'exact',
+          ids: ['eval-short-keys']
+        }
+      },
+      supports: function (entry) {
+        return entry.id === 'eval-short-keys' &&
+          /Spare keys are in the blue tin/i.test(entry.text);
+      }
+    },
+    {
+      id: 'short-date-ambiguous-dentist',
+      entries: [
+        {
+          id: 'eval-short-dentist-one',
+          text: 'Dentist check-up',
+          room: 'appointments',
+          when: soon,
+          hasTime: false,
+          created: ago(2),
+          done: false
+        },
+        {
+          id: 'eval-short-dentist-two',
+          text: 'Dentist hygiene appointment',
+          room: 'appointments',
+          when: later,
+          hasTime: false,
+          created: ago(1),
+          done: false
+        }
+      ],
+      question: 'When dentist?',
+      expected: {
+        behaviour: 'clarify',
+        answer: /different scheduled dates|Which entry do you mean/i,
+        sources: {
+          mode: 'exact',
+          ids: [
+            'eval-short-dentist-one',
+            'eval-short-dentist-two'
+          ]
+        }
+      },
+      supports: function (entry) {
+        return entry.room === 'appointments' &&
+          /Dentist (check-up|hygiene appointment)/i.test(entry.text) &&
+          (entry.when === soon || entry.when === later);
+      }
+    },
+    {
+      id: 'subject-only-passport',
+      entries: [{
+        id: 'eval-short-passport',
+        text: 'Passport is in the top drawer',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'My passport',
+      expected: {
+        behaviour: 'answer',
+        answer: /1 saved entry matching those words/i,
+        sources: {
+          mode: 'exact',
+          ids: ['eval-short-passport']
+        }
+      },
+      supports: function (entry) {
+        return entry.id === 'eval-short-passport' &&
+          /Passport is in the top drawer/i.test(entry.text);
+      }
+    },
+    {
+      id: 'question-without-subject',
+      entries: [],
+      question: 'When?',
+      expected: {
+        behaviour: 'suggest',
+        answer: /ask me about something specific/i,
+        sources: {
+          mode: 'none',
+          ids: []
+        }
+      },
+      supports: function () {
+        return false;
+      }
+    }
+  ]);
+});
+
 test('ask evaluation: typo suggestions are clearly labelled and source-backed', function () {
   runAskEvaluationCase({
     id: 'passport-typo-suggestion',
