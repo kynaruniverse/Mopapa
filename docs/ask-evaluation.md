@@ -22,6 +22,33 @@ A passing evaluation requires the expected answer behaviour and the expected sup
 
 ## 2. Existing evaluation cases
 
+### Structured case format
+
+New structured evaluation scenarios use `runAskEvaluationCase()` in `tests/run.js`.
+
+Each case contains:
+
+| Field | Purpose |
+|---|---|
+| `id` | Stable identifier for the scenario |
+| `entries` | Saved memories supplied to Ask |
+| `question` | Exact user question |
+| `expected.behaviour` | `answer`, `clarify`, `abstain` or `suggest` |
+| `expected.answer` | Regular expression matching the required answer behaviour |
+| `expected.sources` | Expected source IDs and matching mode |
+| `expected.missed` | Optional expected unanswered-question state |
+| `supports` | Optional check that every returned source supports the answer |
+
+Source expectation modes:
+
+- `exact`: the complete returned source-ID set must match the expected IDs. Order is ignored.
+- `includes`: every listed source ID must be returned, but additional sources are permitted.
+- `none`: Ask must return no supporting sources.
+
+The shared runner checks the answer, expected behaviour category, source expectations and optional missed-question state. A `supports` predicate can additionally verify that each returned source genuinely supports the answer.
+
+The initial adoption covers grouped grounded-answer, clarification, abstention and typo-suggestion scenarios. Other specialist regression tests retain their existing direct assertions until they are migrated. This does not mean all 31 existing evaluation tests have been converted.
+
 The following cases already exist in `tests/run.js`. Do not recreate them under different names or add equivalent tests without identifying a specific uncovered behaviour.
 
 ### Grounding, abstention and typo handling
@@ -149,7 +176,7 @@ Before adding an evaluation case:
 
 1. Search `tests/run.js` and `tests/browser.js` for existing equivalent coverage.
 2. Identify the exact behaviour not already covered.
-3. Give the case a distinct scenario and expected outcome.
+3. Use `runAskEvaluationCase()` and the structured case format for new answer, clarification, abstention and suggestion scenarios.
 4. Include expected source IDs wherever the answer should be source-backed.
 5. Include competing or irrelevant memories where needed to test false positives.
 6. Use the fixed evaluation clock for all date-dependent cases. Keep test-only clock control in the test harness, not the production Ask API.
@@ -163,7 +190,7 @@ Keep the evaluation deterministic, local and dependency-free.
 The next steps, in order:
 
 1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
-2. Establish a structured case format with expected answer behaviour and expected sources.
+2. [x] Establish a structured case format with expected answer behaviour and expected sources.
 3. Add an evaluation summary that reports the metrics above.
 4. Audit source precision across the complete evaluation set.
 5. Expand only where a genuine coverage gap is demonstrated.
@@ -172,4 +199,4 @@ Do not replace the existing regression tests with a new framework or duplicate t
 
 ---
 
-**Current conclusion:** Mopapa has 31 Ask evaluation regression cases running under one fixed test-harness clock. The next priority is to establish a structured case format and aggregate reporting, not to add more tests indiscriminately.
+**Current conclusion:** Mopapa has 31 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner now checks expected answer behaviour and source expectations for the core grouped scenarios. Specialist regression tests retain their direct assertions until migrated. The next priority is aggregate reporting, not indiscriminate test expansion.
