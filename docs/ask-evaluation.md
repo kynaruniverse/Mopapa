@@ -118,9 +118,9 @@ The current 31 tests are distributed throughout `tests/run.js`. They are not yet
 
 Important limitations:
 
-- Some appointment dates are constructed relative to `Date.now()`.
-- Some cases use local date construction before conversion to ISO timestamps.
-- The suite does not use one injected, fixed evaluation clock.
+- All 31 `ask evaluation:` tests run under a fixed test-harness clock: `2026-11-17T12:00:00.000Z`.
+- The test harness applies the same clock to date fixture construction and to the Ask runtime without changing the production Ask API.
+- Some cases still use local date construction before conversion to ISO timestamps; calendar interpretation therefore remains subject to the test runtime's local timezone.
 - Assertions are individual pass/fail checks rather than an aggregate evaluation report.
 - The current suite does not calculate overall answer accuracy, false-positive rate, abstention rate or source precision.
 - Source correctness is checked in selected scenarios, not yet audited as a single aggregate metric across every answer.
@@ -152,7 +152,7 @@ Before adding an evaluation case:
 3. Give the case a distinct scenario and expected outcome.
 4. Include expected source IDs wherever the answer should be source-backed.
 5. Include competing or irrelevant memories where needed to test false positives.
-6. Use controlled dates and times once the evaluation clock is made injectable.
+6. Use the fixed evaluation clock for all date-dependent cases. Keep test-only clock control in the test harness, not the production Ask API.
 7. Keep evaluation assertions independent of implementation details where possible.
 8. Do not weaken an existing assertion merely to make a new case pass.
 
@@ -162,7 +162,7 @@ Keep the evaluation deterministic, local and dependency-free.
 
 The next steps, in order:
 
-1. Make date-dependent evaluation cases use a fixed, controlled clock.
+1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
 2. Establish a structured case format with expected answer behaviour and expected sources.
 3. Add an evaluation summary that reports the metrics above.
 4. Audit source precision across the complete evaluation set.
@@ -172,4 +172,4 @@ Do not replace the existing regression tests with a new framework or duplicate t
 
 ---
 
-**Current conclusion:** Mopapa already has 31 useful Ask evaluation regression cases. The immediate priority is to make that coverage reproducible and measurable, not to add more tests indiscriminately.
+**Current conclusion:** Mopapa has 31 Ask evaluation regression cases running under one fixed test-harness clock. The next priority is to establish a structured case format and aggregate reporting, not to add more tests indiscriminately.

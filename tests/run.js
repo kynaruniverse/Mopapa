@@ -1,5 +1,8 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
 
+const ASK_EVALUATION_NOW = Date.UTC(2026, 10, 17, 12, 0, 0, 0);
+let activeTestNow = null;
+
 function boot(storage, storageApi) {
   const ls = {
     _: Object.assign({}, storage),
@@ -25,6 +28,33 @@ function boot(storage, storageApi) {
       storage: storageApi
     }
   };
+  
+  if (activeTestNow !== null) {
+    const NativeDate = Date;
+
+    function FixedDate() {
+      if (!(this instanceof FixedDate)) {
+        return new NativeDate(activeTestNow).toString();
+      }
+
+      const args = Array.prototype.slice.call(arguments);
+
+      return Reflect.construct(
+        NativeDate,
+        args.length ? args : [activeTestNow]
+      );
+    }
+
+    FixedDate.prototype = NativeDate.prototype;
+    FixedDate.now = function () {
+      return activeTestNow;
+    };
+    FixedDate.parse = NativeDate.parse;
+    FixedDate.UTC = NativeDate.UTC;
+
+    win.Date = FixedDate;
+  }
+  
   win.window = win;
   vm.createContext(win);
 
@@ -279,7 +309,28 @@ function bootTalk() {
 }
 
 const tests = [];
-function test(name, fn) { tests.push([name, fn]); }
+function test(name, fn) {
+  if (name.indexOf('ask evaluation:') !== 0) {
+    tests.push([name, fn]);
+    return;
+  }
+
+  tests.push([name, async function () {
+    const originalDateNow = Date.now;
+
+    activeTestNow = ASK_EVALUATION_NOW;
+    Date.now = function () {
+      return ASK_EVALUATION_NOW;
+    };
+
+    try {
+      await fn();
+    } finally {
+      Date.now = originalDateNow;
+      activeTestNow = null;
+    }
+  }]);
+}
 
 test('talk interface loads and attaches its submit handler', function () {
   const app = bootTalk();
@@ -13334,6 +13385,16 @@ test('ask evaluation: original cost selects the oldest saved version', function 
     }),
     ['eval-history-cost-original']
   );
+});
+
+test('test harness restores the real clock after Ask evaluation cases', function () {
+  const before = Date.now();
+  const w = boot({});
+  const appNow = vm.runInContext('Date.now()', w);
+  const appDateNow = vm.runInContext('new Date().getTime()', w);
+
+  assert.ok(Math.abs(appNow - before) < 1000);
+  assert.ok(Math.abs(appDateNow - before) < 1000);
 });
 
 function reboot(w) {
