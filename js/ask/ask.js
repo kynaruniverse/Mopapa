@@ -114,6 +114,13 @@ Mopapa.ask = (function () {
 
     var all = storeData.entries.slice();
 
+    if (questionIntent.isNegatedLocationQuestion(q)) {
+      return {
+        answer: 'I cannot safely infer a negative location from a saved memory. Try asking where the item is saved instead.',
+        sources: []
+      };
+    }
+
     var room = roomForQuestion(q);
     var date = explicitDateFilter(
       q,

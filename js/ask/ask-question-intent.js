@@ -13,6 +13,14 @@ Mopapa.askParts.questionIntent = (function () {
       /\bwhich\s+(?:folder|drawer|room|place)\b/.test(n);
   }
 
+  function isNegatedLocationQuestion(q) {
+    var n = norm(q);
+
+    return isLocationQuestion(q) &&
+      /\b(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt)\b/
+        .test(n);
+  }
+
   function isDirectQuestion(q) {
     var n = norm(q);
 
@@ -69,6 +77,7 @@ Mopapa.askParts.questionIntent = (function () {
   
   return {
     isLocationQuestion: isLocationQuestion,
+    isNegatedLocationQuestion: isNegatedLocationQuestion,
     isDirectQuestion: isDirectQuestion,
     isItemsQuestion: isItemsQuestion,
     isHistoricalQuestion: isHistoricalQuestion,

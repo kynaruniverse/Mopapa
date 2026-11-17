@@ -15417,6 +15417,21 @@ test('question intent identifies location questions', function () {
   assert.strictEqual(intent.isLocationQuestion('Where are my keys?'), true);
   assert.strictEqual(intent.isLocationQuestion('Which room has my books?'), true);
   assert.strictEqual(intent.isLocationQuestion('What did I save?'), false);
+
+  assert.strictEqual(
+    intent.isNegatedLocationQuestion("Where didn't I put my keys?"),
+    true
+  );
+
+  assert.strictEqual(
+    intent.isNegatedLocationQuestion("Where don't I keep my keys?"),
+    true
+  );
+
+  assert.strictEqual(
+    intent.isNegatedLocationQuestion('Where are my keys?'),
+    false
+  );
   assert.strictEqual(intent.isLocationQuestion('When is the dentist?'), false);
 });
 
