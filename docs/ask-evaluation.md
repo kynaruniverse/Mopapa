@@ -139,34 +139,53 @@ The existing tests provide useful regression evidence for:
 
 The suite is an important correctness safeguard. It does not establish a general percentage accuracy for real-world user questions.
 
-## 4. Current measurement limitations
+## 4. Current measurement scope
 
-The current 31 tests are distributed throughout `tests/run.js`. They are not yet a separate evaluation runner or a consolidated report.
+The current evaluation suite contains 31 named tests beginning with `ask evaluation:`.
+
+Ten individual scenarios currently use the structured runner. They are grouped within four named tests:
+
+- 4 expected-answer scenarios.
+- 3 expected-clarification scenarios.
+- 2 expected-abstention scenarios.
+- 1 typo-suggestion scenario.
+
+The test runner prints an evaluation summary after the full unit suite.
+
+The summary reports:
+
+- Structured scenarios passed and failed.
+- Expected behaviour coverage by category.
+- Expected-answer pattern assertion results.
+- Expected source-ID assertion results.
+- Selected clarification and abstention scenario results.
+- Explicit semantic source-support checks.
 
 Important limitations:
 
-- All 31 `ask evaluation:` tests run under a fixed test-harness clock: `2026-11-17T12:00:00.000Z`.
-- The test harness applies the same clock to date fixture construction and to the Ask runtime without changing the production Ask API.
-- Some cases still use local date construction before conversion to ISO timestamps; calendar interpretation therefore remains subject to the test runtime's local timezone.
-- Assertions are individual pass/fail checks rather than an aggregate evaluation report.
-- The current suite does not calculate overall answer accuracy, false-positive rate, abstention rate or source precision.
-- Source correctness is checked in selected scenarios, not yet audited as a single aggregate metric across every answer.
+- The 10 structured scenarios are not the complete 31-test evaluation set.
+- Only 4 of the 10 structured scenarios currently have semantic `supports` predicates.
+- Source-ID matching does not prove that a source semantically supports the answer.
+- The expected-answer regular expressions are regression assertions, not a complete measure of factual correctness.
+- The two expected-abstention scenarios describe the composition of this curated test set, not the rate at which real users receive abstentions.
+- The suite does not yet classify every unsupported factual claim, so a global false-positive rate cannot be calculated.
+- Some date fixtures use local date construction before conversion to ISO timestamps. Calendar interpretation therefore remains subject to the test runtime's local timezone.
 - The cases are hand-authored regression scenarios, not a representative sample of actual user questions.
 
-Do not describe the current 31 passing tests as 100% Ask accuracy.
+Do not describe the current results as general Ask accuracy.
 
-## 5. Evaluation metrics to establish
+## 5. Evaluation metrics and reporting
 
-When a reproducible evaluation runner is introduced, report these separately:
-
-| Metric | Meaning |
+| Metric | Current reporting and limitation |
 |---|---|
-| Answer correctness | Whether the answer matches the expected outcome |
-| False-positive rate | How often Ask gives an unsupported or incorrect factual answer |
-| Abstention rate | How often Ask declines to provide a factual answer |
-| Appropriate abstention | Whether Ask abstains when evidence is insufficient or conflicting |
-| Source precision | Whether every displayed source genuinely supports the answer |
-| Clarification correctness | Whether Ask asks for clarification when the evidence requires it |
+| Answer correctness | Expected-answer pattern checks are counted. This is not a global semantic accuracy measurement. |
+| False-positive rate | Not measured. The complete set does not classify every factual claim against ground truth. |
+| Abstention rate | Not measured as a product rate. The summary reports only the proportion of curated scenarios designed to abstain. |
+| Appropriate abstention | Reports passing expected-abstention scenarios. This is limited to the selected cases. |
+| Source precision | Not measured globally. Explicit semantic support checks cover only scenarios with a `supports` predicate. |
+| Clarification correctness | Reports passing expected-clarification scenarios. This is limited to the selected cases. |
+
+Source-ID expectations and semantic source support are different checks. Passing an expected source-ID assertion does not, by itself, establish source precision.
 
 Do not optimise answer rate at the expense of unsupported answers. A justified abstention is preferable to an invented fact.
 

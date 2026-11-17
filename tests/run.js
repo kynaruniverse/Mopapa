@@ -10842,87 +10842,282 @@ function askWith(entries, question) {
   return w.Mopapa.ask.answer(question);
 }
 
+const askEvaluationResults = [];
+
 function runAskEvaluationCase(item) {
-  assert.ok(
-    item && typeof item.id === 'string' && item.id,
-    'An evaluation case needs a stable ID'
-  );
+  const expected = item && item.expected ? item.expected : {};
 
-  assert.ok(Array.isArray(item.entries), item.id + ' needs entries');
-  assert.strictEqual(typeof item.question, 'string', item.id + ' needs a question');
+  const record = {
+    id: item && item.id ? item.id :
+      'invalid-case-' + (askEvaluationResults.length + 1),
+    behaviour: expected.behaviour || 'unknown',
+    answerChecked: false,
+    answerPassed: false,
+    sourcesChecked: false,
+    sourcesPassed: false,
+    missedChecked: false,
+    missedPassed: false,
+    supportsExpected: !!(
+      item && typeof item.supports === 'function'
+    ),
+    supportChecks: 0,
+    supportPassed: 0,
+    passed: false,
+    error: null
+  };
 
-  const expected = item.expected || {};
-  const behaviours = ['answer', 'clarify', 'abstain', 'suggest'];
+  askEvaluationResults.push(record);
 
-  assert.ok(
-    behaviours.indexOf(expected.behaviour) !== -1,
-    item.id + ' has an unsupported expected behaviour'
-  );
+  try {
+    assert.ok(
+      item && typeof item.id === 'string' && item.id,
+      'An evaluation case needs a stable ID'
+    );
 
-  assert.ok(
-    expected.answer instanceof RegExp,
-    item.id + ' needs an expected answer pattern'
-  );
+    assert.ok(Array.isArray(item.entries), item.id + ' needs entries');
+    assert.strictEqual(typeof item.question, 'string', item.id + ' needs a question');
 
-  assert.ok(
-    expected.sources &&
-    Array.isArray(expected.sources.ids),
-    item.id + ' needs an expected source definition'
-  );
+    const behaviours = ['answer', 'clarify', 'abstain', 'suggest'];
 
-  const result = askWith(item.entries, item.question);
+    assert.ok(
+      behaviours.indexOf(expected.behaviour) !== -1,
+      item.id + ' has an unsupported expected behaviour'
+    );
 
-  assert.ok(
-    expected.answer.test(result.answer),
-    item.id + ' returned an unexpected answer: ' + result.answer
-  );
+    assert.ok(
+      expected.answer instanceof RegExp,
+      item.id + ' needs an expected answer pattern'
+    );
 
-  const sourceIds = Array.from(result.sources).map(function (entry) {
-    return entry.id;
+    assert.ok(
+      expected.sources &&
+      Array.isArray(expected.sources.ids),
+      item.id + ' needs an expected source definition'
+    );
+
+    const result = askWith(item.entries, item.question);
+
+    record.answerChecked = true;
+
+    assert.ok(
+      expected.answer.test(result.answer),
+      item.id + ' returned an unexpected answer: ' + result.answer
+    );
+
+    record.answerPassed = true;
+    record.sourcesChecked = true;
+
+    const sourceIds = Array.from(result.sources).map(function (entry) {
+      return entry.id;
+    });
+
+    if (expected.sources.mode === 'exact') {
+      assert.deepStrictEqual(
+        sourceIds.slice().sort(),
+        expected.sources.ids.slice().sort(),
+        item.id + ' returned incorrect supporting sources'
+      );
+    } else if (expected.sources.mode === 'includes') {
+      expected.sources.ids.forEach(function (id) {
+        assert.ok(
+          sourceIds.includes(id),
+          item.id + ' did not include required source: ' + id
+        );
+      });
+    } else if (expected.sources.mode === 'none') {
+      assert.strictEqual(
+        sourceIds.length,
+        0,
+        item.id + ' should not return supporting sources'
+      );
+    } else {
+      assert.fail(item.id + ' has an unsupported source expectation mode');
+    }
+
+    record.sourcesPassed = true;
+
+    if (Object.prototype.hasOwnProperty.call(expected, 'missed')) {
+      record.missedChecked = true;
+
+      assert.strictEqual(
+        result.missed,
+        expected.missed,
+        item.id + ' returned an incorrect missed-question state'
+      );
+
+      record.missedPassed = true;
+    }
+
+    if (typeof item.supports === 'function') {
+      result.sources.forEach(function (entry) {
+        record.supportChecks++;
+
+        assert.ok(
+          item.supports(entry),
+          item.id + ' returned a source that does not support its answer'
+        );
+
+        record.supportPassed++;
+      });
+    }
+
+    record.passed = true;
+    return result;
+  } catch (e) {
+    record.error = e && e.message ? e.message : String(e);
+    throw e;
+  }
+}
+
+function runAskEvaluationCases(items) {
+  const failures = [];
+
+  items.forEach(function (item) {
+    try {
+      runAskEvaluationCase(item);
+    } catch (e) {
+      failures.push(e.message);
+    }
   });
 
-  if (expected.sources.mode === 'exact') {
-    assert.deepStrictEqual(
-      sourceIds.slice().sort(),
-      expected.sources.ids.slice().sort(),
-      item.id + ' returned incorrect supporting sources'
-    );
-  } else if (expected.sources.mode === 'includes') {
-    expected.sources.ids.forEach(function (id) {
-      assert.ok(
-        sourceIds.includes(id),
-        item.id + ' did not include required source: ' + id
-      );
-    });
-  } else if (expected.sources.mode === 'none') {
-    assert.strictEqual(
-      sourceIds.length,
-      0,
-      item.id + ' should not return supporting sources'
-    );
-  } else {
-    assert.fail(item.id + ' has an unsupported source expectation mode');
-  }
-
-  if (Object.prototype.hasOwnProperty.call(expected, 'missed')) {
-    assert.strictEqual(
-      result.missed,
-      expected.missed,
-      item.id + ' returned an incorrect missed-question state'
-    );
-  }
-
-  if (typeof item.supports === 'function') {
-    result.sources.forEach(function (entry) {
-      assert.ok(
-        item.supports(entry),
-        item.id + ' returned a source that does not support its answer'
-      );
-    });
-  }
-
-  return result;
+  assert.strictEqual(
+    failures.length,
+    0,
+    'Structured Ask evaluation cases failed:\n' + failures.join('\n')
+  );
 }
+
+function summariseAskEvaluationCases(cases) {
+  const summary = {
+    total: cases.length,
+    passed: 0,
+    failed: 0,
+    answer: {
+      checked: 0,
+      passed: 0
+    },
+    sources: {
+      checked: 0,
+      passed: 0
+    },
+    missed: {
+      checked: 0,
+      passed: 0
+    },
+    sourceSupport: {
+      cases: 0,
+      checked: 0,
+      passed: 0
+    },
+    behaviours: {
+      answer: { total: 0, passed: 0 },
+      clarify: { total: 0, passed: 0 },
+      abstain: { total: 0, passed: 0 },
+      suggest: { total: 0, passed: 0 }
+    }
+  };
+
+  cases.forEach(function (record) {
+    if (record.passed) {
+      summary.passed++;
+    } else {
+      summary.failed++;
+    }
+
+    const behaviour = summary.behaviours[record.behaviour];
+
+    if (behaviour) {
+      behaviour.total++;
+
+      if (record.passed) {
+        behaviour.passed++;
+      }
+    }
+
+    if (record.answerChecked) {
+      summary.answer.checked++;
+
+      if (record.answerPassed) {
+        summary.answer.passed++;
+      }
+    }
+
+    if (record.sourcesChecked) {
+      summary.sources.checked++;
+
+      if (record.sourcesPassed) {
+        summary.sources.passed++;
+      }
+    }
+
+    if (record.missedChecked) {
+      summary.missed.checked++;
+
+      if (record.missedPassed) {
+        summary.missed.passed++;
+      }
+    }
+
+    if (record.supportsExpected) {
+      summary.sourceSupport.cases++;
+      summary.sourceSupport.checked += record.supportChecks;
+      summary.sourceSupport.passed += record.supportPassed;
+    }
+  });
+
+  return summary;
+}
+
+test('evaluation summary aggregates structured scenario checks', function () {
+  const summary = summariseAskEvaluationCases([
+    {
+      behaviour: 'answer',
+      passed: true,
+      answerChecked: true,
+      answerPassed: true,
+      sourcesChecked: true,
+      sourcesPassed: true,
+      missedChecked: false,
+      supportsExpected: true,
+      supportChecks: 1,
+      supportPassed: 1
+    },
+    {
+      behaviour: 'abstain',
+      passed: false,
+      answerChecked: true,
+      answerPassed: false,
+      sourcesChecked: false,
+      sourcesPassed: false,
+      missedChecked: false,
+      supportsExpected: false,
+      supportChecks: 0,
+      supportPassed: 0
+    }
+  ]);
+
+  assert.strictEqual(summary.total, 2);
+  assert.strictEqual(summary.passed, 1);
+  assert.strictEqual(summary.failed, 1);
+
+  assert.deepStrictEqual(
+    summary.behaviours.answer,
+    { total: 1, passed: 1 }
+  );
+
+  assert.deepStrictEqual(
+    summary.behaviours.abstain,
+    { total: 1, passed: 0 }
+  );
+
+  assert.strictEqual(summary.answer.checked, 2);
+  assert.strictEqual(summary.answer.passed, 1);
+  assert.strictEqual(summary.sources.checked, 1);
+  assert.strictEqual(summary.sources.passed, 1);
+  assert.strictEqual(summary.sourceSupport.cases, 1);
+  assert.strictEqual(summary.sourceSupport.checked, 1);
+  assert.strictEqual(summary.sourceSupport.passed, 1);
+});
 
 function ago(days) { return new Date(Date.now() - days * 86400000).toISOString(); }
 
@@ -12237,9 +12432,7 @@ test('ask evaluation: realistic answers are grounded in their supporting memorie
     }
   ];
 
-  cases.forEach(function (item) {
-    runAskEvaluationCase(item);
-  });
+  runAskEvaluationCases(cases);
 });
 
 test('ask evaluation: conflicting dates, recipients and costs require clarification', function () {
@@ -12333,50 +12526,49 @@ test('ask evaluation: conflicting dates, recipients and costs require clarificat
     }
   ];
 
-  cases.forEach(function (item) {
-    runAskEvaluationCase(item);
-  });
+  runAskEvaluationCases(cases);
 });
 
 test('ask evaluation: unsupported answers are not invented', function () {
-  runAskEvaluationCase({
-    id: 'unknown-location',
-    entries: [{
-      id: 'eval-passport',
-      text: 'Passport is in the top drawer',
-      room: 'notes',
-      created: ago(1)
-    }],
-    question: 'Where is my umbrella?',
-    expected: {
-      behaviour: 'abstain',
-      answer: /could not find/i,
-      sources: {
-        mode: 'none',
-        ids: []
-      },
-      missed: true
-    }
-  });
-
-  runAskEvaluationCase({
-    id: 'unknown-cost',
-    entries: [{
-      id: 'eval-no-price',
-      text: 'Boiler service booked for Friday',
-      room: 'notes',
-      created: ago(1)
-    }],
-    question: 'How much did the boiler service cost?',
-    expected: {
-      behaviour: 'abstain',
-      answer: /will not guess an amount/i,
-      sources: {
-        mode: 'exact',
-        ids: ['eval-no-price']
+  runAskEvaluationCases([
+    {
+      id: 'unknown-location',
+      entries: [{
+        id: 'eval-passport',
+        text: 'Passport is in the top drawer',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'Where is my umbrella?',
+      expected: {
+        behaviour: 'abstain',
+        answer: /could not find/i,
+        sources: {
+          mode: 'none',
+          ids: []
+        },
+        missed: true
+      }
+    },
+    {
+      id: 'unknown-cost',
+      entries: [{
+        id: 'eval-no-price',
+        text: 'Boiler service booked for Friday',
+        room: 'notes',
+        created: ago(1)
+      }],
+      question: 'How much did the boiler service cost?',
+      expected: {
+        behaviour: 'abstain',
+        answer: /will not guess an amount/i,
+        sources: {
+          mode: 'exact',
+          ids: ['eval-no-price']
+        }
       }
     }
-  });
+  ]);
 });
 
 test('ask evaluation: typo suggestions are clearly labelled and source-backed', function () {
@@ -16243,6 +16435,94 @@ test('storage protection interface explains that it does not replace backups', f
   assert.ok(main.includes('The browser did not grant persistent storage.'));
 });
 
+function printAskEvaluationSummary() {
+  const summary = summariseAskEvaluationCases(askEvaluationResults);
+
+  const namedEvaluationTests = tests.filter(function (item) {
+    return item[0].indexOf('ask evaluation:') === 0;
+  }).length;
+
+  const behaviours = ['answer', 'clarify', 'abstain', 'suggest'];
+  const expectedAbstentions = summary.behaviours.abstain.total;
+
+  const abstentionShare = summary.total
+    ? (expectedAbstentions / summary.total * 100).toFixed(1)
+    : '0.0';
+
+  console.log('');
+  console.log('ASK EVALUATION SUMMARY');
+  console.log(
+    'Structured scenarios: ' +
+    summary.passed + '/' + summary.total +
+    ' passed; ' + summary.failed + ' failed'
+  );
+
+  console.log(
+    'Named Ask evaluation tests in suite: ' + namedEvaluationTests
+  );
+
+  console.log(
+    'Expected behaviour results (curated test set, not user traffic):'
+  );
+
+  behaviours.forEach(function (name) {
+    const group = summary.behaviours[name];
+
+    console.log(
+      '  ' + name + ': ' +
+      group.passed + '/' + group.total + ' scenarios passed'
+    );
+  });
+
+  console.log(
+    'Expected-answer pattern checks: ' +
+    summary.answer.passed + '/' + summary.answer.checked
+  );
+
+  console.log(
+    'Expected-source-ID checks: ' +
+    summary.sources.passed + '/' + summary.sources.checked
+  );
+
+  console.log(
+    'Clarification correctness: ' +
+    summary.behaviours.clarify.passed + '/' +
+    summary.behaviours.clarify.total + ' selected scenarios'
+  );
+
+  console.log(
+    'Appropriate abstention: ' +
+    summary.behaviours.abstain.passed + '/' +
+    summary.behaviours.abstain.total + ' selected scenarios'
+  );
+
+  console.log(
+    'Abstention rate: NOT MEASURED as a product rate; ' +
+    expectedAbstentions + '/' + summary.total +
+    ' curated scenarios expect abstention (' +
+    abstentionShare + '% of this test set only)'
+  );
+
+  console.log(
+    'False-positive rate: NOT MEASURED; the current cases do not ' +
+    'classify every factual claim against a complete ground-truth set.'
+  );
+
+  console.log(
+    'Source precision: NOT MEASURED globally; explicit semantic ' +
+    'source checks passed ' +
+    summary.sourceSupport.passed + '/' +
+    summary.sourceSupport.checked + ' returned sources across ' +
+    summary.sourceSupport.cases + '/' +
+    summary.total + ' scenarios.'
+  );
+
+  console.log(
+    'Global answer accuracy: NOT MEASURED; expected-answer patterns ' +
+    'are regression assertions, not a representative accuracy sample.'
+  );
+}
+
 (async function () {
   let failed = 0;
 
@@ -16257,6 +16537,8 @@ test('storage protection interface explains that it does not replace backups', f
       console.log('FAIL', t[0], '-', e.message);
     }
   }
+
+  printAskEvaluationSummary();
 
   console.log((tests.length - failed) + '/' + tests.length + ' tests passed');
   process.exit(failed ? 1 : 0);
