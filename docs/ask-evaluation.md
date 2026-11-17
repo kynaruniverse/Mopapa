@@ -211,11 +211,11 @@ The next steps, in order:
 1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
 2. [x] Establish a structured case format with expected answer behaviour and expected sources.
 3. [x] Add an evaluation summary that reports the metrics above.
-4. Audit source precision across the complete evaluation set.
+4. [x] Audit semantic source support across all 31 named regression tests in the curated evaluation set.
 5. Expand only where a genuine coverage gap is demonstrated.
 
 Do not replace the existing regression tests with a new framework or duplicate their scenarios.
 
 ---
 
-**Current conclusion:** Mopapa has 31 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner now checks expected answer behaviour and source expectations for the core grouped scenarios. Specialist regression tests retain their direct assertions until migrated. The next priority is aggregate reporting, not indiscriminate test expansion.
+**Current conclusion:** Mopapa has 31 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks expected answer behaviour and source expectations for the core grouped scenarios. A semantic source-support audit now covers returned sources across all 31 named tests. The CI summary reports curated-set source-support results while correctly leaving global source precision unmeasured. The next priority is expanding only where a genuine coverage gap is demonstrated.
