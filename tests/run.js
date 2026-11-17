@@ -12660,9 +12660,9 @@ test('ask evaluation: punctuation and casing preserve equivalent grounded answer
   assert.ok(/blue tin/i.test(ordinary.answer), ordinary.answer);
   assert.ok(/blue tin/i.test(varied.answer), varied.answer);
 
-  assert.deepStrictEqual(
-    ordinary.sources.map(function (entry) { return entry.id; }),
-    varied.sources.map(function (entry) { return entry.id; }),
+  assert.strictEqual(
+    ordinary.sources.map(function (entry) { return entry.id; }).join('|'),
+    varied.sources.map(function (entry) { return entry.id; }).join('|'),
     'Equivalent questions should return the same supporting source IDs'
   );
 });
