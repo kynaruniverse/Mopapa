@@ -13615,6 +13615,31 @@ test('ask evaluation: unqualified questions do not silently choose between chang
   );
 });
 
+test('ask: negative location questions do not produce positive location claims', function () {
+  const entries = [{
+    id: 'negative-location-keys',
+    text: 'Spare keys are in the blue tin',
+    room: 'notes',
+    created: ago(1)
+  }];
+
+  const questions = [
+    "Where didn't I put my spare keys?",
+    "Where don't I keep my spare keys?"
+  ];
+
+  questions.forEach(function (question) {
+    const result = askWith(entries, question);
+
+    assert.ok(
+      !/^(?:They are|It is)\s+(?:in|inside|on|under|behind|beside|next to|within)\b/i
+        .test(result.answer),
+      'Negative wording must not produce a positive location claim: ' +
+        result.answer
+    );
+  });
+});
+
 test('ask evaluation: newest location is determined by saved timestamp, not storage order', function () {
   const entries = [
     {
