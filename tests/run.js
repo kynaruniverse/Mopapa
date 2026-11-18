@@ -13776,7 +13776,11 @@ test('ask: negative location questions do not produce positive location claims',
     'Where did I not leave my spare keys?',
     'Where have I never kept my spare keys?',
     "Where haven't I stored my spare keys?",
-    "Where wouldn't I put my spare keys?"
+    "Where wouldn't I put my spare keys?",
+    "Where can't I keep my spare keys?",
+    'Where cannot I keep my spare keys?',
+    "Where won't I put my spare keys?",
+    "Where mustn't I keep my spare keys?"
   ];
 
   questions.forEach(function (question) {

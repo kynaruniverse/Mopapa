@@ -17,7 +17,7 @@ Mopapa.askParts.questionIntent = (function () {
     var n = norm(q);
 
     return isLocationQuestion(q) &&
-      /\b(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt)\b/
+      /\b(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt|cant|cannot|wont|mustnt)\b/
         .test(n);
   }
 
