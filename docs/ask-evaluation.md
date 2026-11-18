@@ -65,16 +65,6 @@ The following cases already exist in `tests/run.js`. Do not recreate them under 
    - Checks a misspelled query.
    - Requires the relevant suggested memory to appear among the sources.
 
-### Incomplete and negated questions
-
-32. `ask evaluation: negative location questions cannot produce unsupported positive location claims`
-   - Checks that negated location questions do not receive a positive location answer from a saved memory.
-   - Requires a safe response rather than an unsupported inference.
-
-33. `ask evaluation: incomplete prompts preserve safe answer, clarification and suggestion behaviour`
-   - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
-   - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
-
 ### Conflicts and ambiguity
 
 4. `ask evaluation: conflicting dates, recipients and costs require clarification`
@@ -135,6 +125,16 @@ These cases cover confirmed costs, excluded financial statements, ambiguity and 
 
 These cases cover current and historical locations, including the distinction between storage order and saved chronology.
 
+### Incomplete and negated questions
+
+32. `ask evaluation: negative location questions cannot produce unsupported positive location claims`
+   - Checks that negated location questions do not receive a positive location answer from a saved memory.
+   - Requires a safe response rather than an unsupported inference.
+
+33. `ask evaluation: incomplete prompts preserve safe answer, clarification and suggestion behaviour`
+   - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
+   - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
+
 ## 3. What the current suite proves
 
 The existing tests provide useful regression evidence for:
@@ -153,7 +153,7 @@ The suite is an important correctness safeguard. It does not establish a general
 
 The current evaluation suite contains 33 named tests beginning with `ask evaluation:`.
 
-Ten individual scenarios currently use the structured runner. They are grouped within four named tests:
+Fifteen individual scenarios currently use the structured runner. They are grouped within five named tests:
 
 - 7 expected-answer scenarios.
 - 4 expected-clarification scenarios.
@@ -196,7 +196,7 @@ Do not describe the current results as general Ask accuracy.
 | Source precision | Not measured globally. Explicit semantic support checks cover only scenarios with a `supports` predicate. |
 | Clarification correctness | Reports passing expected-clarification scenarios. This is limited to the selected cases. |
 
-Curated-set semantic source support is reported across all 32 named tests. Global source precision remains unmeasured; the fixtures are not a representative sample of real user questions.
+Curated-set semantic source support is reported across all 33 named tests. Global source precision remains unmeasured; the fixtures are not a representative sample of real user questions.
 
 Do not optimise answer rate at the expense of unsupported answers. A justified abstention is preferable to an invented fact.
 
@@ -222,7 +222,7 @@ The next steps, in order:
 1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
 2. [x] Establish a structured case format with expected answer behaviour and expected sources.
 3. [x] Add an evaluation summary that reports the metrics above.
-4. [x] Audit semantic source support across all 32 named regression tests in the curated evaluation set.
+4. [x] Audit semantic source support across all 33 named regression tests in the curated evaluation set.
 5. Expand only where a genuine coverage gap is demonstrated.
 
 Do not replace the existing regression tests with a new framework or duplicate their scenarios.
