@@ -135,7 +135,7 @@ These cases cover current and historical locations, including the distinction be
    - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
    - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
 
-The separate direct regression test `ask: negative location questions do not produce positive location claims` covers ten negated location-question forms, including `can't`, `cannot`, `won't` and `mustn't`. Each form must receive the safe response and return no supporting sources. It is not counted among the 33 tests explicitly labelled `ask evaluation:`.
+The direct regression test `ask: negative location questions do not produce positive location claims` covers ten negated location-question forms, including `can't`, `cannot`, `won't` and `mustn't`. Each form must receive the safe response and return no supporting sources. A separate clause-scope regression test checks that negation is evaluated within the first location-question clause, rather than being triggered by unrelated later sentences. Neither test is counted among the 33 tests explicitly labelled `ask evaluation:`.
 
 ## 3. What the current suite proves
 
@@ -143,6 +143,7 @@ The existing tests provide useful regression evidence for:
 
 - Grounded answers with expected supporting entries.
 - Selected cases of unsupported questions and conservative fallback.
+- Conservative handling of negative location questions, including clause-scoped negation detection.
 - Selected ambiguity and clarification behaviour.
 - Appointment history and chronology.
 - Cost exclusions and historical amounts.
@@ -231,4 +232,4 @@ Do not replace the existing regression tests with a new framework or duplicate t
 
 ---
 
-**Current conclusion:** Mopapa has 33 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks 15 scenarios covering grounded answers, clarification, abstention and suggestions. The latest CI run passed all 15 structured scenarios and all 64 semantic source-support checks across the 33 named tests. Recent additions cover negated location questions and incomplete prompts. The CI summary correctly leaves global source precision and global answer accuracy unmeasured. The next priority is to investigate only demonstrated gaps, without duplicating existing regression coverage.
+**Current conclusion:** Mopapa has 33 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks 15 scenarios covering grounded answers, clarification, abstention and suggestions. The latest completed CI baseline passed all 15 structured scenarios and all 64 semantic source-support checks across the 33 named tests. Direct regression coverage also protects ten negative location-question forms and checks that negation is scoped to the first location-question clause. The CI summary correctly leaves global source precision and global answer accuracy unmeasured. The next priority is to investigate only demonstrated gaps, without duplicating existing regression coverage.

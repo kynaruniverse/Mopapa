@@ -14,11 +14,17 @@ Mopapa.askParts.questionIntent = (function () {
   }
 
   function isNegatedLocationQuestion(q) {
-    var n = norm(q);
+    var clauses = String(q || '').split(/[.!?;]+/);
+    var negativePattern =
+      /\b(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt|cant|cannot|wont|mustnt)\b/;
 
-    return isLocationQuestion(q) &&
-      /\b(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt|cant|cannot|wont|mustnt)\b/
-        .test(n);
+    for (var i = 0; i < clauses.length; i++) {
+      if (!isLocationQuestion(clauses[i])) continue;
+
+      return negativePattern.test(norm(clauses[i]));
+    }
+
+    return false;
   }
 
   function isDirectQuestion(q) {

@@ -13801,6 +13801,54 @@ test('ask: negative location questions do not produce positive location claims',
   });
 });
 
+test('ask: location negation is scoped to the first location-question clause', function () {
+  const w = boot(stored([]));
+  const intent = w.Mopapa.askParts.questionIntent;
+
+  const cases = [
+    {
+      question: "Where can't I keep my spare keys?",
+      expected: true
+    },
+    {
+      question: "I was wondering. Where can't I keep my spare keys?",
+      expected: true
+    },
+    {
+      question: "Where did I not leave my spare keys?",
+      expected: true
+    },
+    {
+      question: "Where mustn't I keep my spare keys?",
+      expected: true
+    },
+    {
+      question: "Where are my spare keys? I don't know.",
+      expected: false
+    },
+    {
+      question: "Where did I put my spare keys? I can't remember.",
+      expected: false
+    },
+    {
+      question: "I don't know. Where are my spare keys?",
+      expected: false
+    },
+    {
+      question: "Where are my spare keys? I never remember.",
+      expected: false
+    }
+  ];
+
+  cases.forEach(function (item) {
+    assert.strictEqual(
+      intent.isNegatedLocationQuestion(item.question),
+      item.expected,
+      'Unexpected negation classification: ' + item.question
+    );
+  });
+});
+
 test('ask evaluation: newest location is determined by saved timestamp, not storage order', function () {
   const entries = [
     {
