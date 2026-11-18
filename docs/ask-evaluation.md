@@ -127,13 +127,15 @@ These cases cover current and historical locations, including the distinction be
 
 ### Incomplete and negated questions
 
-32. `ask evaluation: negative location questions cannot produce unsupported positive location claims`
-   - Checks that negated location questions do not receive a positive location answer from a saved memory.
-   - Requires a safe response rather than an unsupported inference.
+32. `ask evaluation: punctuation and casing preserve equivalent grounded answers`
+   - Checks ordinary, uppercase, polite and repeated-punctuation variants of the same question.
+   - Requires equivalent grounded answers and identical supporting source IDs.
 
 33. `ask evaluation: incomplete prompts preserve safe answer, clarification and suggestion behaviour`
    - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
    - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
+
+The separate direct regression test `ask: negative location questions do not produce positive location claims` covers six negated location-question forms. It is not counted among the 33 tests explicitly labelled `ask evaluation:`.
 
 ## 3. What the current suite proves
 
@@ -175,7 +177,7 @@ Important limitations:
 
 - The 15 structured scenarios are not the complete 33-test evaluation set.
 - Every structured scenario that returns sources has an explicit semantic support predicate. The source-free question-without-subject case has no source to assess. All 33 named tests are included in the source-support audit.
-- The latest CI run checked 62/62 returned sources across 33/33 named tests. This is curated regression coverage, not a global source-precision measurement.
+- The latest CI run checked 64/64 returned sources across 33/33 named tests. This is curated regression coverage, not a global source-precision measurement.
 - Source-ID matching does not prove that a source semantically supports the answer.
 - The expected-answer regular expressions are regression assertions, not a complete measure of factual correctness.
 - The two expected-abstention scenarios describe the composition of this curated test set, not the rate at which real users receive abstentions.
@@ -229,4 +231,4 @@ Do not replace the existing regression tests with a new framework or duplicate t
 
 ---
 
-**Current conclusion:** Mopapa has 33 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks 15 scenarios covering grounded answers, clarification, abstention and suggestions. The latest CI run passed all 15 structured scenarios and all 62 semantic source-support checks across the 33 named tests. Recent additions cover negated location questions and incomplete prompts. The CI summary correctly leaves global source precision and global answer accuracy unmeasured. The next priority is to investigate only demonstrated gaps, without duplicating existing regression coverage.
+**Current conclusion:** Mopapa has 33 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks 15 scenarios covering grounded answers, clarification, abstention and suggestions. The latest CI run passed all 15 structured scenarios and all 64 semantic source-support checks across the 33 named tests. Recent additions cover negated location questions and incomplete prompts. The CI summary correctly leaves global source precision and global answer accuracy unmeasured. The next priority is to investigate only demonstrated gaps, without duplicating existing regression coverage.
