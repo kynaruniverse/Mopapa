@@ -15969,7 +15969,6 @@ test('match resolution finds exact matches in the requested room', function () {
   assert.strictEqual(result.response, null);
 });
 
-
 test('match resolution searches other rooms when the guessed room has no match', function () {
   const w = boot();
   const resolve = w.Mopapa.askParts.matchResolution.resolveMatches;
@@ -16000,6 +15999,30 @@ test('match resolution searches other rooms when the guessed room has no match',
   assert.strictEqual(result.matches[0].id, 'fallback');
 });
 
+
+test('ask does not search other rooms when an empty Ideas room is requested', function () {
+  const result = askWith([
+    {
+      id: 'unrelated-meeting',
+      text: 'Meeting about the quarterly plans',
+      room: 'appointments',
+      created: ago(1)
+    },
+    {
+      id: 'unrelated-feelings',
+      text: 'I felt anxious about the meeting',
+      room: 'feelings',
+      created: ago(2)
+    }
+  ], 'What ideas did I have?');
+
+  assert.strictEqual(result.sources.length, 0);
+  assert.strictEqual(result.missed, true);
+  assert.ok(
+    /could not find anything matching/i.test(result.answer),
+    result.answer
+  );
+});
 
 test('match resolution excludes completed tasks from due-date matches', function () {
   const w = boot();

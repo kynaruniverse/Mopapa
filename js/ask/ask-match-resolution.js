@@ -25,7 +25,8 @@ Mopapa.askParts.matchResolution = (function () {
     var matches = findMatches(room);
 
     // A guessed room must never hide a matching saved entry.
-    if (room && !matches.length) {
+    // But an empty query must never search every room.
+    if (room && !matches.length && terms.length) {
       matches = findMatches(null);
     }
 
