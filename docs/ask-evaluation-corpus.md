@@ -115,7 +115,7 @@ M50| notes| 2026-11-16| —| Read about how lighthouse lenses work; this is unre
 30| Do I have anything planned or todo next Wednesday?| Answer with all relevant items| M20, M46
 31| What did I save for Noah's birthday?| Answer with all saved gift ideas| M21
 32| Where did I put the spare house key?| Answer| M22
-33| Who is the parcel for?| Answer| M23
+33| Who is the parcel for?| Answer| M23, M39
 34| How much was the car service originally?| Answer| M24
 35| What is the latest car service cost I saved?| Answer| M25
 36| Where is my passport?| Answer| M26

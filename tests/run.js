@@ -11101,6 +11101,7 @@ function askWith(entries, question, supports) {
 }
 
 
+
 test('diagnostic: 50-note Ask benchmark baseline', function () {
   const originalDateNow = Date.now;
   const previousTestNow = activeTestNow;
@@ -11121,11 +11122,15 @@ test('diagnostic: 50-note Ask benchmark baseline', function () {
       return room.id;
     });
 
+    const knownEntryIds = Object.create(null);
+
     corpus.entries.forEach(function (entry) {
       assert.ok(
         validRooms.includes(entry.room),
-        'Invalid room in benchmark: ' + entry.id + ' (' + entry.room + ')'
+        'Invalid benchmark room: ' + entry.id + ' (' + entry.room + ')'
       );
+
+      knownEntryIds[entry.id] = true;
     });
 
     const data = w.Mopapa.store.data();
@@ -11137,11 +11142,23 @@ test('diagnostic: 50-note Ask benchmark baseline', function () {
     });
 
     const results = [];
+
+    const scores = {
+      answer: { total: 0, passed: 0 },
+      clarify: { total: 0, passed: 0 },
+      abstain: { total: 0, passed: 0 }
+    };
+
     let exactSourceMatches = 0;
-    let completeSourceMatches = 0;
+    let requiredSourceMatches = 0;
+    let substantiveSourceTotal = 0;
+    let substantiveExactMatches = 0;
+    let substantiveRequiredMatches = 0;
 
     corpus.questions.forEach(function (item) {
       const result = w.Mopapa.ask.answer(item.question);
+
+      const answer = String(result.answer || '');
 
       const actualSources = Array.from(result.sources).map(
         function (entry) {
@@ -11151,32 +11168,54 @@ test('diagnostic: 50-note Ask benchmark baseline', function () {
 
       const expectedSources = item.expectedSources.slice().sort();
 
-      const exactMatch =
+      actualSources.forEach(function (id) {
+        assert.ok(
+          knownEntryIds[id],
+          'Ask returned a source outside the benchmark: ' + id
+        );
+      });
+
+      const exactSourceMatch =
         JSON.stringify(actualSources) ===
         JSON.stringify(expectedSources);
 
-      const completeMatch = expectedSources.every(
+      const requiredSourceMatch = expectedSources.every(
         function (id) {
           return actualSources.includes(id);
         }
       );
 
-      if (exactMatch) exactSourceMatches++;
-      if (completeMatch) completeSourceMatches++;
+      if (exactSourceMatch) exactSourceMatches++;
+      if (requiredSourceMatch) requiredSourceMatches++;
 
-      actualSources.forEach(function (id) {
-        assert.ok(
-          Object.prototype.hasOwnProperty.call(
-            Object.fromEntries(
-              corpus.entries.map(function (entry) {
-                return [entry.id, true];
-              })
-            ),
-            id
-          ),
-          'Ask returned a source outside the benchmark: ' + id
-        );
-      });
+      if (item.expectedBehaviour !== 'abstain') {
+        substantiveSourceTotal++;
+
+        if (exactSourceMatch) substantiveExactMatches++;
+        if (requiredSourceMatch) substantiveRequiredMatches++;
+      }
+
+      const responseTextMatches = item.expectedResponse.test(answer);
+
+      let behaviourMatches = false;
+
+      if (item.expectedBehaviour === 'answer') {
+        behaviourMatches = responseTextMatches;
+      } else if (item.expectedBehaviour === 'clarify') {
+        behaviourMatches =
+          responseTextMatches && actualSources.length > 1;
+      } else if (item.expectedBehaviour === 'abstain') {
+        behaviourMatches =
+          responseTextMatches &&
+          actualSources.length === 0 &&
+          result.missed === true;
+      }
+
+      const score = scores[item.expectedBehaviour];
+
+      score.total++;
+
+      if (behaviourMatches) score.passed++;
 
       const persistentStateAfter = JSON.stringify({
         entries: data.entries,
@@ -11196,28 +11235,56 @@ test('diagnostic: 50-note Ask benchmark baseline', function () {
         expectedBehaviour: item.expectedBehaviour,
         expectedSources: expectedSources,
         actualSources: actualSources,
-        exactMatch: exactMatch,
-        completeMatch: completeMatch,
-        answer: String(result.answer || ''),
+        exactSourceMatch: exactSourceMatch,
+        requiredSourceMatch: requiredSourceMatch,
+        responseMatches: responseTextMatches,
+        behaviourMatches: behaviourMatches,
+        answer: answer,
         missed: result.missed === true
       });
     });
 
     console.log('');
-    console.log('50-NOTE ASK DIAGNOSTIC BASELINE');
+    console.log('50-NOTE ASK SCORED BASELINE');
     console.log('Notes loaded: ' + corpus.entries.length);
     console.log('Questions run: ' + results.length);
+
     console.log(
-      'Exact expected-source matches: ' +
+      'Answer response criteria: ' +
+      scores.answer.passed + '/' + scores.answer.total
+    );
+
+    console.log(
+      'Clarification behaviour: ' +
+      scores.clarify.passed + '/' + scores.clarify.total
+    );
+
+    console.log(
+      'Abstention behaviour: ' +
+      scores.abstain.passed + '/' + scores.abstain.total
+    );
+
+    console.log(
+      'Exact source sets, answer/clarify questions: ' +
+      substantiveExactMatches + '/' + substantiveSourceTotal
+    );
+
+    console.log(
+      'All required sources retrieved, answer/clarify questions: ' +
+      substantiveRequiredMatches + '/' + substantiveSourceTotal
+    );
+
+    console.log(
+      'Exact source sets, including abstentions: ' +
       exactSourceMatches + '/' + results.length
     );
+
     console.log(
-      'All required sources retrieved: ' +
-      completeSourceMatches + '/' + results.length
+      'All required sources retrieved, including abstentions: ' +
+      requiredSourceMatches + '/' + results.length
     );
-    console.log(
-      'Answer correctness: NOT YET SCORED; answer text is reported for review.'
-    );
+
+    console.log('Individual question results:');
 
     results.forEach(function (item) {
       console.log(
@@ -11225,7 +11292,9 @@ test('diagnostic: 50-note Ask benchmark baseline', function () {
         ' [' + item.expectedBehaviour + ']' +
         ' expected=' + (item.expectedSources.join(',') || 'none') +
         ' actual=' + (item.actualSources.join(',') || 'none') +
-        ' exact=' + (item.exactMatch ? 'yes' : 'no') +
+        ' sources=' + (item.exactSourceMatch ? 'exact' : 'different') +
+        ' response=' + (item.responseMatches ? 'pass' : 'fail') +
+        ' behaviour=' + (item.behaviourMatches ? 'pass' : 'fail') +
         ' missed=' + item.missed +
         ' answer=' + item.answer.slice(0, 180)
       );
