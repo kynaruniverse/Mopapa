@@ -3,7 +3,7 @@
 
 **Purpose:** maintain a documented, repeatable regression set for Mopapa's deterministic, source-backed Ask system.
 
-**Current baseline:** 31 unit tests explicitly labelled `ask evaluation:` in `tests/run.js`.
+**Current baseline:** 33 unit tests explicitly labelled `ask evaluation:` in `tests/run.js`, with 15 structured scenarios.
 
 **Status:** existing regression coverage catalogued. This is not yet a statistically measured accuracy benchmark.
 
@@ -64,6 +64,16 @@ The following cases already exist in `tests/run.js`. Do not recreate them under 
 3. `ask evaluation: typo suggestions are clearly labelled and source-backed`
    - Checks a misspelled query.
    - Requires the relevant suggested memory to appear among the sources.
+
+### Incomplete and negated questions
+
+32. `ask evaluation: negative location questions cannot produce unsupported positive location claims`
+   - Checks that negated location questions do not receive a positive location answer from a saved memory.
+   - Requires a safe response rather than an unsupported inference.
+
+33. `ask evaluation: incomplete prompts preserve safe answer, clarification and suggestion behaviour`
+   - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
+   - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
 
 ### Conflicts and ambiguity
 
@@ -141,14 +151,14 @@ The suite is an important correctness safeguard. It does not establish a general
 
 ## 4. Current measurement scope
 
-The current evaluation suite contains 31 named tests beginning with `ask evaluation:`.
+The current evaluation suite contains 33 named tests beginning with `ask evaluation:`.
 
 Ten individual scenarios currently use the structured runner. They are grouped within four named tests:
 
-- 4 expected-answer scenarios.
-- 3 expected-clarification scenarios.
+- 7 expected-answer scenarios.
+- 4 expected-clarification scenarios.
 - 2 expected-abstention scenarios.
-- 1 typo-suggestion scenario.
+- 2 suggestion scenarios.
 
 The test runner prints an evaluation summary after the full unit suite.
 
@@ -163,8 +173,9 @@ The summary reports:
 
 Important limitations:
 
-- The 10 structured scenarios are not the complete 31-test evaluation set.
-- Every structured scenario that returns sources has an explicit semantic support predicate. The source-free unknown-location case has no source to assess. All 31 named tests are included in the source-support audit.
+- The 15 structured scenarios are not the complete 33-test evaluation set.
+- Every structured scenario that returns sources has an explicit semantic support predicate. The source-free question-without-subject case has no source to assess. All 33 named tests are included in the source-support audit.
+- The latest CI run checked 62/62 returned sources across 33/33 named tests. This is curated regression coverage, not a global source-precision measurement.
 - Source-ID matching does not prove that a source semantically supports the answer.
 - The expected-answer regular expressions are regression assertions, not a complete measure of factual correctness.
 - The two expected-abstention scenarios describe the composition of this curated test set, not the rate at which real users receive abstentions.
@@ -185,7 +196,7 @@ Do not describe the current results as general Ask accuracy.
 | Source precision | Not measured globally. Explicit semantic support checks cover only scenarios with a `supports` predicate. |
 | Clarification correctness | Reports passing expected-clarification scenarios. This is limited to the selected cases. |
 
-Curated-set semantic source support is reported across all 31 named tests. Global source precision remains unmeasured; the fixtures are not a representative sample of real user questions.
+Curated-set semantic source support is reported across all 32 named tests. Global source precision remains unmeasured; the fixtures are not a representative sample of real user questions.
 
 Do not optimise answer rate at the expense of unsupported answers. A justified abstention is preferable to an invented fact.
 
@@ -211,11 +222,11 @@ The next steps, in order:
 1. [x] Make date-dependent evaluation cases use a fixed, controlled clock.
 2. [x] Establish a structured case format with expected answer behaviour and expected sources.
 3. [x] Add an evaluation summary that reports the metrics above.
-4. [x] Audit semantic source support across all 31 named regression tests in the curated evaluation set.
+4. [x] Audit semantic source support across all 32 named regression tests in the curated evaluation set.
 5. Expand only where a genuine coverage gap is demonstrated.
 
 Do not replace the existing regression tests with a new framework or duplicate their scenarios.
 
 ---
 
-**Current conclusion:** Mopapa has 31 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks expected answer behaviour and source expectations for the core grouped scenarios. A semantic source-support audit now covers returned sources across all 31 named tests. The CI summary reports curated-set source-support results while correctly leaving global source precision unmeasured. The next priority is expanding only where a genuine coverage gap is demonstrated.
+**Current conclusion:** Mopapa has 33 Ask evaluation regression tests running under a fixed test-harness clock. A shared structured case runner checks 15 scenarios covering grounded answers, clarification, abstention and suggestions. The latest CI run passed all 15 structured scenarios and all 62 semantic source-support checks across the 33 named tests. Recent additions cover negated location questions and incomplete prompts. The CI summary correctly leaves global source precision and global answer accuracy unmeasured. The next priority is to investigate only demonstrated gaps, without duplicating existing regression coverage.
