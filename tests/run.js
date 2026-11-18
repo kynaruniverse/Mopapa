@@ -13837,6 +13837,22 @@ test('ask: location negation is scoped to the first location-question clause', f
     {
       question: "Where are my spare keys? I never remember.",
       expected: false
+    },
+    {
+      question: "Where are my spare keys if I can't remember where I put them?",
+      expected: false
+    },
+    {
+      question: "Where are my keys when I don't remember where I left them?",
+      expected: false
+    },
+    {
+      question: "Where are my spare keys and why can't I remember putting them away?",
+      expected: false
+    },
+    {
+      question: "Where did I not leave my spare keys?",
+      expected: true
     }
   ];
 
