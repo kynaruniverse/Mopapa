@@ -97,7 +97,7 @@ module.exports = function loadAskEvaluationCorpus() {
     6: /chicken and mushroom pie/i,
     7: /fictional-test-4821/,
     8: /07700 900123/,
-    9: /(?=.*£280)(?=.*quote|estimate)/i,
+    9: /(?=.*£280)(?=.*(?:quote|estimate))/i,
     10: /Dave/i,
     11: /different scheduled dates|which entry|which dentist/i,
     12: /Northside Builders Merchants/i,
