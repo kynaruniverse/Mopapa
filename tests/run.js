@@ -1,4 +1,5 @@
 const fs = require('fs'), vm = require('vm'), assert = require('assert');
+const loadAskEvaluationCorpus = require('./ask-evaluation-50');
 
 const ASK_EVALUATION_NOW = Date.UTC(2026, 10, 17, 12, 0, 0, 0);
 let activeTestNow = null;
@@ -11098,6 +11099,146 @@ function askWith(entries, question, supports) {
 
   return result;
 }
+
+
+test('diagnostic: 50-note Ask benchmark baseline', function () {
+  const originalDateNow = Date.now;
+  const previousTestNow = activeTestNow;
+
+  activeTestNow = ASK_EVALUATION_NOW;
+
+  Date.now = function () {
+    return ASK_EVALUATION_NOW;
+  };
+
+  try {
+    const corpus = loadAskEvaluationCorpus();
+    const w = boot(stored(corpus.entries));
+
+    w.Mopapa.store.load();
+
+    const validRooms = w.Mopapa.rooms.map(function (room) {
+      return room.id;
+    });
+
+    corpus.entries.forEach(function (entry) {
+      assert.ok(
+        validRooms.includes(entry.room),
+        'Invalid room in benchmark: ' + entry.id + ' (' + entry.room + ')'
+      );
+    });
+
+    const data = w.Mopapa.store.data();
+
+    const persistentStateBefore = JSON.stringify({
+      entries: data.entries,
+      learned: data.learned,
+      ask: data.ask
+    });
+
+    const results = [];
+    let exactSourceMatches = 0;
+    let completeSourceMatches = 0;
+
+    corpus.questions.forEach(function (item) {
+      const result = w.Mopapa.ask.answer(item.question);
+
+      const actualSources = Array.from(result.sources).map(
+        function (entry) {
+          return entry.id;
+        }
+      ).sort();
+
+      const expectedSources = item.expectedSources.slice().sort();
+
+      const exactMatch =
+        JSON.stringify(actualSources) ===
+        JSON.stringify(expectedSources);
+
+      const completeMatch = expectedSources.every(
+        function (id) {
+          return actualSources.includes(id);
+        }
+      );
+
+      if (exactMatch) exactSourceMatches++;
+      if (completeMatch) completeSourceMatches++;
+
+      actualSources.forEach(function (id) {
+        assert.ok(
+          Object.prototype.hasOwnProperty.call(
+            Object.fromEntries(
+              corpus.entries.map(function (entry) {
+                return [entry.id, true];
+              })
+            ),
+            id
+          ),
+          'Ask returned a source outside the benchmark: ' + id
+        );
+      });
+
+      const persistentStateAfter = JSON.stringify({
+        entries: data.entries,
+        learned: data.learned,
+        ask: data.ask
+      });
+
+      assert.strictEqual(
+        persistentStateAfter,
+        persistentStateBefore,
+        'Question ' + item.number +
+          ' changed saved data or Ask learning state'
+      );
+
+      results.push({
+        number: item.number,
+        expectedBehaviour: item.expectedBehaviour,
+        expectedSources: expectedSources,
+        actualSources: actualSources,
+        exactMatch: exactMatch,
+        completeMatch: completeMatch,
+        answer: String(result.answer || ''),
+        missed: result.missed === true
+      });
+    });
+
+    console.log('');
+    console.log('50-NOTE ASK DIAGNOSTIC BASELINE');
+    console.log('Notes loaded: ' + corpus.entries.length);
+    console.log('Questions run: ' + results.length);
+    console.log(
+      'Exact expected-source matches: ' +
+      exactSourceMatches + '/' + results.length
+    );
+    console.log(
+      'All required sources retrieved: ' +
+      completeSourceMatches + '/' + results.length
+    );
+    console.log(
+      'Answer correctness: NOT YET SCORED; answer text is reported for review.'
+    );
+
+    results.forEach(function (item) {
+      console.log(
+        'Q' + String(item.number).padStart(2, '0') +
+        ' [' + item.expectedBehaviour + ']' +
+        ' expected=' + (item.expectedSources.join(',') || 'none') +
+        ' actual=' + (item.actualSources.join(',') || 'none') +
+        ' exact=' + (item.exactMatch ? 'yes' : 'no') +
+        ' missed=' + item.missed +
+        ' answer=' + item.answer.slice(0, 180)
+      );
+    });
+
+    console.log(
+      'Persistent data and Ask learning remained unchanged across all 50 questions.'
+    );
+  } finally {
+    Date.now = originalDateNow;
+    activeTestNow = previousTestNow;
+  }
+});
 
 const askEvaluationResults = [];
 

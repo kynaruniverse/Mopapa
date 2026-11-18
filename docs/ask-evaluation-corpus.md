@@ -99,7 +99,7 @@ M50| notes| 2026-11-16| —| Read about how lighthouse lenses work; this is unre
 14| What were the two places I considered for the weekend trip?| Answer| M13
 15| Which birthday present did I choose, and who was it for?| Answer| M14
 16| What was the original plan, and what did I change it to?| Answer| M15
-17| When did I last mention the boiler problem?| Answer| M38
+17| When did I last save a note about comparing boiler service providers?| Answer| M38
 18| What date did I originally plan to visit York?| Answer| M13
 19| Did I change the dentist appointment? What is the latest date and time?| Answer| M27
 20| Which version of the garden plan did I settle on?| Abstain; do not infer a final decision from the saved proposals| None
