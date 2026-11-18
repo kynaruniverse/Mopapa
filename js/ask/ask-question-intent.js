@@ -16,7 +16,7 @@ Mopapa.askParts.questionIntent = (function () {
   function isNegatedLocationQuestion(q) {
     var clauses = String(q || '').split(/[.!?;]+/);
     var negativePattern =
-      /\bwhere\s+(?:(?:did|do|does|have|has|had|would|could|should|can|will|must|is|are|was|were)\s+)?(?:(?:i|we|you|they|he|she|it)\s+)?(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt|cant|cannot|wont|mustnt)\b/;
+      /\b(?:where|which\s+(?:folder|drawer|room|place))\s+(?:(?:did|do|does|have|has|had|would|could|should|can|will|must|is|are|was|were)\s+)?(?:(?:i|we|you|they|he|she|it)\s+)?(?:not|never|no|didnt|dont|doesnt|isnt|wasnt|werent|hasnt|havent|wouldnt|couldnt|shouldnt|cant|cannot|wont|mustnt)\b/;
 
     for (var i = 0; i < clauses.length; i++) {
       var clause = norm(clauses[i]);

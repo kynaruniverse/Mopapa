@@ -135,7 +135,7 @@ These cases cover current and historical locations, including the distinction be
    - Checks short topic prompts, short location questions, ambiguous date questions, subject-only prompts and questions without a subject.
    - Requires the correct answer, clarification or suggestion behaviour and checks supporting source IDs.
 
-The direct regression test ask: negative location questions do not produce positive location claims covers ten negated location-question forms, including can't, cannot, won't and mustn't. Each form must receive the safe response and return no supporting sources. A separate regression test checks that negation is part of the location-question construction itself, rather than an unrelated negative expression elsewhere in the same sentence or a later sentence. Neither test is counted among the 33 tests explicitly labelled ask evaluation:.
+The direct regression test `ask: negative location questions do not produce positive location claims` covers twenty negated location-question forms: ten beginning with `where` and ten beginning with supported `which` location types. Each form must receive the safe response and return no supporting sources. A separate regression test directly checks the intent classifier, including positive location questions and unrelated negation elsewhere in the same sentence or a later sentence. Neither test is counted among the 33 tests explicitly labelled `ask evaluation:`.
 
 ## 3. What the current suite proves
 

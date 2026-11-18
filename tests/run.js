@@ -13780,7 +13780,18 @@ test('ask: negative location questions do not produce positive location claims',
     "Where can't I keep my spare keys?",
     'Where cannot I keep my spare keys?',
     "Where won't I put my spare keys?",
-    "Where mustn't I keep my spare keys?"
+    "Where mustn't I keep my spare keys?",
+
+    "Which drawer didn't I put my spare keys in?",
+    "Which drawer don't I keep my spare keys in?",
+    'Which room did I not leave my spare keys in?',
+    'Which place have I never kept my spare keys?',
+    "Which folder haven't I stored my spare keys in?",
+    "Which drawer wouldn't I put my spare keys in?",
+    "Which room can't I keep my spare keys in?",
+    'Which place cannot I keep my spare keys in?',
+    "Which folder won't I put my spare keys in?",
+    "Which drawer mustn't I keep my spare keys in?"
   ];
 
   questions.forEach(function (question) {
@@ -13805,62 +13816,70 @@ test('ask: location negation is scoped to the first location-question clause', f
   const w = boot(stored([]));
   const intent = w.Mopapa.askParts.questionIntent;
 
-  const cases = [
-    {
-      question: "Where can't I keep my spare keys?",
-      expected: true
-    },
-    {
-      question: "I was wondering. Where can't I keep my spare keys?",
-      expected: true
-    },
-    {
-      question: "Where did I not leave my spare keys?",
-      expected: true
-    },
-    {
-      question: "Where mustn't I keep my spare keys?",
-      expected: true
-    },
-    {
-      question: "Where are my spare keys? I don't know.",
-      expected: false
-    },
-    {
-      question: "Where did I put my spare keys? I can't remember.",
-      expected: false
-    },
-    {
-      question: "I don't know. Where are my spare keys?",
-      expected: false
-    },
-    {
-      question: "Where are my spare keys? I never remember.",
-      expected: false
-    },
-    {
-      question: "Where are my spare keys if I can't remember where I put them?",
-      expected: false
-    },
-    {
-      question: "Where are my keys when I don't remember where I left them?",
-      expected: false
-    },
-    {
-      question: "Where are my spare keys and why can't I remember putting them away?",
-      expected: false
-    },
-    {
-      question: "Where did I not leave my spare keys?",
-      expected: true
-    }
+  const negativeQuestions = [
+    "Where didn't I put my spare keys?",
+    "Where don't I keep my spare keys?",
+    'Where did I not leave my spare keys?',
+    'Where have I never kept my spare keys?',
+    "Where haven't I stored my spare keys?",
+    "Where wouldn't I put my spare keys?",
+    "Where can't I keep my spare keys?",
+    'Where cannot I keep my spare keys?',
+    "Where won't I put my spare keys?",
+    "Where mustn't I keep my spare keys?",
+
+    "Which drawer didn't I put my spare keys in?",
+    "Which drawer don't I keep my spare keys in?",
+    'Which room did I not leave my spare keys in?',
+    'Which place have I never kept my spare keys?',
+    "Which folder haven't I stored my spare keys in?",
+    "Which drawer wouldn't I put my spare keys in?",
+    "Which room can't I keep my spare keys in?",
+    'Which place cannot I keep my spare keys in?',
+    "Which folder won't I put my spare keys in?",
+    "Which drawer mustn't I keep my spare keys in?"
   ];
 
-  cases.forEach(function (item) {
+  const positiveQuestions = [
+    'Where are my spare keys?',
+    'Which room has my books?',
+    'Which drawer contains my keys?',
+    'Which folder has my document?'
+  ];
+
+  const unrelatedNegationQuestions = [
+    "Where are my spare keys? I don't know.",
+    "Where did I put my spare keys? I can't remember.",
+    "I don't know. Where are my spare keys?",
+    "Where are my spare keys? I never remember.",
+    "Where are my spare keys if I can't remember where I put them?",
+    "Where are my keys when I don't remember where I left them?",
+    "Where are my spare keys and why can't I remember putting them away?"
+  ];
+
+  negativeQuestions.forEach(function (question) {
     assert.strictEqual(
-      intent.isNegatedLocationQuestion(item.question),
-      item.expected,
-      'Unexpected negation classification: ' + item.question
+      intent.isNegatedLocationQuestion(question),
+      true,
+      'Expected negative location classification: ' + question
+    );
+  });
+
+  positiveQuestions.forEach(function (question) {
+    assert.strictEqual(
+      intent.isNegatedLocationQuestion(question),
+      false,
+      'A positive location question must not be classified as negative: ' +
+        question
+    );
+  });
+
+  unrelatedNegationQuestions.forEach(function (question) {
+    assert.strictEqual(
+      intent.isNegatedLocationQuestion(question),
+      false,
+      'Unrelated negation must not change location-question classification: ' +
+        question
     );
   });
 });
