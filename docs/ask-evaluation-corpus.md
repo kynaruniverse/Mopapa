@@ -37,7 +37,7 @@ M07| notes| 2026-11-12| —| Home Wi-Fi password is fictional-test-4821
 M08| notes| 2026-11-13| —| Plumber's phone number: 07700 900123
 M09| notes| 2026-11-14| —| Plumber estimated the bathroom repair at £280; this is a quote, not a confirmed final cost
 M10| notes| 2026-11-16| —| Lent my cordless drill to Dave on Monday 16 November
-M11| appointments| 2026-11-15| 2026-11-26T10:40:00Z| Dentist check-up, Thursday 26 November at 10:40
+M11| appointments| 2026-11-15| 2026-11-26T10:40:00Z| Routine dentist check-up, Thursday 26 November at 10:40. This is separate from the dentist follow-up appointment.
 M12| notes| 2026-11-13| —| The blue exterior paint I wanted is sold at Northside Builders Merchants
 M13| notes| 2026-11-10| —| Weekend trip shortlist: York and Lincoln. Originally planned to visit York on 21 November
 M14| wishlist| 2026-11-12| —| Jasmine's birthday present: silver star necklace
@@ -53,7 +53,7 @@ M23| notes| 2026-11-12| —| Parcel is for Morgan
 M24| notes| 2026-11-13| —| Car service originally cost £100
 M25| notes| 2026-11-16| —| Corrected car service cost: £150
 M26| notes| 2026-11-14| —| Passport is in the grey document wallet in the desk drawer
-M27| appointments| 2026-11-16| 2026-11-27T14:30:00Z| Dentist appointment was rescheduled from 20 November to Friday 27 November at 14:30
+M27| appointments| 2026-11-16| 2026-11-27T14:30:00Z| Separate dentist follow-up appointment was rescheduled from 20 November to Friday 27 November at 14:30. This is not the routine dentist check-up.
 M28| ideas| 2026-11-12| —| Sofa idea: originally considered a grey sofa, but decided on a dark green one
 M29| notes| 2026-11-11| —| Recipe to try: roasted tomato and red pepper soup
 M30| todo| 2026-11-15| 2026-11-20| Remember to collect the prescription on Friday 20 November
@@ -102,7 +102,7 @@ M50| notes| 2026-11-16| —| Read about how lighthouse lenses work; this is unre
 17| When did I last mention the boiler problem?| Answer| M38
 18| What date did I originally plan to visit York?| Answer| M13
 19| Did I change the dentist appointment? What is the latest date and time?| Answer| M27
-20| Which version of the garden plan did I settle on?| Answer with available evidence; do not invent a final decision| M03, M42
+20| Which version of the garden plan did I settle on?| Abstain; do not infer a final decision from the saved proposals| None
 21| What is my bank account PIN?| Abstain| None
 22| What did the doctor tell me about my blood test results?| Abstain| None
 23| What is the registration number of my neighbour's car?| Abstain| None
@@ -154,7 +154,7 @@ Questions 7, 8, 9, 13, 28, 29, 31, 35 and 41 require extracting a particular val
 
 Abstention
 
-Questions 21–25 and 50 have no supporting source. Any factual answer is a failure.
+Questions 20–25 and 50 have no supporting answer. Question 20 is particularly important: related proposals exist, but no saved memory establishes a final garden decision. Any claim that one proposal was chosen is a failure.
 
 Distractors
 
