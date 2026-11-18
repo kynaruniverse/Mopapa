@@ -12632,6 +12632,7 @@ test('ask: location verbs and generic words do not block a match', function () {
   assert.ok(/kitchen drawer/.test(r.answer), r.answer);
 });
 
+
 test('ask evaluation: punctuation and casing preserve equivalent grounded answers', function () {
   const entries = [{
     id: 'eval-normalisation-key',
@@ -12645,26 +12646,38 @@ test('ask evaluation: punctuation and casing preserve equivalent grounded answer
       /Spare keys are in the blue tin/i.test(entry.text);
   };
 
-  const ordinary = askWith(
-    entries,
+  const questions = [
     'Where are my spare keys?',
-    supports
-  );
-
-  const varied = askWith(
-    entries,
     'WHERE ARE MY SPARE KEYS?!',
-    supports
-  );
+    'Where are my spare keys, please?',
+    'Where are my spare keys...'
+  ];
 
-  assert.ok(/blue tin/i.test(ordinary.answer), ordinary.answer);
-  assert.ok(/blue tin/i.test(varied.answer), varied.answer);
+  const results = questions.map(function (question) {
+    return askWith(entries, question, supports);
+  });
 
-  assert.strictEqual(
-    ordinary.sources.map(function (entry) { return entry.id; }).join('|'),
-    varied.sources.map(function (entry) { return entry.id; }).join('|'),
-    'Equivalent questions should return the same supporting source IDs'
-  );
+  results.forEach(function (result, index) {
+    assert.ok(
+      /blue tin/i.test(result.answer),
+      'Equivalent punctuation variant failed: ' + questions[index] +
+        ' returned: ' + result.answer
+    );
+  });
+
+  const expectedSources = results[0].sources.map(function (entry) {
+    return entry.id;
+  }).join('|');
+
+  results.forEach(function (result) {
+    assert.strictEqual(
+      result.sources.map(function (entry) {
+        return entry.id;
+      }).join('|'),
+      expectedSources,
+      'Equivalent questions should return the same supporting source IDs'
+    );
+  });
 });
 
 test('ask evaluation: realistic answers are grounded in their supporting memories', function () {
@@ -13748,6 +13761,7 @@ test('ask evaluation: unqualified questions do not silently choose between chang
   );
 });
 
+
 test('ask: negative location questions do not produce positive location claims', function () {
   const entries = [{
     id: 'negative-location-keys',
@@ -13758,17 +13772,27 @@ test('ask: negative location questions do not produce positive location claims',
 
   const questions = [
     "Where didn't I put my spare keys?",
-    "Where don't I keep my spare keys?"
+    "Where don't I keep my spare keys?",
+    'Where did I not leave my spare keys?',
+    'Where have I never kept my spare keys?',
+    "Where haven't I stored my spare keys?",
+    "Where wouldn't I put my spare keys?"
   ];
 
   questions.forEach(function (question) {
     const result = askWith(entries, question);
 
     assert.ok(
-      !/^(?:They are|It is)\s+(?:in|inside|on|under|behind|beside|next to|within)\b/i
-        .test(result.answer),
-      'Negative wording must not produce a positive location claim: ' +
-        result.answer
+      /cannot safely infer a negative location/i.test(result.answer),
+      'Negative wording must receive the safe response: ' +
+        question + ' returned: ' + result.answer
+    );
+
+    assert.strictEqual(
+      result.sources.length,
+      0,
+      'A negative location question must not cite a positive location memory: ' +
+        question
     );
   });
 });
