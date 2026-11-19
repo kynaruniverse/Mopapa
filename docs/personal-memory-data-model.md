@@ -686,47 +686,403 @@ Relationships| How does it connect to other memories?
 
 These dimensions must not be compressed into a single status, category or confidence field.
 
-19.3 Message attribution
 
-The message record must distinguish the original message role from its actual author attribution.
+19.3 Conversation participants and message authorship
 
-The existing role field remains useful for the structure of the source conversation.
+The model must distinguish:
 
-The attribution field must be defined sufficiently to preserve the original author classification.
+- The conversation in which a message appears.
+- The participant who produced the message.
+- The original role assigned by the source format.
+- Any person quoted or attributed within the message.
+- The person or thing discussed by an extracted memory.
 
-The logical attribution classes are:
+These are separate concepts and must not be collapsed into one role, name or attribution field.
+
+19.3.1 Conversation participants
+
+Each conversation must be capable of preserving its own participant list.
+
+A participant is a source-local identity used to distinguish speakers within that conversation.
+
+Proposed logical participant record:
+
+{
+  "id": "participant_id",
+  "sourceLabel": "Mum",
+  "sourceRole": "participant",
+  "identityResolution": "source_only"
+}
+
+Fields:
+
+- id: required stable identifier, unique within the conversation.
+- sourceLabel: original display name or speaker label, if supplied.
+- sourceRole: original role or participant type supplied by the source, if available.
+- identityResolution: the degree to which the participant's real-world identity has been established.
+
+Initial identity resolution values:
+
+- source_only: the source identifies a speaker, but Mopapa has not established who that person is.
+- unresolved: the source provides insufficient or conflicting identity information.
+- confirmed_within_conversation: the participant has been explicitly identified within this conversation.
+
+The conversation record owns these participant records.
+
+Participant identifiers must not be derived from array positions, display names or assumptions about identity.
+
+Two participants with the same display name must remain separate unless their identity has been explicitly resolved.
+
+A participant label such as "Mum", "Speaker 2" or "Alex" is not proof of a globally unique person.
+
+The initial model does not establish that a participant in one conversation is the same person as a participant in another conversation.
+
+Cross-conversation person resolution is deferred until a separate identity model and its correction, merging and deletion rules have been designed.
+
+The initial model does not require a separate global people collection.
+
+19.3.2 Message author representation
+
+The message record must preserve the source's original role and provide a structured representation of authorship.
+
+The existing role field remains available to preserve the original conversation structure.
+
+The proposed author object is:
+
+{
+  "kind": "third_party",
+  "participantId": "participant_id"
+}
+
+Initial author kinds:
 
 - user
 - assistant
+- system
 - third_party
-- imported
 - unknown
-
-The implementation may represent attribution using a structured object, provided it preserves these distinctions and can retain an optional source-specific identity.
 
 Rules:
 
-- The author is the person or system that produced the original statement.
-- The subject is the person or thing the statement concerns.
-- A statement about the user must not automatically be attributed to the user.
-- Assistant-generated statements must remain identifiable as assistant-generated.
-- Imported material must retain its original authorship where available.
-- If authorship cannot be established, use unknown.
-- Do not infer an author's identity from text alone.
+- user identifies a message authored by the Mopapa user's own conversational identity.
+- assistant identifies a message produced by the assistant.
+- system identifies a system-generated message where the source distinguishes one.
+- third_party identifies another human participant.
+- unknown identifies authorship that cannot be established.
 
-The origin field continues to identify the source or import mechanism. It is not a substitute for authorship.
+For third_party authors, participantId must refer to a participant belonging to the same conversation.
 
-19.4 Memory attribution and subject
+For user and assistant authors, a participantId is not required.
 
-An extracted memory must retain enough information to identify the origin of its claim.
+Unknown authorship must not be converted into a user or third-party identity merely because the text uses first-person or conversational language.
 
-The memory must be traceable through its memorySources records to the original messages and their attribution.
+The original source role must be preserved separately where it differs from these logical author kinds.
 
-The memory subject must remain separate from the source author.
+The origin field identifies the source or import mechanism. It does not identify the author.
 
-For example, a third party may make a statement about the user. The memory subject may be the user, but the author remains the third party.
+An imported user message remains user-authored. An imported assistant message remains assistant-authored.
 
-A memory supported by multiple messages must preserve the attribution of each supporting source. Do not flatten different authors into one assumed speaker.
+If an import source does not provide reliable authorship, use unknown rather than inventing a role.
+
+19.3.3 Quoted and embedded speakers
+
+A message may contain statements attributed to someone other than its author.
+
+For example:
+
+- The user writes: "Mum said she is moving next month."
+- The user writes: "My colleague told me the meeting was cancelled."
+- An assistant message quotes a statement from an earlier source.
+- An imported message contains a quotation from another participant.
+
+The message author remains the person who produced the message.
+
+The quoted speaker must be represented separately when the quotation is relevant to an extracted memory.
+
+A quoted-speaker annotation must preserve:
+
+- The participant reference, if known.
+- The exact quoted text location in the original message.
+- Whether the attribution was explicit or unresolved.
+- The original message containing the quotation.
+
+Proposed logical annotation:
+
+{
+  "id": "quoted_speaker_id",
+  "participantId": "participant_id",
+  "evidenceSpan": {
+    "start": 12,
+    "end": 43
+  },
+  "attributionStatus": "explicit"
+}
+
+Initial attribution statuses:
+
+- explicit: the original message clearly identifies the quoted speaker.
+- ambiguous: more than one possible speaker or interpretation exists.
+- unknown: the quoted speaker cannot be established.
+
+The evidence span uses zero-based JavaScript string offsets into the unchanged original message text, with an exclusive end offset.
+
+Offsets must be measured against the exact stored string. Normalisation, trimming, line-ending conversion or other text transformations must not be applied before calculating or validating them.
+
+Tests must cover Unicode characters, surrogate pairs, repeated quoted phrases, invalid ranges and empty spans.
+
+If the source does not preserve an exact quotation or reliable span, the annotation must not pretend that a precise span is known.
+
+Quoted-speaker annotations are derived metadata. They must never modify the original message text.
+
+An ambiguous quotation must not be treated as a confirmed statement by a named person.
+
+19.3.4 Attribution rules
+
+The author is the person or system that produced the original message.
+
+A quoted speaker is the person to whom a statement inside that message is attributed.
+
+The subject is the person or thing that the information concerns.
+
+These identities may all be different.
+
+Examples:
+
+1. The user says: "I have moved to Bristol."
+
+   Author: user.
+   Subject: user.
+
+2. The user says: "My partner has moved to Bristol."
+
+   Author: user.
+   Subject: the partner.
+
+3. The user says: "My partner told me that their new job starts Monday."
+
+   Author: user.
+   Quoted speaker: partner.
+   Subject: partner.
+
+4. The assistant says: "You previously mentioned working at Company B."
+
+   Author: assistant.
+   Subject: user.
+   The assistant statement is not independent proof that the user works there. The original supporting user message must be retrieved if the claim is to be treated as user-supplied evidence.
+
+5. An imported message identifies its speaker only as "Speaker 3".
+
+   Author: third_party.
+   Participant: source-local Speaker 3.
+   Real-world identity: source_only or unresolved.
+
+6. A message says: "Alex told me that Jordan is leaving."
+
+   Author: the message author.
+   Quoted speaker: Alex, if explicitly established.
+   Subject: Jordan.
+
+No author or subject identity may be inferred solely from:
+
+- A matching display name.
+- An email address or username.
+- Writing style.
+- Pronouns without a clear antecedent.
+- A conversational assumption.
+- A previous conversation containing a similar name.
+
+Explicit user confirmation or reliable source metadata may establish an identity, but the basis must be retained.
+
+19.4 Memory subject representation and identity resolution
+
+An extracted memory must preserve its subject independently from its source author.
+
+The existing plain-text subject example is insufficient as an implementation-level representation.
+
+The proposed logical representation is a subjects array.
+
+Each subject reference identifies the person, object, event or topic to which the memory applies.
+
+Proposed subject reference:
+
+{
+  "kind": "person",
+  "participantId": "participant_id",
+  "label": "Mum",
+  "resolution": "confirmed",
+  "role": "person_discussed"
+}
+
+Initial subject kinds:
+
+- user
+- person
+- object
+- event
+- topic
+- unknown
+
+Initial resolution values:
+
+- confirmed
+- ambiguous
+- unresolved
+
+The participantId field is used when the subject is a participant represented in the supporting conversation.
+
+For a user subject, kind is user and a third-party participant reference is not required.
+
+For a person who is not represented as a conversation participant, a descriptive label may be retained, but it must not be treated as a globally resolved identity.
+
+A subject reference must not become confirmed merely because a name is present.
+
+Where a memory concerns more than one subject, each subject must be represented separately.
+
+The optional role field describes the subject's part in the memory, not their identity or authorship.
+
+Examples include:
+
+- person_discussed
+- event_participant
+- owner
+- recipient
+- other
+
+These role values are descriptive relationships. They must not be used as proof of identity.
+
+19.4.1 Subject and author independence
+
+The memory subject must not be copied automatically from the message author.
+
+The following combinations are valid:
+
+- User author, user subject.
+- User author, third-party subject.
+- Third-party author, user subject.
+- Third-party author, another third-party subject.
+- Assistant author, user subject, with the original evidence separately identified.
+- Unknown author, known subject.
+- Known author, unresolved subject.
+
+A memory supported by multiple messages must preserve each source's author attribution through its individual memorySources links.
+
+Do not flatten several authors into one assumed speaker.
+
+If supporting messages disagree about the subject, the memory must remain ambiguous or be separated into distinct candidate memories for review.
+
+19.4.2 Identity resolution boundaries
+
+The initial implementation must support reliable identity within an individual conversation.
+
+It must not claim reliable global identity resolution across unrelated conversations.
+
+The following are insufficient to merge two participants:
+
+- Identical names.
+- Identical nicknames.
+- Similar descriptions.
+- Similar relationships to the user.
+- Similar writing styles.
+- Similar occupations or locations.
+
+Cross-conversation identity resolution requires an explicit mechanism to:
+
+- Propose a possible match.
+- Show the evidence for the match.
+- Obtain confirmation where necessary.
+- Preserve the original source-local participant identifiers.
+- Correct or reverse a mistaken identity match.
+- Reassess memories affected by the correction.
+- Prevent an identity correction from rewriting original evidence.
+
+This capability is deferred. Until it is designed and approved, memories referring to similarly named people in different conversations must remain independently identifiable.
+
+19.4.3 Identity corrections
+
+Correcting a participant's identity must not rewrite original messages or quoted text.
+
+The correction must be represented as a separate, auditable decision.
+
+The future implementation must preserve:
+
+- The original source participant label.
+- The previous identity resolution.
+- The corrected identity resolution.
+- The evidence or user confirmation supporting the correction.
+- The time the correction was recorded.
+- The memories and relationships affected by the correction.
+
+A correction must trigger reassessment of derived memories that depend on the affected identity.
+
+It must not silently transfer facts from one person to another.
+
+If the identity cannot be resolved confidently, retain an unresolved or ambiguous subject instead of forcing a match.
+
+19.4.4 Attribution and subject validation
+
+The combined validator must verify:
+
+- Every third-party message author references a participant in the same conversation.
+- Participant identifiers are unique within their conversation.
+- Participant references do not cross conversation boundaries.
+- Author kinds are supported.
+- Unknown authorship remains explicitly unknown.
+- Quoted-speaker references resolve to valid participants where supplied.
+- Evidence spans are valid against the unchanged original message text.
+- Subject kinds and resolution values are supported.
+- Participant-based subjects reference valid participants.
+- User subjects do not require an invented participant.
+- Unresolved subjects are not presented as confirmed identities.
+- A memory's subject is not assumed to be its source author.
+- Identity corrections do not modify original messages.
+- No cross-conversation identity merge occurs without an explicit supported resolution.
+
+Invalid participant or subject references must be rejected or safely quarantined according to the defined import and restore policy.
+
+They must not be silently replaced with the user identity.
+
+19.4.5 Evaluation requirements
+
+The evaluation fixtures must include:
+
+- User speaking about themselves.
+- User speaking about a partner or family member.
+- Third party speaking about the user.
+- Third party speaking about another third party.
+- Assistant repeating a user-supplied fact.
+- Assistant introducing an unsupported claim.
+- Direct quotation with a clearly identified speaker.
+- Quotation with an ambiguous speaker.
+- Imported conversation with multiple participants.
+- Repeated names belonging to different people.
+- The same person using different labels in one conversation.
+- The same display name used by different people in separate conversations.
+- Missing author metadata.
+- Conflicting subject references.
+- Identity correction after memories have been extracted.
+- Deletion of the evidence supporting an identity decision.
+
+Attribution accuracy, subject accuracy and identity resolution accuracy must be evaluated independently.
+
+A correct answer about the wrong person is a critical failure.
+
+A memory attributed to the user when the evidence came from an assistant or third party is a critical failure.
+
+19.4.6 Implementation boundary
+
+This section defines the proposed logical participant, author, quoted-speaker and subject model.
+
+It does not authorise:
+
+- A production schema change.
+- A new people or entity collection.
+- Cross-conversation automatic identity matching.
+- Automatic identity inference from names or writing style.
+- Changes to existing messages or manual entries.
+- A migration or storage technology change.
+
+The exact serialised schema, correction history representation, import mapping and validation implementation must be finalised before production work is authorised.
+
 
 19.5 Memory type and category
 
