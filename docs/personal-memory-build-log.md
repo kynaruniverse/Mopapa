@@ -132,12 +132,12 @@ Main research conclusions
 Approved documentation programme
 
 Item| Status
-Extended research review| Completed; verification addendum being incorporated
-Permanent build log| Created
+Extended research review| Completed, including 19 November verification addendum
+Permanent build log| Created and maintained
 Target architecture revision| Approved and documented
 Data model revision| Approved as logical direction and documented
-Module map alignment| Completed in commit 85e67d64492159782f91dcf47c4ede6ece15c37d
-Build log alignment| Correction in progress
+Module map alignment| Completed
+Build log alignment| Final consistency correction required
 Phased build plan| Not yet completed
 Implementation-level schema| Required before implementation
 Storage and migration decision| Requires workload review before archive implementation
@@ -151,13 +151,12 @@ This does not authorise production implementation.
 
 Before production implementation:
 
-1. Align the module map and build log with the approved architecture and data model.
-2. Prepare a phased build plan with dependencies and acceptance criteria.
-3. Finalise exact record fields, validation, identifiers and relationship rules.
-4. Define backup compatibility, migration, rollback and recovery.
-5. Establish realistic storage measurements and the criteria for reconsidering IndexedDB.
-6. Define separate evaluation for extraction, provenance, retrieval and answer quality.
-7. Approve the first narrowly scoped implementation phase.
+1. Complete the phased build plan with dependencies and acceptance criteria.
+2. Finalise exact record fields, validation, identifiers, participant identity and relationship rules.
+3. Define backup compatibility, migration, rollback and recovery.
+4. Establish realistic storage measurements and the criteria for reconsidering IndexedDB.
+5. Define separate evaluation for extraction, provenance, attribution, temporal updates, retrieval and answer quality.
+6. Approve the first narrowly scoped implementation phase.
 
 The existing application must remain functional throughout this process.
 
@@ -340,7 +339,7 @@ The following documents exist:
 - docs/storage-architecture.md
 - docs/personal-memory-build-log.md
 
-The architecture and logical data-model direction are approved. Documentation reconciliation is the current task.
+The architecture and logical data-model direction are approved. The research review, architecture decisions, architecture specification, data model and module map have been reconciled. The build log is receiving its final consistency correction.
 
 No production memory-ingestion module has been approved.
 
