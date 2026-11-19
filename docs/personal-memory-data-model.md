@@ -1147,50 +1147,374 @@ A memory may be active but later become conflicted after new evidence arrives. T
 
 A memory with conflicted or partially supported evidence must not be presented as an unqualified fact.
 
-19.8 Scope
 
-Every memory must be capable of representing the context in which it applies.
+19.8 Scope, context and applicability
+
+Scope identifies where, when or under what circumstances a memory applies.
+
+Scope is independent from:
+
+- Subject: who or what the memory concerns.
+- Source: where the information originated.
+- Audience: who may see or receive the information.
+- Use policy: what Mopapa may do with the information.
+- Temporal validity: when the information is or was true.
+
+These dimensions must not be compressed into one field.
+
+19.8.1 Scope types
 
 The logical scope model must support:
 
-- personal
-- conversation
-- project
-- topic
-- other
-- unknown
+- personal: information intended to apply generally to the user's personal context.
+- conversation: information limited to a particular conversation.
+- project: information limited to a particular project.
+- topic: information limited to a defined subject or topic.
+- event: information limited to a particular event or occasion.
+- relationship: information applicable within a particular relationship context.
+- other: a defined context that does not fit the preceding types.
+- unknown: the applicable context has not been established.
 
-A scope may include a stable reference to the relevant conversation, project or topic when such an entity exists.
+A scope reference may identify the relevant conversation, project, topic, event or relationship where a supported record exists.
 
-The initial implementation must not invent project or topic identifiers. It may use unknown until a supported reference exists.
+The initial implementation must not invent identifiers for projects, topics, events or relationships that have not been established.
 
-Scope is not the same as subject.
+Unknown scope must remain explicitly unknown.
 
-A subject identifies what the memory concerns. Scope identifies where or in what context the memory applies.
+A missing scope must never be interpreted as personal or unrestricted scope.
 
-Missing scope must not silently become unrestricted scope.
+19.8.2 Scope inheritance and conflicts
 
-19.9 Use restrictions
+A memory extracted from a conversation does not automatically have conversation-only scope.
 
-The data model must provide an explicit representation for memory-use restrictions.
+For example:
 
-The logical design must support restrictions such as:
+- "I prefer tea" may describe a general personal preference.
+- "For this project, use tea-coloured packaging" is project-specific.
+- "In this conversation, assume the meeting is at 3pm" is conversation-specific.
+- "At the event next Friday, I will arrive at 3pm" is event-specific.
 
-- do not surface proactively
-- use only within the specified context
-- do not infer additional information from this memory
-- do not use for a specified purpose
-- user-defined restriction
+Scope must be established from the meaning and evidence, not simply copied from the source container.
 
-These are examples of restriction semantics, not a final enum or an instruction to implement every option immediately.
+Where the evidence does not establish the applicable scope, retain unknown or require clarification.
 
-Restrictions must be enforceable by retrieval and answering.
+A memory supported by several sources must not silently broaden its scope.
 
-A descriptive note that a memory is restricted is insufficient if the retrieval system can still use it in a prohibited context.
+If supporting sources have incompatible scopes, the memory must remain separated into appropriately scoped records or be marked ambiguous pending review.
 
-The implementation must define how multiple restrictions combine. A less restrictive source must never silently override a more restrictive applicable instruction.
+A broader scope must not be inferred from repeated mentions in narrower contexts.
 
-Missing restriction metadata must not override an explicit restriction recorded elsewhere.
+A project-specific fact must not become a general personal fact solely because it appears in several project conversations.
+
+19.8.3 Scope and retrieval
+
+Retrieval must consider the current interaction context.
+
+The retrieval process must determine whether a memory is applicable to:
+
+- The current conversation.
+- The current project or task, if known.
+- The current topic, if known.
+- The user's general personal context.
+- Another explicitly established context.
+
+If the current context is unknown, Mopapa must not assume that a restricted memory is applicable.
+
+A memory with conversation-only scope must not be used in an unrelated conversation unless a separately defined permission explicitly allows that use.
+
+A memory with project scope must not automatically appear in another project.
+
+A memory with unknown scope must not be treated as globally applicable.
+
+A retrieved memory must still pass audience and use-policy checks before it can be used in an answer.
+
+19.9 Audience visibility and use policy
+
+Audience visibility and use policy define what Mopapa is permitted to do with stored information.
+
+They are separate from whether the information is true, useful or relevant.
+
+A memory may be:
+
+- Correct but restricted.
+- Relevant but not permitted in the current context.
+- Retained for historical reference but not available for proactive use.
+- Available for a direct user question but not for unrelated suggestions.
+- Private to the user despite containing information about another person.
+
+The presence of information in storage does not grant permission to retrieve, disclose, infer from or proactively surface it.
+
+19.9.1 Audience model
+
+The logical audience model must distinguish:
+
+- owner_only: available only to the owner of the Mopapa installation.
+- named_audience: available only to explicitly identified recipients, if a future supported sharing capability exists.
+- restricted_context: available only within an explicitly authorised context.
+- unknown: the permitted audience has not been established.
+
+The initial product remains a single-user, local-first application.
+
+Owner-only is the default audience.
+
+The initial implementation must not imply that named-audience sharing or multi-user access exists.
+
+Imported conversation participants are not automatically authorised recipients.
+
+Being a participant in an original conversation does not grant that person access to the user's Mopapa memories.
+
+A memory about another person does not become shareable with that person merely because they are its subject.
+
+Audience identifiers must refer to explicitly established identities or supported local contexts. Display names alone are insufficient.
+
+19.9.2 Visibility defaults
+
+Newly extracted memories must default to owner_only visibility unless a more restrictive policy applies.
+
+If the intended audience cannot be established, use unknown and prevent disclosure outside the owner's explicitly authorised context.
+
+Existing manual entries without visibility metadata must not automatically become publicly or externally accessible.
+
+For the initial single-user application, existing manual entries may be treated as owner-only for internal use, provided this does not expand their existing use beyond the user's control.
+
+No memory should be made available to an external recipient, service or application without an explicit supported authorisation.
+
+19.9.3 Use policy dimensions
+
+The logical use policy must distinguish the following permissions:
+
+- answer_direct: may be used when directly answering a relevant user question.
+- answer_contextual: may be used in an otherwise relevant contextual answer.
+- proactive_surface: may be surfaced without the user directly asking for the information.
+- cross_context_reuse: may be used in a different conversation, project or topic.
+- inference: may be used as a basis for deriving additional information.
+- export: may be included in an export or transfer intended for another destination.
+
+These permissions must be independently representable.
+
+The initial default must be conservative:
+
+- Direct answers: allowed only when scope and audience checks pass.
+- Contextual answers: allowed only when scope and audience checks pass.
+- Proactive surfacing: denied unless explicitly permitted.
+- Cross-context reuse: denied unless explicitly permitted.
+- Additional inference: restricted by the source evidence and explicit use policy.
+- External disclosure or sharing: denied unless explicitly authorised.
+
+A permission for one purpose must not automatically grant permission for another.
+
+For example, permission to answer a direct question does not grant permission to proactively mention the same information in an unrelated conversation.
+
+Permission to use a memory internally does not grant permission to export or share it.
+
+19.9.4 Restrictions
+
+The logical restriction model must support explicit prohibitions such as:
+
+- Do not surface proactively.
+- Do not use outside the originating conversation.
+- Do not use outside the specified project or topic.
+- Do not disclose to a specified audience.
+- Do not use for a specified purpose.
+- Do not infer additional personal information from this source.
+- Do not export or share.
+- Do not use after a specified time or event.
+- User-defined restriction.
+
+Restrictions must be represented as enforceable policy data, not merely descriptive text.
+
+A restriction must identify its target and, where applicable:
+
+- The prohibited action.
+- The prohibited context.
+- The affected audience.
+- Its effective period.
+- Its source or authorisation basis.
+- Whether it applies to the original evidence, a derived memory or both.
+
+The exact serialised representation remains subject to the implementation-level schema review.
+
+19.9.5 Restriction inheritance
+
+A memory derived from restricted evidence must inherit the applicable restrictions.
+
+Extracting a shorter or differently worded memory must not remove restrictions attached to its source.
+
+If several messages support one memory, the effective use policy must account for every supporting source.
+
+A less restrictive source must not override a restriction attached to another source.
+
+Where a memory combines information from sources with different restrictions, the combined memory must follow the most restrictive applicable policy for each affected use.
+
+If the sources cannot be separated sufficiently to apply their policies independently, restrict the combined memory rather than weakening its protections.
+
+If a restricted source is later deleted or revoked, the memory's provenance and effective restrictions must be reassessed.
+
+Removing a restriction from a derived memory must not silently remove the restriction from its original evidence.
+
+A restriction may be changed only through an explicit, authorised decision with an auditable record.
+
+19.9.6 Policy combination and conflict resolution
+
+Restrictions combine conservatively.
+
+The effective permission is the intersection of all applicable permissions, not the union.
+
+In practical terms:
+
+- An explicit denial overrides an otherwise applicable permission.
+- A narrower context overrides a broader context.
+- An unknown audience does not grant disclosure.
+- An unknown scope does not grant cross-context use.
+- A missing policy does not override an existing restriction.
+- A conflicting or invalid policy results in denial until resolved.
+
+No retrieval ranking score, memory confidence score, recency value or relevance score may override a restriction.
+
+The answer layer must not be able to bypass a denial returned by the governance check.
+
+If a memory is relevant but prohibited, Mopapa must exclude it from the answer context.
+
+The application may explain that it cannot use information in the current context, but must not reveal the restricted information while doing so.
+
+19.9.7 Retrieval and context assembly enforcement
+
+Governance checks must occur before restricted information enters the answer context.
+
+The future retrieval pipeline must:
+
+1. Identify the current interaction context.
+2. Retrieve potential candidate records.
+3. Check lifecycle and evidence eligibility.
+4. Check temporal validity.
+5. Check scope applicability.
+6. Check audience visibility.
+7. Apply the effective use policy.
+8. Exclude prohibited records.
+9. Assemble the smallest permitted evidence set.
+10. Pass only permitted evidence to the answer layer.
+
+The answer layer must receive sufficient policy outcome information to prevent it from reintroducing excluded material.
+
+A memory excluded by governance must not be included indirectly through a derived summary, cached answer, index or related memory.
+
+Derived indexes and cached context must not become a route around restrictions.
+
+If the current context or policy cannot be evaluated reliably, the affected memory must be withheld.
+
+19.9.8 Proactive use
+
+Proactive use requires a separate permission.
+
+A memory being active, relevant, recent or useful does not authorise Mopapa to surface it without a direct question.
+
+The initial product should default to no proactive use of newly extracted memories.
+
+Future proactive capabilities must define:
+
+- Which memory types are eligible.
+- Which scopes are eligible.
+- Which audiences are permitted.
+- Which purposes are permitted.
+- How timing and frequency are controlled.
+- How the user can inspect and disable proactive use.
+- How restrictions are enforced before a notification or suggestion is generated.
+
+No notification, reminder or unsolicited suggestion may disclose restricted information.
+
+19.9.9 Export and backup distinction
+
+Internal backup and recovery are distinct from external sharing.
+
+A user-created backup is intended to preserve the user's own data for recovery.
+
+An export intended for another person, application or service is a separate disclosure action.
+
+The implementation must distinguish these purposes.
+
+Backup and restore must preserve:
+
+- Original scope.
+- Audience visibility.
+- Use policies.
+- Restrictions.
+- Restriction provenance.
+- Any relevant policy history.
+
+A restore must not broaden permissions or remove restrictions.
+
+An export must not silently include information that is prohibited from external disclosure.
+
+If the export format cannot preserve the applicable policy metadata, the export must either exclude the affected records or clearly require an explicit user decision before proceeding.
+
+19.9.10 Validation and evaluation requirements
+
+The combined validator and future governance tests must verify:
+
+- Every memory has a valid scope representation.
+- Unknown scope remains distinguishable from personal scope.
+- Scope references resolve to valid records where supplied.
+- Audience values are supported.
+- Unknown audience does not grant disclosure.
+- Owner-only remains the default for newly extracted memories.
+- Imported participants are not automatically authorised recipients.
+- Each use permission is represented independently.
+- Missing permissions do not become implicit grants.
+- Restrictions have valid targets and supported actions.
+- Source restrictions propagate to derived memories.
+- Multiple source restrictions combine conservatively.
+- A less restrictive source cannot override a stricter source.
+- Explicit denial overrides an otherwise applicable permission.
+- Cross-context reuse is blocked unless authorised.
+- Proactive use is blocked unless authorised.
+- Export restrictions are enforced independently from internal backup.
+- Restore preserves scope and policy metadata.
+- Restricted memories cannot enter answer context through an index, summary or cache.
+- Invalid or conflicting policies result in safe denial.
+- Policy changes preserve an auditable decision history.
+
+Evaluation fixtures must include:
+
+- A general personal preference.
+- A project-specific instruction.
+- A conversation-only statement.
+- A memory with unknown scope.
+- A memory about a third party.
+- A private memory that is relevant to an unrelated conversation.
+- A memory permitted for direct answers but prohibited for proactive use.
+- A memory permitted in one project but prohibited in another.
+- A memory derived from one restricted source and one unrestricted source.
+- A memory whose source restriction is later changed.
+- An export containing restricted and unrestricted records.
+- A backup and restore preserving all policy metadata.
+- A conflicting policy.
+- A missing policy.
+- An attempt to retrieve restricted information through a derived index.
+- An attempt to surface a restricted memory through a proactive suggestion.
+
+A restriction violation is a critical failure.
+
+A correct answer that discloses information in a prohibited context is a critical failure.
+
+A restore that silently broadens permissions is a critical failure.
+
+19.9.11 Implementation boundary
+
+This section defines the proposed logical scope, audience and use-policy model.
+
+It does not authorise:
+
+- External sharing.
+- Multi-user access.
+- Cloud synchronisation.
+- Third-party processing.
+- Automatic access to other applications.
+- Proactive notifications or autonomous suggestions.
+- A production schema change.
+- Changes to existing manual-entry behaviour.
+- A migration or storage technology change.
+
+The exact serialised policy structure, policy evaluation order, restriction history, export behaviour and enforcement interfaces must be finalised before production implementation.
 
 19.10 Temporal information
 
