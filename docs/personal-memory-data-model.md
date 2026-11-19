@@ -102,8 +102,8 @@ id| Required| Stable unique identifier
 title| Optional| Human-readable conversation title
 origin| Required| Original source or import method
 status| Required| active or archived
-createdAt| Required| Original conversation creation time, when known
-updatedAt| Required| Most recent known conversation activity
+createdAt| Nullable| Original conversation creation time, if known
+updatedAt| Nullable| Most recent known conversation activity, if known
 
 If the original creation timestamp is unknown, it must not be fabricated. The implementation must define how unknown timestamps are represented before ingestion begins.
 
@@ -119,6 +119,7 @@ Proposed record:
   "id": "message_id",
   "conversationId": "conversation_id",
   "role": "user",
+  "attribution": null,
   "text": "I now work at Company B.",
   "timestamp": "2026-11-18T14:30:00.000Z",
   "sequence": 12,
@@ -137,6 +138,7 @@ timestamp| Nullable| Original message timestamp
 sequence| Required| Original position within conversation
 origin| Required| Source or import method
 receivedAt| Required| When Mopapa received or imported it
+attribution| Optional| Explicitly attributed person or source, when different from the message author
 
 Supported roles
 
@@ -217,6 +219,7 @@ Initial statuses
 - "historical": Previously valid information.
 - "uncertain": Evidence is insufficient to establish the correct interpretation.
 - "dismissed": The user has rejected the extraction.
+- "unsupported": Retained information with no remaining valid supporting evidence. It must not be presented as an established fact or used as an established fact in Ask.
 
 Deletion is a separate operation, not another status.
 
@@ -255,9 +258,11 @@ Rules
 - Every memory source link must reference an existing message.
 - Initial relationship type: "supports".
 - Duplicate links must be rejected.
-- Extracted memories must have at least one valid supporting source.
+- Active, historical and uncertain extracted memories must have at least one valid supporting source.
+- Unsupported memories may have no remaining valid supporting sources, but must retain their unsupported status.
 - An assistant statement must not be represented as a user statement.
 - Source attribution must remain available to Ask.
+- A memory must not be treated as supported merely because its original source link once existed.
 
 A memory without sufficient supporting evidence must not be presented as an established fact.
 
@@ -351,9 +356,9 @@ Repeated processing of the same imported message must not create uncontrolled du
 
 Requirements:
 
-1. Preserve stable message identifiers through an import operation.
-2. Where an import source supplies a stable original record identifier, preserve it.
-3. Reprocessing an already imported record must be recognisable.
+1. Preserve stable source identifiers supplied by the import source.
+2. Use the source identifier and import-source identity to recognise previously imported messages.
+3. Where no stable source identifier exists, do not claim guaranteed automatic duplicate detection. Use an explicit import-batch identity and provide a review strategy before merging potentially repeated records.
 4. Duplicate provenance links must be rejected.
 5. Memory similarity must not automatically prove that two records are identical.
 6. A potentially duplicate memory must be assessed before merging.
@@ -369,25 +374,34 @@ Deletion must respect the relationship between messages and memories.
 
 Deleting a message
 
-- Remove the message.
-- Remove provenance links pointing to that message.
-- If an extracted memory has other valid supporting messages, retain it.
-- If an extracted memory has no remaining supporting messages, remove that unsupported extracted memory.
-- Remove or reconcile historical relationships that no longer have valid evidence.
+- Remove the message and its provenance links.
+- Reassess every memory that depended on that message.
+- Retain affected memories for review rather than silently deleting them.
+- Mark memories with no remaining supporting evidence as unsupported.
+- Unsupported memories must not be presented as established facts.
+- Reassess historical relationships that depended on the deleted evidence.
 
 Deleting a conversation
 
-- Remove its messages.
-- Remove provenance links to those messages.
-- Remove extracted memories supported exclusively by those messages.
-- Preserve memories that have other valid supporting evidence.
-- Revalidate affected historical relationships.
+- Explain that deleting a conversation can affect memories extracted from it.
+- Before deletion, allow the user to choose whether to delete its derived memories as well.
+- If the user chooses to retain derived memories, remove their deleted source links and mark unsupported memories accordingly.
+- If the user chooses to delete derived memories, remove those memories and their relationships.
+- Preserve memories that have independent supporting evidence.
+- Perform the selected deletion consistently, without leaving orphaned records.
 
 Deleting a memory
 
 - Remove its provenance links.
 - Remove its historical relationships.
 - Do not delete original messages merely because one extracted memory was removed.
+
+Unsupported memories
+
+- An unsupported memory is retained information without a remaining valid evidence link.
+- It must be visibly distinguished from supported memories.
+- It must not be used as an established fact in Ask.
+- The user may review, correct or delete it.
 
 Deletion must not leave misleading orphaned records.
 
@@ -456,7 +470,9 @@ Validation must also detect:
 - Unsupported schema versions.
 - Invalid timestamps.
 - Invalid relationship structures.
-- Orphaned extracted memories.
+- Extracted memories with no valid supporting source unless their status is "unsupported".
+- Unsupported memories incorrectly presented as established facts.
+- Memories whose status and provenance records are inconsistent.
 
 The application must not silently discard invalid new records and then report a fully successful restore.
 
@@ -470,6 +486,8 @@ The current live application uses:
 - A current import file-size limit of 5 MB.
 
 The proposed schema uses version 2.
+
+The proposed schema version 2 does not by itself authorise changing the existing localStorage key. The current key, "mopapa.v1", and the data schema version are separate concerns. Any storage-key change requires its own compatibility and recovery plan.
 
 Version 1 to version 2
 
