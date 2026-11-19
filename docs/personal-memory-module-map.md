@@ -314,100 +314,146 @@ Migration| Existing storage boundary, extended| Versioned schema
 
 Do not create all these modules immediately. First finalise the schemas and ownership boundaries.
 
-8. Critical design questions before implementation
+8. Approved architecture decisions and remaining design work
 
-These questions must be resolved during data-model design.
+The target architecture direction and logical data-model direction were approved on 19 November 2026.
 
-8.1 Message ownership
+The approved direction is documented in:
 
-- Can a message exist without a conversation?
-- How are imported messages distinguished from messages created inside Mopapa?
-- How are missing or uncertain timestamps represented?
-- How is original message order preserved?
+- `docs/personal-memory-architecture.md`
+- `docs/personal-memory-data-model.md`
 
-8.2 Memory ownership
+These approvals establish the intended architecture. They do not authorise production implementation or settle every field-level, storage or migration detail.
 
-- Can one memory be supported by several messages?
-- Can one message support several memories?
-- How are manually saved entries represented alongside extracted memories?
-- Can an extracted memory be corrected without modifying its original evidence?
+8.1 Settled architectural direction
 
-8.3 Historical relationships
+The following are now approved:
 
-- What evidence is required before a newer fact supersedes an older fact?
-- How are contradictions represented?
-- How does Ask distinguish current from historical values?
-- What happens when the supporting message for a memory is deleted?
+- Original conversations and messages must remain distinguishable from memories extracted from them.
+- Original evidence must be preserved and traceable.
+- Extracted memories must have explicit provenance and supporting-source relationships.
+- Attribution must distinguish who made a statement from whom the statement concerns.
+- Memory type, lifecycle state, evidence state, temporal validity, scope and restrictions must be represented independently.
+- Historical changes, contradictions, supersession, correction and dismissal must be handled explicitly.
+- Capture, extraction, storage, retrieval, context assembly and answering must remain separate responsibilities.
+- Ask must remain deterministic and evidence-grounded.
+- Existing manually saved entries must remain intact.
+- The product remains local-first, with no paid services or recurring costs introduced during development.
+- No cloud synchronisation, hosted AI inference or external AI API is approved.
+- The current localStorage implementation remains in place until measured evidence justifies a storage change.
 
-8.4 Persistence and recovery
+8.2 Remaining implementation-level questions
 
-- How will new domains be validated?
-- How will older version-1 backups be restored?
-- How will new backups preserve all data domains?
-- How will partial or failed migrations be recovered?
-- How will derived indexes be rebuilt?
+These are not reasons to reopen the approved architecture. They are details that must be resolved before implementation.
 
-These decisions must precede production schema changes.
+Identity and schema:
 
-9. Implementation order
+- Exact required and optional fields for each record.
+- Stable identifier generation and collision handling.
+- Record ordering and handling of missing timestamps.
+- How imported and internally created conversations are distinguished.
+- How unknown or uncertain attribution is represented in actual records.
 
-The recommended order is:
+Provenance and memory operations:
 
-Step 1: Complete this module map.
+- Exact rules for linking one memory to multiple supporting messages.
+- Exact rules for linking one message to multiple memories.
+- How manual entries coexist with extracted memories without accidental duplication.
+- How corrections preserve the original evidence.
+- Which operations create historical versions or supersession relationships.
+- How deletion, revocation and restrictions propagate through dependent records.
 
-Identify current ownership, dependencies, reuse opportunities and gaps.
+Storage and recovery:
 
-Step 2: Define the data schemas.
+- Whether the existing localStorage capacity is sufficient for realistic conversation volumes.
+- Which measurements would justify IndexedDB.
+- Exact version-1 to future-version migration procedure.
+- Backup compatibility and restore behaviour for every new record type.
+- Atomicity, rollback and recovery behaviour if migration or restore fails.
+- Whether derived indexes are needed and how they will be rebuilt.
 
-Specify conversations, messages, memories and provenance relationships, including validation and stable identifiers.
+Evaluation:
 
-Step 3: Define compatibility and recovery.
+- Exact extraction and retrieval evaluation datasets.
+- How false memories, unsupported claims and incorrect attribution will be measured.
+- How temporal questions, contradictions, abstention and deletion will be tested.
+- How the existing 50-question Ask evaluation and separate LongMemEval diagnostic will be maintained without mixing them into ordinary regression totals.
 
-Specify backup format, restore validation, schema versioning, migration and rollback before storing new records.
+9. Updated implementation sequence
 
-Step 4: Measure storage requirements.
+The architecture and logical data-model direction are approved. The remaining work is to turn that direction into a safe, testable implementation plan.
 
-Use realistic message volumes and mobile-device measurements. Do not migrate to IndexedDB without evidence.
+Step 1: Align project documentation.
 
-Step 5: Build the smallest safe storage extension.
+Keep the module map, build log, architecture and data model consistent. Record the approved decisions and distinguish them from implementation authorisation.
 
-Add the new data domains without changing existing entry behaviour.
+Step 2: Produce the detailed build plan.
 
-Step 6: Implement ingestion.
+Define the smallest independently testable phases, dependencies, acceptance criteria, rollback requirements and explicit exclusions.
 
-Preserve original messages first. Add deterministic extraction, provenance and safe retry behaviour.
+Step 3: Finalise implementation-level schemas.
 
-Step 7: Extend retrieval.
+Specify exact record fields, validation rules, identifiers, relationships, lifecycle transitions and deletion behaviour. Check the specification against the current application and backup format.
 
-Allow Ask to use the new evidence while preserving source attribution and abstention.
+Step 4: Define migration and recovery.
 
-Step 8: Add inspection and correction interfaces.
+Specify version compatibility, backup and restore behaviour, migration atomicity, rollback and recovery before any new persistent domain is introduced.
 
-Expose extracted memories and their supporting evidence to the user.
+Step 5: Measure realistic storage requirements.
 
-10. Explicit non-goals for this stage
+Measure representative conversation and memory volumes on supported mobile browsers. Keep localStorage unless evidence demonstrates a concrete limitation. IndexedDB remains a candidate, not an approved migration.
 
-- No production code changes.
-- No replacement of "js/store.js".
-- No replacement of the Ask engine.
-- No IndexedDB migration.
-- No external AI API.
-- No cloud synchronisation.
-- No semantic embeddings.
-- No major interface redesign.
+Step 6: Approve the first production phase.
+
+The phase must have a narrow scope, measurable acceptance criteria, regression coverage and a recovery plan. No production change should begin before this approval.
+
+Step 7: Extend persistence safely.
+
+Add the smallest necessary data domains while preserving existing entries, storage safeguards, backups and restore behaviour.
+
+Step 8: Implement evidence-preserving ingestion.
+
+Preserve original messages first. Add deterministic extraction, provenance, duplicate handling and safe retry behaviour as separate capabilities.
+
+Step 9: Extend retrieval and Ask.
+
+Introduce new evidence sources incrementally. Preserve deterministic answering, source attribution, historical distinctions and abstention.
+
+Step 10: Add memory governance interfaces.
+
+Allow users to inspect, correct, dismiss, restrict and delete extracted memories and understand the evidence supporting them.
+
+Step 11: Evaluate and expand.
+
+Use separate evaluation for extraction, provenance, temporal updates, retrieval and answer quality. Expand only when measured results justify it.
+
+10. Explicit non-goals and restrictions
+
+The following remain outside the approved implementation boundary:
+
+- No immediate production code changes from this documentation batch.
+- No immediate schema migration.
+- No IndexedDB migration without measured justification and a separate implementation decision.
+- No replacement of the existing storage system merely for architectural neatness.
+- No replacement of the deterministic Ask engine with an LLM.
+- No paid API, subscription or hosted AI dependency.
+- No cloud synchronisation or mandatory account system.
+- No automatic access to other applications or their data without explicit authorisation.
+- No semantic embedding or vector database dependency without evidence and a separate decision.
+- No wholesale rewrite of the existing application.
 - No premature creation of every proposed module.
+- No claim that automatic conversation memory exists until it is implemented and verified.
 
-11. Inspection conclusion
+11. Updated inspection conclusion
 
-The existing application is a viable foundation for the proposed Personal Memory Companion.
+The existing application is a viable starting point for the approved Personal Memory Companion architecture.
 
-The most important missing layer is the distinction between:
+The current code already provides useful foundations: local persistence, manual entries, deterministic search and Ask, structured interpretation, backup and restore, recovery safeguards and regression tests.
 
-1. Original conversations and messages.
-2. Memories extracted from those messages.
-3. Relationships connecting memories to their evidence and historical versions.
-4. Answers produced from retrieved evidence.
+It does not yet provide a persistent conversation archive, a general extracted-memory model or the complete provenance and governance capabilities described by the approved target architecture.
 
-The next task is to define those records precisely and establish their backup, restore and migration rules.
+The correct engineering approach is incremental extension, not a premature rewrite.
 
-This mapping documents existing code. It does not claim that the proposed capabilities have been implemented.
+The approved architecture and logical data-model direction are now documented. The next task is to produce a phased build plan with precise prerequisites, acceptance criteria, test ownership and rollback conditions.
+
+This module map describes the inspected implementation and proposed future ownership. It does not claim that future capabilities have been built.

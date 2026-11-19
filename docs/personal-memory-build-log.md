@@ -86,7 +86,7 @@ Research baseline
 
 Date: 19 November 2026
 
-Status: Research review completed; target architecture not yet approved.
+Status: Research review completed; target architecture direction and logical data-model direction approved on 19 November 2026. Implementation not yet authorised.
 
 Research reviewed:
 
@@ -129,27 +129,39 @@ Main research conclusions
 10. Local model inference may be investigated later, but no model is approved for integration.
 11. Zero recurring financial costs remain mandatory during development.
 
-Initial documentation programme
+Approved documentation programme
 
 Item| Status
 Extended research review| Research completed
 Permanent build log| Created
-Target architecture revision| Awaiting
-Data model revision| Awaiting
-Build plan| Awaiting
-Storage and migration design| Awaiting
+Target architecture revision| Approved and documented
+Data model revision| Approved as logical direction and documented
+Module map alignment| In progress
+Build log alignment| In progress
+Phased build plan| Not yet completed
+Detailed implementation-level schema| Required before implementation
+Storage and migration design| Required before implementation
+Evaluation and acceptance criteria| To be finalised in the build plan
 
 Current approved implementation boundary
 
-No new production memory-ingestion code is authorised by the research review alone.
+The target architecture direction and logical data-model direction have been approved.
+
+This does not authorise production implementation.
 
 Before production implementation:
 
-1. Complete the target architecture.
-2. Complete the data model.
-3. Resolve storage and migration strategy.
-4. Define the evaluation harness.
-5. Approve the first implementation phase and its acceptance criteria.
+1. Align the module map and build log with the approved architecture and data model.
+2. Prepare a phased build plan with dependencies and acceptance criteria.
+3. Finalise exact record fields, validation, identifiers and relationship rules.
+4. Define backup compatibility, migration, rollback and recovery.
+5. Establish realistic storage measurements and the criteria for reconsidering IndexedDB.
+6. Define separate evaluation for extraction, provenance, retrieval and answer quality.
+7. Approve the first narrowly scoped implementation phase.
+
+The existing application must remain functional throughout this process.
+
+No paid services, hosted AI, cloud synchronisation or immediate storage migration are authorised by the architecture approval.
 
 Build entry template
 
@@ -201,6 +213,66 @@ Next approved task:
 Identify the single next task in the build plan.
 
 ---
+
+19 November 2026 - Target architecture and logical data model approved
+
+Status: Approved
+
+Purpose:
+
+Record the approval and documentation of the target architecture direction and logical data-model direction.
+
+Files changed:
+
+- `docs/personal-memory-architecture.md`
+- `docs/personal-memory-data-model.md`
+
+Implementation:
+
+The architecture and data-model documents were revised to establish a consistent target direction for Mopapa as a Personal Memory Companion.
+
+The approved direction separates original evidence, candidate extraction, stored memories, relationships and governance, retrieval and context assembly, and answering.
+
+It also defines the intended distinctions between attribution, subject, memory type, lifecycle state, evidence state, temporal validity, scope, restrictions and provenance.
+
+Existing manually saved entries remain part of the application. The proposed conversation, message, memory, source and relationship collections remain logical design concepts, not live production data domains.
+
+No production code or live storage schema was changed.
+
+Tests:
+
+- Unit tests: Not run; documentation-only change.
+- Browser tests: Not run; documentation-only change.
+- Additional checks: Reviewed the changed documentation and commit contents.
+
+Verification:
+
+- Commit SHA: `3a2a3f40b5a73c28429b5ade4df9022f232355e9`
+- GitHub Actions: No associated run was confirmed for this commit. Do not treat this as a passing Actions result.
+- Deployment status: Vercel reported successful deployment.
+- Manual verification: Confirmed that the commit changed the two intended documentation files and did not change production code.
+
+Evidence and limitations:
+
+The commit confirms that the approved target direction is documented. It does not demonstrate that the proposed data model has been implemented, that migration is safe, or that automatic memory extraction works.
+
+The architecture and logical data-model direction are approved. Detailed implementation-level schemas, migration design, storage measurements and production acceptance criteria remain outstanding.
+
+Outstanding issues:
+
+- Align the module map and build log.
+- Prepare the phased build plan.
+- Finalise implementation-level schema and validation rules.
+- Define backup, restore, migration and rollback requirements.
+- Define the evaluation and acceptance criteria for the first implementation phase.
+
+Decision:
+
+The target architecture direction and logical data-model direction are accepted. Production implementation remains unauthorised pending completion of the required design and planning work.
+
+Next approved task:
+
+Complete the module map and build-log alignment, then prepare the phased build plan.
 
 Decision record template
 
@@ -256,10 +328,17 @@ Do not silently rewrite history.
 
 Current position
 
-The project is in architecture and specification review.
+The research review is complete.
 
-No new personal-memory production module has been approved.
+The target architecture direction and logical data-model direction were approved on 19 November 2026 and documented in:
 
-The next work is to revise the target architecture and data model using the findings in the research review, then prepare the phased build plan.
+- `docs/personal-memory-architecture.md`
+- `docs/personal-memory-data-model.md`
 
-The existing application remains intact while these decisions are made.
+The module map and build log are being aligned with those approved documents.
+
+No new personal-memory production module has been approved. No schema migration, IndexedDB migration, external AI integration, paid service or cloud synchronisation has been authorised.
+
+The next task is to prepare a phased build plan. It must define implementation dependencies, detailed schema requirements, migration and recovery safeguards, evaluation criteria and acceptance conditions before production work begins.
+
+The existing application remains intact while this planning work is completed.
