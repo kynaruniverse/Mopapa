@@ -1,6 +1,6 @@
 Mopapa: Personal Memory Architecture
 
-Status: Proposed architecture
+Status: Approved target architecture direction, implementation not authorised
 Product direction: Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 Implementation policy: Incremental evolution of the existing application
@@ -659,3 +659,271 @@ The existing application is the foundation. Its reliability, deterministic reaso
 The next engineering task after approving this specification is a detailed module-by-module architecture mapping, followed by a separate external benchmark harness.
 
 No production rewrite is authorised by this document.
+
+---
+
+16. Approved target architecture alignment
+
+Decision date: 19 November 2026
+
+Authority: This section records the approved target direction. Where earlier sections contain a conflicting proposal, this section takes precedence. The existing implementation remains unchanged until individual engineering stages are separately authorised.
+
+16.1 Product objective
+
+Mopapa is to evolve into a personal memory companion that can automatically identify, preserve, organise and retrieve useful information from conversations and other sources explicitly provided or authorised by the user.
+
+The objective is dependable memory, not maximum collection or maximum answer rate.
+
+The system must preserve original evidence, distinguish it from interpretations, recognise changes over time, respect memory restrictions and provide evidence-grounded answers.
+
+16.2 Six distinct architectural layers
+
+The target architecture must keep the following responsibilities separate.
+
+1. Original evidence
+   
+   - Preserve original messages and authorised source material.
+   - Retain source identity, authorship, ordering and timestamps where available.
+   - Never rewrite original evidence to make it easier to process.
+   - Preserve uncertainty about missing or unreliable metadata.
+
+2. Candidate extraction
+   
+   - Identify potentially useful information.
+   - Produce candidate memories rather than immediately treating every extraction as established fact.
+   - Preserve the exact supporting evidence.
+   - Distinguish explicit statements from interpretations and inferences.
+   - Permit extraction to fail without damaging original evidence.
+
+3. Stored memory
+   
+   - Represent useful information independently of the original message.
+   - Support episodic, semantic and relational memory.
+   - Preserve historical information and changes.
+   - Keep temporary working context separate from permanent memory.
+   - Defer procedural memory until the foundational lifecycle is reliable.
+
+4. Memory relationships and governance
+   
+   - Track evidence, attribution, subjects, scope and restrictions.
+   - Represent support, contradiction and supersession explicitly.
+   - Handle correction, dismissal, revocation and deletion.
+   - Prevent unsupported, restricted or deleted information from being used as established knowledge.
+
+5. Retrieval and context assembly
+   
+   - Retrieve relevant evidence and memories.
+   - Respect temporal validity, attribution, scope and restrictions.
+   - Distinguish current from historical information.
+   - Assemble only the context needed for the current request.
+   - Keep temporary context separate from permanent storage.
+
+6. Answering
+   
+   - Preserve the existing deterministic Ask engine as the initial answer system.
+   - Use retrieved evidence rather than unsupported inference.
+   - Identify conflicting or insufficient evidence.
+   - Clarify or abstain when appropriate.
+   - Make the supporting source inspectable.
+
+These layers are logical responsibilities. They do not require six separate databases or six separate application frameworks.
+
+16.3 Memory categories
+
+The target system distinguishes the following memory types.
+
+- Episodic: events and experiences with their context.
+- Semantic: facts, preferences and other general knowledge.
+- Relational: supported connections between people, subjects, events and memories.
+- Procedural: learned methods or recurring ways of completing tasks. Deferred.
+- Working memory: temporary context assembled for the current interaction. Not automatically permanent.
+
+These types describe the nature of information, not its evidence quality or permission to use it.
+
+A memory may be semantic and historical, episodic and disputed, or relational and restricted. These dimensions must remain independent.
+
+16.4 Attribution and subject
+
+The architecture must distinguish:
+
+- The author or speaker of the original information.
+- The person or subject the information concerns.
+- The source through which Mopapa received it.
+- Mopapa's interpretation of the information.
+
+Supported attribution classes must include:
+
+- User.
+- Assistant.
+- Third party.
+- Imported source.
+- Unknown.
+
+A statement about the user is not necessarily a statement made by the user.
+
+An assistant-generated statement must not become a user fact merely because it appears in a conversation.
+
+Imported material must retain its original speaker attribution wherever that information is available.
+
+Unknown authorship must remain explicitly unknown. The system must not infer authorship from conversational wording alone.
+
+16.5 Memory lifecycle and state separation
+
+Memory processing must distinguish the following stages:
+
+1. Authorised source received.
+2. Original evidence preserved.
+3. Candidate information identified.
+4. Candidate attributed to its source.
+5. Candidate linked to its supporting evidence.
+6. Existing memories checked for duplication, updates and contradictions.
+7. Scope and restrictions assessed.
+8. Candidate validated or rejected.
+9. Memory stored in an appropriate state.
+10. Memory made available to permitted retrieval.
+11. Memory inspected, corrected, restricted, dismissed or deleted when required.
+
+The following dimensions must not be collapsed into one status field:
+
+- Memory lifecycle state.
+- Evidence state.
+- Attribution.
+- Subject.
+- Temporal validity.
+- Scope.
+- Use restrictions.
+- Deletion state.
+
+A newer statement must not automatically supersede an older memory. Supersession requires evidence that the information concerns the same subject and changing fact.
+
+Contradictory evidence must remain visible until the conflict can be resolved appropriately.
+
+16.6 Scope and restrictions
+
+Every future memory design must provide a way to represent where information applies and how it may be used.
+
+Scope answers: where or in what context is this information relevant?
+
+Restrictions answer: what uses are not permitted?
+
+The design must allow information to be limited to a conversation, topic, project or other explicitly defined context.
+
+A restriction must be enforceable by retrieval and answering, not merely displayed as descriptive metadata.
+
+Missing scope must not be interpreted as permission for unrestricted use.
+
+Missing restriction information must not be interpreted as permission to ignore an explicit restriction elsewhere in the evidence or memory record.
+
+16.7 Automatic processing without paid services
+
+The first implementation strategy must investigate deterministic processing.
+
+Potential initial capabilities include:
+
+- Original message preservation.
+- Stable identity and duplicate detection.
+- Source attribution.
+- Rule-based classification.
+- Explicitly stated facts and preferences.
+- Structured dates and entities.
+- User-confirmed updates.
+- Evidence-linked memory records.
+- Lexical and structured retrieval.
+
+Deterministic processing will not reliably solve every conversational extraction problem. Mopapa must preserve uncertain candidates rather than manufacture certainty.
+
+A local language model may be investigated only if deterministic processing demonstrates a material limitation that affects the product.
+
+Any such investigation must consider device compatibility, memory use, battery consumption, offline operation, model size, licence, accuracy and false-memory rates.
+
+No local model, external model, AI API or hosted inference service is approved for implementation by this architecture decision.
+
+16.8 Storage decision
+
+The current localStorage implementation remains in place.
+
+IndexedDB is a serious candidate for future conversation archive storage, but no migration is approved.
+
+A storage decision must follow measurements of:
+
+- Expected conversation and message volume.
+- Typical message size.
+- Storage growth.
+- Save and retrieval latency.
+- Search performance.
+- Backup and restore time.
+- Quota behaviour.
+- Recovery after interrupted writes.
+- Mobile browser compatibility.
+
+Do not introduce two competing authoritative storage systems.
+
+Any eventual migration requires a separate approved design, compatibility plan, tests and recovery procedure.
+
+16.9 Cost and privacy constraints
+
+Development must remain free of recurring financial obligations.
+
+No paid APIs, hosted inference, paid databases, cloud storage, paid subscriptions or hidden paid fallbacks may be introduced without a separate explicit decision.
+
+Personal information remains on the device by default.
+
+Automatic memory means processing information the user provides to Mopapa or explicitly authorises it to import. It does not authorise silent access to other Android applications or collection without permission.
+
+No cloud synchronisation, account system or external processing is approved by this architecture decision.
+
+16.10 Evaluation boundaries
+
+Memory quality must be evaluated as separate capabilities:
+
+- Source capture and preservation.
+- Attribution accuracy.
+- Extraction precision and recall.
+- False-memory rate.
+- Duplicate handling.
+- Update and contradiction handling.
+- Evidence integrity.
+- Scope and restriction compliance.
+- Deletion and revocation compliance.
+- Retrieval precision and recall.
+- Answer correctness.
+- Abstention quality.
+- Performance and storage reliability.
+
+The existing Mopapa regression suite, existing 50-question evaluation, LongMemEval fixtures and any future external benchmarks must remain separately identifiable.
+
+No single aggregate score may hide a serious provenance, privacy, deletion or governance failure.
+
+16.11 Approved engineering order
+
+The target direction is to proceed in this order:
+
+1. Align the architecture and data-model specifications.
+2. Complete the module-to-responsibility mapping.
+3. Finalise record schemas, attribution, scope and restrictions.
+4. Define lifecycle transitions and evidence rules.
+5. Define deletion, revocation and provenance behaviour.
+6. Define backup, restore, migration and rollback requirements.
+7. Measure realistic storage requirements.
+8. Make a separate storage decision.
+9. Extend storage only after that decision.
+10. Preserve authorised conversations and messages.
+11. Implement deterministic candidate extraction.
+12. Implement provenance and memory governance.
+13. Extend retrieval while preserving deterministic Ask.
+14. Build inspection and correction controls.
+15. Evaluate the complete lifecycle.
+
+Each stage requires its own implementation plan and approval. Documentation approval does not authorise production implementation.
+
+16.12 Final architectural decision
+
+Mopapa will evolve as a local-first, evidence-preserving personal memory system.
+
+Original evidence, extracted memories, memory governance, retrieval context and answers remain distinct.
+
+The existing application is the foundation. Its manual entries, deterministic Ask, storage safeguards and recovery behaviour must be preserved.
+
+Automatic memory is the long-term product objective. It must be achieved without silently collecting information, inventing facts, losing provenance or introducing recurring costs during development.
+
+No wholesale rewrite, paid AI dependency, cloud service or immediate storage migration is approved.

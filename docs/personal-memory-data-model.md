@@ -1,6 +1,6 @@
 Mopapa: Personal Memory Data Model Specification
 
-Status: Proposed data model
+Status: Approved logical target direction; detailed schema and implementation remain subject to validation
 Product: Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 Prerequisite: "docs/personal-memory-architecture.md" and "docs/personal-memory-module-map.md"
@@ -642,3 +642,401 @@ Historical changes and contradictions will be represented through separate relat
 Existing manual entries, deterministic Ask, local-first storage and recovery safeguards remain the foundation.
 
 This document defines a proposed data model. It does not claim that any of these new capabilities have been implemented.
+
+---
+
+19. Approved data-model alignment and required schema amendments
+
+Decision date: 19 November 2026
+
+Authority: This section extends and, where necessary, supersedes earlier proposals in this document. It records the approved logical requirements. It does not authorise a production schema change or migration.
+
+19.1 Core model
+
+The five proposed collections remain the logical foundation:
+
+- conversations
+- messages
+- memories
+- memorySources
+- memoryRelations
+
+Existing entries remain in the existing entries collection.
+
+The five new collections are not yet present in the live schema. The proposed schema version 2 remains a design proposal, not an implementation instruction.
+
+The logical model must distinguish original evidence, extracted memories, provenance, relationships and governance metadata.
+
+19.2 Required conceptual separation
+
+The following are independent data dimensions:
+
+Dimension| Question answered
+Record identity| Which record is this?
+Attribution| Who originally said or supplied this?
+Subject| Who or what is the information about?
+Memory type| What kind of memory is it?
+Lifecycle state| What stage or state is the memory in?
+Evidence state| What does the available evidence establish?
+Temporal validity| When was the information true or relevant?
+Scope| In which context does the information apply?
+Restrictions| How may this information be used?
+Provenance| Which original evidence supports it?
+Relationships| How does it connect to other memories?
+
+These dimensions must not be compressed into a single status, category or confidence field.
+
+19.3 Message attribution
+
+The message record must distinguish the original message role from its actual author attribution.
+
+The existing role field remains useful for the structure of the source conversation.
+
+The attribution field must be defined sufficiently to preserve the original author classification.
+
+The logical attribution classes are:
+
+- user
+- assistant
+- third_party
+- imported
+- unknown
+
+The implementation may represent attribution using a structured object, provided it preserves these distinctions and can retain an optional source-specific identity.
+
+Rules:
+
+- The author is the person or system that produced the original statement.
+- The subject is the person or thing the statement concerns.
+- A statement about the user must not automatically be attributed to the user.
+- Assistant-generated statements must remain identifiable as assistant-generated.
+- Imported material must retain its original authorship where available.
+- If authorship cannot be established, use unknown.
+- Do not infer an author's identity from text alone.
+
+The origin field continues to identify the source or import mechanism. It is not a substitute for authorship.
+
+19.4 Memory attribution and subject
+
+An extracted memory must retain enough information to identify the origin of its claim.
+
+The memory must be traceable through its memorySources records to the original messages and their attribution.
+
+The memory subject must remain separate from the source author.
+
+For example, a third party may make a statement about the user. The memory subject may be the user, but the author remains the third party.
+
+A memory supported by multiple messages must preserve the attribution of each supporting source. Do not flatten different authors into one assumed speaker.
+
+19.5 Memory type and category
+
+The model must distinguish broad memory type from application-specific category.
+
+The logical memory types are:
+
+- episodic
+- semantic
+- relational
+- procedural
+- working
+
+Initial persistent implementation should prioritise episodic, semantic and relational memories.
+
+Procedural memory is deferred until the foundational lifecycle is reliable.
+
+Working memory is temporary context assembled for an interaction. It must not automatically be stored as a permanent memory.
+
+Existing category values such as personal_fact, preference, event, task, plan and location may remain as more specific classifications.
+
+A category must not determine evidence quality, lifecycle state, scope or permission.
+
+19.6 Memory lifecycle state
+
+The memory lifecycle state must be represented independently of evidence quality.
+
+The proposed lifecycle states are:
+
+- candidate: extracted or proposed, not yet accepted as an established memory.
+- active: accepted for permitted current use.
+- historical: retained because it describes an earlier period or state.
+- uncertain: retained with an unresolved interpretation or validity question.
+- dismissed: rejected by the user and not available as established knowledge.
+- unsupported: no remaining valid evidence supports the memory.
+
+Deletion is an operation, not a lifecycle state.
+
+A dismissed memory must not be silently reactivated by repeated extraction.
+
+A candidate must not be presented as an established fact.
+
+An unsupported memory must not be used as an established fact in Ask.
+
+The implementation must define permitted transitions between states before production ingestion begins.
+
+19.7 Evidence state
+
+Evidence state must be separate from lifecycle state.
+
+The logical evidence states are:
+
+- supported: one or more valid sources support the claim.
+- partially_supported: available evidence supports only part of the claim.
+- conflicted: valid sources materially disagree.
+- unsupported: no valid supporting evidence remains.
+- unknown: evidence quality or availability has not been established.
+
+Evidence state must be derived from valid provenance and the evidence assessment. It must not be treated as a substitute for source records.
+
+A memory may be active but later become conflicted after new evidence arrives. The lifecycle state and evidence state must therefore be independently representable.
+
+A memory with conflicted or partially supported evidence must not be presented as an unqualified fact.
+
+19.8 Scope
+
+Every memory must be capable of representing the context in which it applies.
+
+The logical scope model must support:
+
+- personal
+- conversation
+- project
+- topic
+- other
+- unknown
+
+A scope may include a stable reference to the relevant conversation, project or topic when such an entity exists.
+
+The initial implementation must not invent project or topic identifiers. It may use unknown until a supported reference exists.
+
+Scope is not the same as subject.
+
+A subject identifies what the memory concerns. Scope identifies where or in what context the memory applies.
+
+Missing scope must not silently become unrestricted scope.
+
+19.9 Use restrictions
+
+The data model must provide an explicit representation for memory-use restrictions.
+
+The logical design must support restrictions such as:
+
+- do not surface proactively
+- use only within the specified context
+- do not infer additional information from this memory
+- do not use for a specified purpose
+- user-defined restriction
+
+These are examples of restriction semantics, not a final enum or an instruction to implement every option immediately.
+
+Restrictions must be enforceable by retrieval and answering.
+
+A descriptive note that a memory is restricted is insufficient if the retrieval system can still use it in a prohibited context.
+
+The implementation must define how multiple restrictions combine. A less restrictive source must never silently override a more restrictive applicable instruction.
+
+Missing restriction metadata must not override an explicit restriction recorded elsewhere.
+
+19.10 Temporal information
+
+The existing validFrom and validTo concepts remain.
+
+The implementation must distinguish:
+
+- when the original statement was made;
+- when Mopapa received or imported it;
+- when the described information became true, if known;
+- when the described information stopped being true, if known;
+- when the memory record was created or updated.
+
+These timestamps have different meanings.
+
+Unknown times must remain unknown. Import time must never be substituted for the original statement time or the time an event occurred.
+
+A later statement does not automatically establish that an earlier fact has ended.
+
+Supersession requires an explicit relationship supported by evidence.
+
+19.11 Provenance rules
+
+The memorySources collection remains the authoritative link between memories and supporting messages.
+
+It must preserve:
+
+- the memory identifier;
+- the original message identifier;
+- the source relationship;
+- the source's attribution through the referenced message;
+- the time the relationship was recorded;
+- any supported evidence qualification needed to explain the relationship.
+
+Initial source relationship:
+
+- supports
+
+Additional relationship types require a demonstrated need and a documented definition.
+
+A memory may have several supporting messages. A message may support several memories.
+
+Removing one source must trigger reassessment of the memory's remaining evidence.
+
+A source relationship must not be treated as valid if either referenced record is missing or deleted.
+
+19.12 Relationship rules
+
+The memoryRelations collection remains responsible for relationships between memories.
+
+Initial relationship types remain:
+
+- supersedes
+- contradicts
+- related
+
+The relationship must identify the memories involved and preserve the evidence that justifies the relationship.
+
+Supersession:
+
+- identifies the newer memory and the earlier memory;
+- does not delete the earlier memory;
+- requires evidence that the same changing fact or state is being updated;
+- must not be inferred from timestamps alone.
+
+Contradiction:
+
+- preserves both memories;
+- does not automatically select a winner;
+- must remain visible to retrieval and answer evaluation.
+
+Related:
+
+- must have a defensible reason;
+- must not be created from wording similarity alone.
+
+19.13 Deletion, revocation and restrictions
+
+The model must distinguish deletion from revocation and restriction.
+
+Deletion removes information under the defined deletion operation and its retention rules.
+
+Revocation withdraws permission for a memory or source to be used. Revoked information must not remain available to ordinary retrieval as though permission still exists.
+
+Restriction narrows permitted use without necessarily deleting the information.
+
+The implementation must define how each operation affects:
+
+- original messages;
+- extracted memories;
+- provenance links;
+- historical relationships;
+- derived indexes;
+- backups and recovery copies;
+- future re-imports.
+
+Deleting a source must trigger reassessment of every memory dependent on it.
+
+A memory with no remaining valid evidence must become unsupported and must not be presented as established knowledge.
+
+If a memory has several independent supporting sources, deleting one source must not automatically destroy valid remaining support.
+
+A deleted or revoked memory must not silently reappear through a repeated import or extraction. The design must provide a safe way to recognise prior user decisions without retaining prohibited content unnecessarily.
+
+19.14 Record validation
+
+Validation must cover the combined model, not only individual record shapes.
+
+It must verify:
+
+- unique stable identifiers;
+- valid parent conversation references;
+- valid message-to-conversation relationships;
+- supported author attribution;
+- valid memory lifecycle and evidence states;
+- valid memory type and category;
+- valid temporal fields;
+- valid scope references;
+- valid restriction representation;
+- valid provenance links;
+- valid memory relationships;
+- no orphaned records;
+- no invalid supersession or contradiction structures;
+- no duplicate source links;
+- no unsupported memory presented as established knowledge.
+
+Validation must reject or safely quarantine invalid records according to a defined policy.
+
+A restore must not be reported as fully successful if records or relationships were silently discarded.
+
+19.15 Storage and migration
+
+The proposed version 2 structure remains a logical target.
+
+No change to the live storage key, schema version, storage technology or migration behaviour is authorised by this section.
+
+The current localStorage implementation remains the live source of truth.
+
+IndexedDB remains a candidate for evaluation, not an approved migration.
+
+Before any schema extension or storage migration:
+
+1. Finalise the complete record validation rules.
+2. Define backup and restore compatibility.
+3. Define migration and rollback behaviour.
+4. Measure realistic conversation volume and storage performance.
+5. Confirm that existing entries, learning data, rooms and Ask state remain intact.
+6. Test interrupted writes and failed restoration.
+7. Obtain separate implementation approval.
+
+Do not maintain two competing authoritative stores.
+
+19.16 Evaluation requirements
+
+The data model must make it possible to test independently:
+
+- correct author attribution;
+- correct subject attribution;
+- source preservation;
+- memory extraction quality;
+- candidate acceptance and dismissal;
+- evidence-state transitions;
+- temporal updates;
+- contradiction handling;
+- scope enforcement;
+- restriction enforcement;
+- revocation;
+- deletion;
+- duplicate import and retry behaviour;
+- provenance integrity;
+- backup and restore integrity.
+
+A high retrieval or answer score cannot compensate for a serious attribution, privacy, restriction or deletion failure.
+
+19.17 Implementation boundary
+
+This specification approves the logical target direction only.
+
+It does not approve:
+
+- production code changes;
+- a schema version change;
+- an IndexedDB migration;
+- a local language model;
+- an external AI service;
+- cloud synchronisation;
+- automatic access to other applications;
+- a replacement for existing entries;
+- replacement of deterministic Ask.
+
+The next design task is to map these requirements onto the existing modules and define exact validation, lifecycle, deletion and backup behaviour.
+
+---
+
+Final data-model decision
+
+Mopapa will preserve original messages independently from extracted memories.
+
+Every extracted memory must retain traceable evidence, source attribution, subject, lifecycle state, evidence state, temporal information, scope and applicable restrictions.
+
+Relationships will represent supported updates and contradictions without destructive overwrites.
+
+Existing manual entries remain intact.
+
+The model is approved as a target specification. It is not implemented and must not be treated as a live storage schema.
