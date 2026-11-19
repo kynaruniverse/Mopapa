@@ -650,6 +650,153 @@ Each stage requires its own acceptance criteria and tests.
 
 No production implementation should begin simply because a document has been written.
 
+19. Logical data-model governance and attribution addendum
+
+Decision date: 19 November 2026
+
+Status: Approved logical data-model direction. Implementation-level schema not yet approved.
+
+Authority:
+
+This addendum records the subsequent refinement of the approved logical data model in:
+
+"docs/personal-memory-data-model.md"
+
+It clarifies the logical requirements for participant identity, message attribution, memory subjects, scope, audience visibility and use permissions.
+
+It does not authorise production implementation.
+
+19.1 Participant identity and attribution
+
+The logical model must distinguish:
+
+- Conversation-local participant identity.
+- Message role.
+- Original message author.
+- Quoted speaker.
+- Person or entity mentioned.
+- Subject of an extracted memory.
+- Source or import origin.
+- Mopapa's interpretation.
+
+Participant identifiers are conversation-local in the initial model.
+
+Cross-conversation identity matching must not happen automatically.
+
+Unknown and ambiguous identities must remain representable.
+
+Message authorship, quoted speakers and memory subjects must remain separate concepts.
+
+Identity corrections must be traceable and must trigger reassessment of affected memories where necessary.
+
+19.2 Evidence and provenance
+
+Original message content must remain unchanged.
+
+Where the source format permits it, evidence references should identify the relevant span of the original message.
+
+A memory supported by multiple messages must retain the attribution and provenance of each supporting source.
+
+Evidence references must remain traceable through correction, migration, backup and restore.
+
+19.3 Scope
+
+Scope is independent from subject, source, audience and use permission.
+
+The logical model supports:
+
+- Personal.
+- Conversation.
+- Project.
+- Topic.
+- Event.
+- Relationship.
+- Other explicitly defined context.
+- Unknown.
+
+Unknown scope must not be interpreted as unrestricted personal scope.
+
+Information originating in one conversation or project must not automatically become generally available in unrelated contexts.
+
+19.4 Audience visibility
+
+Audience visibility is independent from scope and use permission.
+
+The logical model supports:
+
+- Owner-only.
+- Named audience.
+- Restricted context.
+- Unknown.
+
+The initial single-user local-first product defaults to owner-only visibility.
+
+Imported conversation participants are not automatically authorised recipients.
+
+A memory about another person is not automatically shareable with that person.
+
+Unknown audience permissions must be treated conservatively.
+
+19.5 Independent use permissions
+
+The logical model distinguishes permission for:
+
+- Direct answers.
+- Contextual answers.
+- Proactive surfacing.
+- Cross-context reuse.
+- Inference.
+- Export.
+
+Permission for one use does not automatically grant permission for another.
+
+Proactive surfacing and cross-context reuse require explicit permission.
+
+External sharing is not authorised.
+
+19.6 Restriction inheritance and enforcement
+
+Restrictions from original evidence must remain applicable to derived memories.
+
+Where multiple sources support one memory, applicable restrictions must combine conservatively.
+
+A less restrictive source must not override an explicit restriction.
+
+Explicit denial takes precedence.
+
+Missing, unknown or conflicting permission information must deny the disputed use until resolved.
+
+Governance checks must occur before information enters retrieval or answer context.
+
+Summaries, caches and derived indexes must not bypass these checks.
+
+Backup and restore must preserve permission metadata.
+
+Export must not silently remove restrictions or broaden permissions.
+
+19.7 Implementation boundary
+
+These decisions establish logical requirements only.
+
+They do not approve:
+
+- Production schema changes.
+- Automatic conversation ingestion.
+- New storage mechanisms.
+- IndexedDB migration.
+- External sharing.
+- Multi-user access.
+- Cloud synchronisation.
+- Third-party processing.
+- Proactive notifications.
+- Automatic access to other applications.
+- Paid services or AI APIs.
+- Replacement of deterministic Ask.
+
+The exact record fields, validation rules, lifecycle transitions, enforcement implementation, migration behaviour and evaluation acceptance criteria remain to be completed and approved separately.
+
+---
+
 18. Current decision
 
 The target architecture direction was approved on 19 November 2026.
@@ -680,6 +827,8 @@ The approval does not authorise:
 
 The current localStorage implementation remains in place while storage requirements are evaluated. A separate storage decision is required before any migration.
 
-The next task is to complete documentation reconciliation and prepare the phased build plan.
+The phased build plan has now been created. The next task is to reconcile the architecture, logical data model, build plan and permanent build log, then complete the remaining implementation-level design requirements.
+
+Production implementation remains unauthorised.
 
 This record describes the approved target direction. It does not claim that the proposed capabilities have been implemented.

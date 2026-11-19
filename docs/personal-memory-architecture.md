@@ -742,14 +742,48 @@ These types describe the nature of information, not its evidence quality or perm
 
 A memory may be semantic and historical, episodic and disputed, or relational and restricted. These dimensions must remain independent.
 
-16.4 Attribution and subject
+16.4 Attribution, participants and subject identity
 
-The architecture must distinguish:
+The architecture must distinguish the following concepts:
 
-- The author or speaker of the original information.
-- The person or subject the information concerns.
-- The source through which Mopapa received it.
+- The conversation containing the original information.
+- The participant who authored the original message.
+- The role assigned to the message by its source.
+- A speaker quoted or described inside the message.
+- The person or entity the information concerns.
+- The source or import mechanism through which Mopapa received it.
 - Mopapa's interpretation of the information.
+
+These concepts must not be collapsed into a single author or subject field.
+
+Participant identity
+
+The initial participant identity model must be conversation-local.
+
+Each participant must have a stable identifier within its originating conversation.
+
+A source-provided participant identifier should be retained where available, alongside any display name or other source metadata.
+
+The logical model must not assume that a participant in one conversation is the same person as a participant in another conversation.
+
+Cross-conversation identity matching requires a separate, explicit identity-resolution process. Similar names, writing style, quoted names or contextual resemblance are insufficient evidence to establish identity.
+
+Unknown participants must remain representable without inventing an identity.
+
+Message authorship and quoted speakers
+
+The original message author must remain distinct from:
+
+- The role assigned to the message by the source.
+- A person quoted within the message.
+- A person mentioned within the message.
+- The subject of a memory extracted from the message.
+
+A quoted speaker must not automatically be treated as the message author.
+
+A person mentioned in a message must not automatically be treated as its author or as the subject of every extracted statement.
+
+Attribution classes
 
 Supported attribution classes must include:
 
@@ -759,13 +793,35 @@ Supported attribution classes must include:
 - Imported source.
 - Unknown.
 
+These classes describe the origin or authorship of information. They do not establish whether the information is true.
+
+Subject representation
+
+The subject of a memory must be represented independently from the message author.
+
 A statement about the user is not necessarily a statement made by the user.
 
-An assistant-generated statement must not become a user fact merely because it appears in a conversation.
+A statement made by the user is not necessarily about the user.
+
+A statement about a third party must not become a personal fact about the user merely because it appears in the user's conversation history.
+
+Where the subject cannot be established reliably, it must remain unknown or unresolved.
+
+Evidence spans and attribution corrections
+
+Where a memory is supported by only part of a message, its evidence reference should identify the relevant source span where the source format permits this.
+
+Evidence spans must retain their relationship to the original, unchanged message.
+
+Corrections to participant identity, authorship or subject attribution must be traceable.
+
+An identity correction must not silently rewrite original message content or erase the previous attribution decision.
+
+Affected memories and relationships must be reassessed when an attribution correction changes their interpretation.
 
 Imported material must retain its original speaker attribution wherever that information is available.
 
-Unknown authorship must remain explicitly unknown. The system must not infer authorship from conversational wording alone.
+Unknown authorship or subject identity must remain explicitly unknown. The system must not infer either from conversational wording alone.
 
 16.5 Memory lifecycle and state separation
 
@@ -798,21 +854,148 @@ A newer statement must not automatically supersede an older memory. Supersession
 
 Contradictory evidence must remain visible until the conflict can be resolved appropriately.
 
-16.6 Scope and restrictions
+16.6 Scope, audience visibility and use policy
 
-Every future memory design must provide a way to represent where information applies and how it may be used.
+The architecture must treat scope, audience visibility and use permissions as three independent dimensions.
 
-Scope answers: where or in what context is this information relevant?
+They answer different questions:
 
-Restrictions answer: what uses are not permitted?
+- Scope: Where, when or in what context does this information apply?
+- Audience: Who is permitted to see or receive this information?
+- Use policy: What is Mopapa permitted to do with this information?
 
-The design must allow information to be limited to a conversation, topic, project or other explicitly defined context.
+These dimensions must not be collapsed into a single privacy, visibility or permission flag.
 
-A restriction must be enforceable by retrieval and answering, not merely displayed as descriptive metadata.
+Scope
 
-Missing scope must not be interpreted as permission for unrestricted use.
+The logical model must support the following scope types:
 
-Missing restriction information must not be interpreted as permission to ignore an explicit restriction elsewhere in the evidence or memory record.
+- Personal.
+- Conversation.
+- Project.
+- Topic.
+- Event.
+- Relationship.
+- Other explicitly defined context.
+- Unknown.
+
+A scope reference must identify the context to which it applies where that context can be established.
+
+Unknown scope must remain explicitly unknown.
+
+Information originating in a conversation must not automatically become general personal knowledge.
+
+Information associated with a project must not automatically become applicable to unrelated projects or general personal contexts.
+
+Repeated mentions within a narrow context must not, by themselves, broaden that information into unrestricted personal scope.
+
+Audience visibility
+
+The logical model must distinguish:
+
+- Owner-only information.
+- Information available to an explicitly named audience.
+- Information restricted to a particular context.
+- Information with unknown or unresolved audience permissions.
+
+The initial single-user, local-first product must default to owner-only visibility.
+
+Imported conversation participants must not automatically become authorised recipients of stored information.
+
+A memory about another person must not automatically become shareable with that person.
+
+Unknown audience permissions must be treated conservatively.
+
+Use policy
+
+Use permissions must be represented independently from audience visibility.
+
+The logical model must distinguish permission for:
+
+- Direct answers to the owner.
+- Contextual use in an answer to the owner.
+- Proactive surfacing.
+- Cross-context reuse.
+- Inference or derivation.
+- Export or disclosure.
+
+Permission for one use must not automatically grant permission for another.
+
+Proactive surfacing and cross-context reuse must be denied unless explicitly permitted.
+
+External sharing must not be inferred from permission to retain or retrieve information locally.
+
+Restrictions and inheritance
+
+Restrictions must be capable of expressing prohibitions such as:
+
+- No proactive surfacing.
+- No cross-context reuse.
+- No use outside a specified audience.
+- No use for a specified purpose.
+- No inference or derivation.
+- No export or external disclosure.
+- No use outside a specified time period.
+
+Derived memories must inherit applicable restrictions from their supporting evidence.
+
+Where several sources support one memory, their applicable restrictions must be combined conservatively.
+
+A less restrictive source must never override an explicit restriction from another applicable source.
+
+An explicit denial must take precedence over an otherwise permissive rule.
+
+Unknown, missing or conflicting permission information must result in denial of the disputed use until it is resolved.
+
+Retrieval enforcement
+
+Governance must be checked before information enters retrieval context or answer context.
+
+Retrieval must consider:
+
+- Current conversation and project context.
+- Scope applicability.
+- Audience permissions.
+- Use permissions.
+- Source restrictions.
+- Temporal validity.
+- Evidence state.
+- Deletion and revocation.
+- Supersession and contradiction.
+
+Information that is prohibited from the current use must not enter the answer context merely because it was found by search.
+
+The same restrictions must apply to summaries, caches, derived indexes and other secondary representations.
+
+Proactive use requires its own permission check. Permission to answer a direct question does not grant permission to surface the same information proactively.
+
+Backup and export
+
+Internal backup and restore must be distinguished from external export or disclosure.
+
+Backup and restore must preserve the applicable scope, audience and use-policy metadata.
+
+An export process must not silently remove restrictions or broaden permissions.
+
+If an export format cannot preserve the applicable restrictions, restricted information must be excluded or the user must be clearly informed before proceeding.
+
+Implementation boundary
+
+These are logical architecture requirements, not approval to implement new sharing or access capabilities.
+
+They do not authorise:
+
+- External sharing.
+- Multi-user access.
+- Cloud synchronisation.
+- Third-party processing.
+- Automatic access to other applications.
+- Proactive notifications.
+- Production schema changes.
+- Changes to existing manual-entry behaviour.
+- Storage migration.
+
+All such changes require separate design, security review and explicit approval.
 
 16.7 Automatic processing without paid services
 

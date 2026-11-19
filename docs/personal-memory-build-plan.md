@@ -222,35 +222,51 @@ Ownership principles
 
 These questions must be resolved before the implementation-level schema is approved.
 
-7.1 Conversation participants and identity
+7.1 Participant identity and conversation-local attribution
 
-The logical model distinguishes message role from author attribution, but the implementation must define participant identity precisely.
+The logical participant and attribution direction is established in the approved data model.
 
-Decide:
+The implementation-level schema must now define the exact representation and validation rules.
 
-- How participants are represented.
-- Whether participants are conversation-specific or reusable across conversations.
-- How an imported author identifier maps to a participant.
-- How unknown authors are represented.
-- How quoted speakers are distinguished from message authors.
-- How identity corrections affect previously extracted memories.
-- How identity collisions and ambiguous names are handled.
+The approved logical requirements are:
+
+- Participants are represented within their originating conversation.
+- Source-provided participant identifiers are retained where available.
+- Message authorship is separate from message role.
+- Quoted speakers are separate from message authors.
+- Mentioned people are separate from message authors and quoted speakers.
+- Unknown and unresolved participants remain representable.
+- Cross-conversation identity matching is not automatic.
+- Identity corrections must be traceable.
+- Memories affected by identity corrections must be reassessed.
+
+The implementation-level design must specify:
+
+- Exact participant record fields.
+- Participant identifier generation and uniqueness.
+- Source identifier retention.
+- Display-name handling.
+- Unknown participant representation.
+- Duplicate participant handling within one conversation.
+- Identity correction history.
+- Behaviour when a participant is removed or reassigned.
+- Referential integrity between messages, participants and memories.
 
 Do not assume that two people with the same display name are the same person.
 
-Do not infer identity from writing style or a name mentioned in a message.
+Do not infer identity from writing style, a name mentioned in a message or contextual resemblance.
 
-The first implementation should favour explicit source identity and conservative unresolved attribution.
+7.2 Message authorship, quoted speakers and memory subjects
 
-7.2 Author, subject and attribution
-
-The model must preserve separate concepts:
+The logical model distinguishes:
 
 - Message role.
 - Original message author.
+- Quoted speaker.
 - Source or import origin.
-- Person or entity the statement concerns.
+- Person or entity mentioned.
 - Subject of the extracted memory.
+- Mopapa's interpretation.
 
 The approved attribution classes are:
 
@@ -260,39 +276,113 @@ The approved attribution classes are:
 - "imported"
 - "unknown"
 
-The final record structure must preserve these distinctions without forcing an identity where none is known.
+The implementation-level schema must define:
 
-A memory supported by several messages must retain the attribution of each supporting source.
+- How each attribution class is represented.
+- How a message author references a conversation participant.
+- How quoted speakers are represented.
+- How multiple subjects are represented where necessary.
+- How unknown and ambiguous subjects are represented.
+- How source attribution is retained for memories supported by multiple messages.
+- How attribution corrections affect derived memories.
+- How original source content remains unchanged.
 
-7.3 Audience and visibility
+A statement about the user must not automatically be treated as a statement made by the user.
 
-The existing logical model defines scope and use restrictions but does not yet fully define audience visibility.
+A statement made by the user must not automatically be treated as a statement about the user.
 
-Before implementation, decide whether the system needs to distinguish:
+7.3 Scope, audience visibility and use policy
 
-- Information available only in its originating conversation.
-- Information available to the user's general personal-memory context.
-- Information restricted to a particular project, topic or relationship.
-- Information that may be retained but must not be surfaced proactively.
-- Information that must not be used for a particular purpose.
+The logical model now defines three independent governance dimensions.
 
-Do not treat storage visibility, retrieval eligibility and permission to disclose as the same thing.
+Scope describes where or in what context information applies.
 
-Missing visibility metadata must not silently become unrestricted visibility.
+Audience describes who is permitted to see or receive it.
 
-7.4 Scope and restrictions
+Use policy describes what Mopapa is permitted to do with it.
 
-Finalise:
+The approved logical scope types are:
 
-- Supported scope types.
-- How scope references are represented.
-- Behaviour when a scope target is unknown or deleted.
-- How multiple restrictions combine.
-- How restrictions propagate through derived memories.
-- How retrieval enforces restrictions.
-- How answers demonstrate that restricted information was excluded.
+- "personal"
+- "conversation"
+- "project"
+- "topic"
+- "event"
+- "relationship"
+- "other"
+- "unknown"
 
-The more restrictive applicable rule must take precedence. A less restrictive source must not override an explicit restriction.
+The approved audience types are:
+
+- "owner_only"
+- "named_audience"
+- "restricted_context"
+- "unknown"
+
+The use-policy model must distinguish permission for:
+
+- Direct answers.
+- Contextual answers.
+- Proactive surfacing.
+- Cross-context reuse.
+- Inference.
+- Export.
+
+The implementation-level design must define:
+
+- Exact fields and allowed values.
+- Scope reference formats.
+- Named audience representation.
+- Context matching rules.
+- Default behaviour when metadata is missing.
+- Permission evaluation order.
+- How explicit denial is represented.
+- How conflicting policies are handled.
+- How multiple source restrictions combine.
+- How restrictions propagate to derived memories.
+- How source deletion or revocation affects derived permissions.
+- How policy changes are audited.
+- How permission metadata is preserved in backup and restore.
+- How export handles metadata it cannot preserve.
+
+The approved conservative direction is:
+
+- Owner-only visibility by default.
+- Unknown scope is not unrestricted scope.
+- Unknown audience is not permission to disclose.
+- Proactive surfacing is not permitted without explicit permission.
+- Cross-context reuse is not permitted without explicit permission.
+- External sharing is not authorised.
+- Explicit denial takes precedence.
+- Missing or conflicting permissions deny the disputed use.
+
+7.4 Governance enforcement and evidence spans
+
+Governance must be enforced before information enters retrieval or answer context.
+
+The implementation-level design must specify:
+
+- The exact point at which governance checks run.
+- How current conversation and project context are established.
+- How scope applicability is evaluated.
+- How audience permissions are checked.
+- How each use permission is checked.
+- How restrictions from multiple sources are combined.
+- How deleted and revoked evidence is excluded.
+- How prohibited information is prevented from entering summaries, caches and derived indexes.
+- How governance failures are recorded and tested.
+- How evidence spans identify supporting portions of original messages.
+- How evidence spans remain valid if records are migrated or corrected.
+
+Permission to answer a direct question must not automatically grant permission for proactive surfacing or cross-context reuse.
+
+Information that fails a governance check must be excluded before context assembly, not merely ignored by the answer layer.
+
+The design must specify exact behaviour for unknown, missing, invalid and conflicting metadata.
+
+A missing permission must never silently become permission.
+
+The implementation-level schema and governance rules remain unapproved until their fields, validation, evaluation fixtures and acceptance criteria are complete.
 
 7.5 Candidate acceptance
 
@@ -379,24 +469,34 @@ Exit gate: Documentation reconciliation is complete and the build plan is accept
 
 Phase 1: Finalise the implementation-level data model
 
-Purpose: Turn the approved logical model into a precise, testable schema.
+Purpose: Turn the approved logical model into a precise, testable schema without authorising production implementation.
 
 Work:
 
 1. Finalise conversation records.
 2. Finalise message records.
-3. Define participant identity.
-4. Define author attribution and subject representation.
-5. Define memory records and memory types.
-6. Define candidate and lifecycle transitions.
-7. Define evidence states.
-8. Define scope and visibility.
-9. Define use restrictions.
-10. Define provenance records.
-11. Define historical and contradiction relationships.
-12. Define deletion and revocation metadata or operations.
-13. Define stable identifier generation.
-14. Define validation rules for individual records and the complete dataset.
+3. Define conversation-local participant records and identifiers.
+4. Define message roles and original author attribution.
+5. Define quoted-speaker representation.
+6. Define memory subject representation and unresolved identity handling.
+7. Define evidence spans and source references.
+8. Finalise memory records and memory types.
+9. Define candidate and lifecycle transitions.
+10. Define independent evidence states.
+11. Define temporal validity and historical relationships.
+12. Define scope types and scope references.
+13. Define audience visibility and named-audience representation.
+14. Define independent use permissions.
+15. Define explicit restrictions and denial rules.
+16. Define restriction inheritance across derived memories.
+17. Define policy combination when multiple sources support one memory.
+18. Define behaviour for unknown, missing and conflicting permissions.
+19. Define governance enforcement before retrieval and context assembly.
+20. Define provenance and relationship records.
+21. Define deletion, revocation and identity-correction operations.
+22. Define stable identifier generation.
+23. Define validation rules for individual records and the complete dataset.
+24. Define valid, invalid, ambiguous and conflicting example datasets.
 
 The schema must specify exact behaviour for missing, null, unknown and invalid values.
 
@@ -404,19 +504,33 @@ It must not rely on undocumented assumptions.
 
 Acceptance criteria:
 
-- Every required field has a defined type and validation rule.
+- Every required field has a defined type, allowed values and validation rule.
 - Every relationship has a defined direction and integrity rule.
-- Participant, author and subject identity are unambiguous in the supported cases.
-- Unknown identity and unknown time remain representable.
+- Participant identifiers are unique within their defined conversation scope.
+- Message role, message author, quoted speaker and memory subject are independently represented.
+- Cross-conversation identity is not inferred automatically.
+- Unknown and ambiguous identity remain representable.
+- Evidence spans can be validated against their original messages.
+- Every memory can identify its supporting sources.
 - Candidate, active, historical, uncertain, dismissed and unsupported states have defined transitions.
 - Evidence state is independent from lifecycle state.
-- Scope and restrictions are enforceable, not descriptive labels only.
-- Existing manual entries remain separate.
+- Temporal validity is independent from record creation and update timestamps.
+- Scope and audience visibility are independently represented.
+- Use permissions are independent from visibility.
+- Owner-only visibility is the conservative default.
+- Missing or conflicting permission metadata cannot grant permission.
+- Explicit denials take precedence over permissive rules.
+- Restrictions from multiple sources combine conservatively.
+- Derived memories cannot silently weaken source restrictions.
+- Governance checks occur before prohibited information enters retrieval or answer context.
+- Summaries, caches and derived indexes cannot bypass governance.
+- Existing manual entries remain separate and retain their current meaning.
 - Invalid records have a defined rejection or quarantine policy.
 - A complete valid example dataset and invalid example dataset exist.
+- Ambiguous identity and permission cases have explicit expected outcomes.
 - The schema can be validated without relying on UI behaviour.
 
-Exit gate: The implementation-level schema and validation specification are explicitly approved.
+Exit gate: The implementation-level schema, attribution rules, scope model, audience model, use-policy model, validation rules and governance enforcement specification are complete and explicitly approved.
 
 Phase 2: Deletion, provenance and governance design
 
@@ -529,20 +643,49 @@ Evaluation must be divided by capability. A good final answer must not conceal a
 Create separate fixtures for:
 
 - Original-message preservation.
-- Author attribution.
+- Message role attribution.
+- Original message author attribution.
+- Quoted-speaker attribution.
 - Subject attribution.
-- Participant identity.
+- Participant identity within a conversation.
+- Unknown and ambiguous participant identity.
+- Cross-conversation identity separation.
+- Identity correction and reassessment of derived memories.
+- Evidence-span accuracy.
 - Candidate extraction.
 - Candidate rejection.
 - Provenance.
+- Multiple supporting sources.
 - Duplicate imports.
 - Retry behaviour.
 - Temporal changes.
 - Contradictions.
-- Scope.
-- Restrictions.
+- Scope applicability.
+- Conversation-only scope.
+- Project and topic scope.
+- Unknown scope.
+- Owner-only visibility defaults.
+- Named-audience restrictions.
+- Unknown audience.
+- Direct-answer permission.
+- Contextual-answer permission.
+- Proactive-use denial.
+- Cross-context reuse denial.
+- Inference restrictions.
+- Export restrictions.
+- Explicit permission denial.
+- Missing permission metadata.
+- Conflicting permissions.
+- Multiple-source restriction inheritance.
+- Derived-memory restriction inheritance.
+- Source deletion and restriction reassessment.
 - Revocation.
 - Deletion.
+- Governance enforcement before context assembly.
+- Restricted information excluded from summaries.
+- Restricted information excluded from caches and derived indexes.
+- Backup and restore preserving permission metadata.
+- Export behaviour when permission metadata cannot be preserved.
 - Retrieval.
 - Answer support and abstention.
 
@@ -556,11 +699,17 @@ Acceptance criteria:
 - Expected outputs are fixed and reviewable.
 - Positive and negative cases are represented.
 - Ambiguous cases test whether the system abstains or requests clarification.
-- Attribution and privacy failures are reported separately from answer accuracy.
+- Attribution failures are reported separately from extraction and answer accuracy.
+- Participant identity errors are reported separately from subject attribution errors.
+- Scope and audience violations are reported separately from ordinary retrieval errors.
+- Prohibited proactive use and cross-context reuse are treated as governance failures.
+- Missing or conflicting permissions never produce an unintended permission grant.
+- Restriction inheritance is tested across single-source and multiple-source memories.
+- Derived indexes, summaries and caches are tested for restricted-information leakage.
+- Backup, restore and export tests verify that permissions are not silently broadened.
 - Deletion and restriction failures are treated as critical, not averaged away.
 - Benchmark licensing and permitted use are recorded.
 - Evaluation data can be rerun consistently.
-- Existing regression assertions are not weakened to improve new scores.
 
 Exit gate: The evaluation harness is ready to assess the first implementation phase.
 
@@ -1008,16 +1157,23 @@ The following documents form the current design set:
 
 The next work is to review this plan against the existing specifications and close the remaining implementation-level design gaps.
 
-The first design work should concentrate on:
+The remaining design work should concentrate on:
 
-1. Participant identity and author attribution.
-2. Subject representation.
-3. Scope, audience visibility and use restrictions.
-4. Candidate acceptance and lifecycle transitions.
-5. Deletion, revocation and re-import protection.
-6. Exact schema and validation.
-7. Storage workload and backup compatibility.
-8. Evaluation fixtures and acceptance thresholds.
+1. Exact implementation-level record fields and validation.
+2. Participant identifier generation and identity-correction behaviour.
+3. Message author, quoted-speaker and subject representation.
+4. Evidence-span validation and provenance integrity.
+5. Candidate acceptance and lifecycle transitions.
+6. Temporal validity and contradiction handling.
+7. Deletion, revocation and re-import protection.
+8. Scope references and applicability rules.
+9. Audience visibility and named-audience representation.
+10. Independent use permissions and explicit denial behaviour.
+11. Multiple-source restriction inheritance.
+12. Governance enforcement before retrieval and context assembly.
+13. Backup, restore, migration and rollback compatibility.
+14. Storage workload and storage decision criteria.
+15. Evaluation fixtures, critical failure rules and acceptance thresholds.
 
 Only after these are resolved should the first production phase be proposed for approval.
 

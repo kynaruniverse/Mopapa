@@ -133,34 +133,58 @@ Approved documentation programme
 
 Item| Status
 Extended research review| Completed, including 19 November verification addendum
-Permanent build log| Created and maintained
+Permanent build log| Created; current-position reconciliation in progress
 Target architecture revision| Approved and documented
-Data model revision| Approved as logical direction and documented
+Logical data-model revision| Approved and documented
+Participant identity and attribution direction| Documented in logical data model
+Scope, audience and use-policy direction| Documented in logical data model
 Module map alignment| Completed
-Build log alignment| Final consistency correction required
-Phased build plan| Not yet completed
-Implementation-level schema| Required before implementation
-Storage and migration decision| Requires workload review before archive implementation
-Evaluation and acceptance criteria| To be finalised in the build plan
+Phased build plan| Created; requires reconciliation with latest data-model decisions
+Implementation-level schema| Outstanding; required before implementation
+Deletion, revocation and provenance specification| Outstanding at implementation level
+Storage workload and migration decision| Outstanding; requires measured workload review
+Backup, restore and rollback specification| Outstanding at implementation level
+Evaluation fixtures and acceptance thresholds| Defined in the build plan; require completion and review
+Architecture and plan consistency review| Next documentation task
+Production implementation| Not authorised
 
 Current approved implementation boundary
 
 The target architecture direction and logical data-model direction have been approved.
 
-This does not authorise production implementation.
+The logical model now defines:
+
+- Original evidence and extracted memories as separate concepts.
+- Conversation-local participant identity.
+- Message role, author, quoted speaker and memory subject as separate concepts.
+- Attribution classes and unresolved identity handling.
+- Evidence provenance and source references.
+- Independent scope, audience visibility and use permissions.
+- Conservative defaults for missing or conflicting permission information.
+- Restriction inheritance across derived memories.
+- Governance enforcement before retrieval and context assembly.
+
+The phased engineering build plan has been created.
+
+These approvals and documents do not authorise production implementation.
 
 Before production implementation:
 
-1. Complete the phased build plan with dependencies and acceptance criteria.
-2. Finalise exact record fields, validation, identifiers, participant identity and relationship rules.
-3. Define backup compatibility, migration, rollback and recovery.
-4. Establish realistic storage measurements and the criteria for reconsidering IndexedDB.
-5. Define separate evaluation for extraction, provenance, attribution, temporal updates, retrieval and answer quality.
-6. Approve the first narrowly scoped implementation phase.
+1. Reconcile the architecture, data model, build plan and build log.
+2. Finalise exact implementation-level record fields and validation.
+3. Define participant identifier generation and identity-correction behaviour.
+4. Define candidate acceptance and lifecycle transitions.
+5. Define evidence-span and provenance integrity rules.
+6. Define deletion, revocation, restriction inheritance and re-import protection.
+7. Define backup compatibility, migration, rollback and recovery.
+8. Establish realistic storage measurements and criteria for reconsidering IndexedDB.
+9. Complete the evaluation fixtures, critical failure rules and acceptance thresholds.
+10. Review the exact first production phase, affected files, regression coverage and recovery plan.
+11. Obtain explicit approval for that production phase.
 
 The existing application must remain functional throughout this process.
 
-No paid services, hosted AI, cloud synchronisation or immediate storage migration are authorised by the architecture approval.
+No paid services, hosted AI, cloud synchronisation, external sharing, third-party processing or immediate storage migration are authorised.
 
 Build entry template
 
@@ -273,6 +297,158 @@ Next approved task:
 
 Complete the module map and build-log alignment, then prepare the phased build plan.
 
+19 November 2026 - Phased personal-memory build plan added
+
+Status: Documentation added and verified
+
+Purpose:
+
+Record the creation of the phased engineering build plan.
+
+Files changed:
+
+- `docs/personal-memory-build-plan.md`
+
+Implementation:
+
+A phased engineering plan was added to define the design prerequisites, implementation sequence, dependencies, evaluation responsibilities, storage requirements, recovery requirements and implementation authorisation gates.
+
+The plan explicitly states that production implementation is not authorised.
+
+No production code or live storage schema was changed.
+
+Tests:
+
+- Unit tests: Existing CI test check passed.
+- Browser tests: Not independently run for this documentation-only change.
+- Additional checks: Commit contents and changed-file scope inspected.
+
+Verification:
+
+- Commit SHA: `612391b4ce84229ab9fb95f3f0623d820aead6da`
+- GitHub Actions: Run `44507370382`, job `135502367990`, test check completed successfully.
+- Deployment status: Vercel deployment succeeded.
+- Manual verification: Exactly one documentation file changed. No production JavaScript files changed.
+
+Evidence and limitations:
+
+The successful Actions check verifies the repository's configured test workflow for this commit. It does not prove that proposed memory functionality exists or that a future migration is safe.
+
+Decision:
+
+The phased build plan is accepted as the planning document, subject to continued reconciliation with subsequent logical data-model decisions.
+
+Next approved task:
+
+Reconcile the plan with the detailed participant identity, attribution, subject and governance requirements.
+
+---
+
+19 November 2026 - Participant identity and subject model refined
+
+Status: Documentation change verified
+
+Purpose:
+
+Record the refinement of participant identity, message authorship, quoted-speaker attribution and memory subject representation.
+
+Files changed:
+
+- `docs/personal-memory-data-model.md`
+
+Implementation:
+
+The logical data model was extended to distinguish conversation-local participants, message authors, quoted speakers, mentioned people and memory subjects.
+
+It also defines conservative handling of unknown identity, prohibits automatic cross-conversation identity matching and establishes requirements for traceable identity corrections and evidence spans.
+
+No production code, live storage schema or application behaviour was changed.
+
+Tests:
+
+- Unit tests: Not independently run for this documentation-only change.
+- Browser tests: Not independently run for this documentation-only change.
+- Additional checks: Changed file and commit contents inspected.
+
+Verification:
+
+- Commit SHA: `4ce4137dd6ba9ffe4801e9fe707ab7ee10452e42`
+- GitHub Actions: No associated workflow run was confirmed.
+- Deployment status: Vercel deployment succeeded.
+- Manual verification: Exactly one documentation file changed. No production files changed.
+
+Evidence and limitations:
+
+This commit establishes the documented logical direction. It does not implement participant records, identity resolution or memory extraction.
+
+Decision:
+
+The participant and subject requirements are accepted at the logical data-model level. Exact implementation fields and validation remain outstanding.
+
+Next approved task:
+
+Define scope, audience visibility and independent use permissions.
+
+---
+
+19 November 2026 - Scope, audience visibility and use policy refined
+
+Status: Documentation change verified
+
+Purpose:
+
+Record the addition of explicit scope, audience visibility, use permissions and restriction inheritance to the logical data model.
+
+Files changed:
+
+- `docs/personal-memory-data-model.md`
+
+Implementation:
+
+The logical data model now separates:
+
+- Scope and contextual applicability.
+- Audience visibility.
+- Permission for direct answers.
+- Permission for contextual answers.
+- Proactive surfacing.
+- Cross-context reuse.
+- Inference.
+- Export.
+
+It also defines conservative defaults, explicit denial precedence, restriction inheritance, multiple-source policy combination, governance enforcement before context assembly and backup/export requirements.
+
+The document explicitly withholds approval for external sharing, multi-user access, cloud synchronisation, third-party processing, proactive notifications, production schema changes and storage migration.
+
+No production code, live storage schema or application behaviour was changed.
+
+Tests:
+
+- Unit tests: Not independently run for this documentation-only change.
+- Browser tests: Not independently run for this documentation-only change.
+- Additional checks: Changed file and commit contents inspected.
+
+Verification:
+
+- Commit SHA: `c1035d06dd85fed072032eed9fe1aa7c5be740a5`
+- GitHub Actions: No associated workflow run was returned.
+- Deployment status: Vercel deployment succeeded.
+- Manual verification: Exactly one documentation file changed. No production files changed.
+
+Evidence and limitations:
+
+The commit confirms that the logical governance requirements are documented. It does not prove that access controls, permission enforcement or restricted retrieval have been implemented.
+
+Decision:
+
+The scope, audience and use-policy direction is accepted at the logical data-model level. Implementation-level fields, validation, enforcement and evaluation remain outstanding.
+
+Next approved task:
+
+Reconcile the architecture, data model, build plan and build log so that all four documents describe the same approved logical model and implementation boundary.
+
+---
+
 Decision record template
 
 [Date] - Decision: [Title]
@@ -327,24 +503,48 @@ Do not silently rewrite history.
 
 Current position
 
-The research review is complete. Its findings have informed the approved target architecture and logical data-model direction.
+The research review is complete.
 
-The following documents exist:
+The target architecture direction and logical data-model direction are approved.
 
-- docs/personal-memory-research-review.md
-- docs/personal-memory-architecture-decisions.md
-- docs/personal-memory-architecture.md
-- docs/personal-memory-data-model.md
-- docs/personal-memory-module-map.md
-- docs/storage-architecture.md
-- docs/personal-memory-build-log.md
+The phased engineering build plan has been created.
 
-The architecture and logical data-model direction are approved. The research review, architecture decisions, architecture specification, data model and module map have been reconciled. The build log is receiving its final consistency correction.
+The following documents form the current personal-memory design and planning set:
+
+- `docs/personal-memory-research-review.md`
+- `docs/personal-memory-architecture-decisions.md`
+- `docs/personal-memory-architecture.md`
+- `docs/personal-memory-data-model.md`
+- `docs/personal-memory-module-map.md`
+- `docs/storage-architecture.md`
+- `docs/personal-memory-build-log.md`
+- `docs/personal-memory-build-plan.md`
+
+The logical model now distinguishes original evidence, candidate extraction, stored memories, provenance, attribution, participant identity, memory subjects, temporal validity, scope, audience visibility, use permissions and retrieval governance.
+
+The architecture, data model and build plan must now be reconciled so that no document describes an already-decided logical requirement as undecided, and no document describes an unimplemented capability as implemented.
+
+The next work is to complete the implementation-level design.
+
+Outstanding design work includes:
+
+1. Exact record fields and validation rules.
+2. Participant identity and identity-correction behaviour.
+3. Candidate acceptance and lifecycle transitions.
+4. Evidence-span and provenance integrity.
+5. Temporal validity and contradiction rules.
+6. Deletion, revocation and restriction inheritance.
+7. Scope references and applicability.
+8. Audience visibility and permission evaluation.
+9. Governance enforcement before retrieval and context assembly.
+10. Backup, restore, migration and rollback compatibility.
+11. Measured storage workload and storage decision criteria.
+12. Complete evaluation fixtures and critical acceptance thresholds.
 
 No production memory-ingestion module has been approved.
 
-No schema migration, IndexedDB migration, local model, external AI integration, paid service or cloud synchronisation has been authorised.
-
-The next substantial deliverable is docs/personal-memory-build-plan.md. It must define the implementation phases, detailed design prerequisites, acceptance criteria, evaluation ownership, migration and recovery requirements, and explicit implementation approval gates.
+No production schema change, IndexedDB migration, local model, external AI integration, paid service, cloud synchronisation, external sharing or third-party processing has been authorised.
 
 The existing application remains unchanged while this work is completed.
+
+The next milestone is completion and review of the implementation-level design, not production coding.
