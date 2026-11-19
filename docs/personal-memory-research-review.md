@@ -1,7 +1,7 @@
 Mopapa Personal Memory Research Review
 
 Review date: 19 November 2026
-Status: Research review completed; architectural decisions require approval
+Status: Research review completed; target architecture direction approved on 19 November 2026; production implementation not authorised
 Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 
@@ -22,7 +22,7 @@ This document distinguishes:
 - Published research findings.
 - Benchmark capabilities and limitations.
 - Architectural recommendations.
-- Proposed decisions awaiting approval.
+- Architectural recommendations and decisions, with their current approval status recorded in the architecture and data-model specifications.
 - Features that have actually been implemented.
 
 A benchmark result is not proof that Mopapa will achieve equivalent performance. Research systems frequently use different models, hardware, prompts, datasets and evaluation methods.
@@ -1043,6 +1043,102 @@ The existing application should not be discarded without evidence. However, its 
 Research recommendation: complete the target architecture, data model, storage decision and evaluation plan before production memory-ingestion work begins.
 
 ---
+
+15.1 Research verification addendum - 19 November 2026
+
+This addendum records additional source verification and qualifications identified during the architecture review.
+
+MemArena-L dataset details:
+
+The dataset card reports:
+
+- 50 simulated agents.
+- 15 simulated days.
+- 13,343 sessions.
+- 137,279 conversational turns.
+- Approximately 10.3 million tokens.
+- Approximately 401 sessions and 4,186 turns per agent on average.
+- Evaluation covering recall, reasoning and trustworthiness, including permission-aware access.
+
+Sources:
+- https://github.com/dereksodo/MemArena-Bench/blob/main/docs/DATASET_CARD.md
+- https://arxiv.org/abs/2608.02613
+
+The dataset card and a mirrored dataset README report different evaluation-instance totals. One reports 1,523 and the other 1,579. Treat this as unresolved metadata until the released dataset version is inspected directly. Do not use either figure as an unquestioned benchmark total.
+
+GroupMemBench:
+
+The published research reports that its strongest evaluated system achieved 46.0% average accuracy, with 27.1% on knowledge updates and 37.7% on term ambiguity.
+
+These results reinforce the need to preserve speaker identity, conversational structure and ambiguous terminology rather than flattening multi-party information into one profile.
+
+Source:
+- https://arxiv.org/abs/2605.14498
+
+HorizonBench:
+
+The benchmark contains 4,245 items from 360 simulated users, with six-month histories averaging approximately 4,300 turns and 163,000 tokens.
+
+The research reports persistent preference-update failures, including cases where systems continue selecting an earlier preference.
+
+This supports temporal preference evaluation. It does not justify automatically inferring a preference change from a life event without sufficient evidence.
+
+Source:
+- https://arxiv.org/abs/2604.17283
+
+HaluMem:
+
+The research evaluates memory extraction, memory updating and memory question answering separately. Its datasets contain approximately 15,000 memory points and 3,500 questions, with histories averaging approximately 1,500 and 2,600 turns in the two variants.
+
+Source:
+- https://aclanthology.org/2026.emnlp-main.220/
+
+LoCoMo-Conv:
+
+The benchmark distinguishes dialog, implicit, counterfactual and composed queries. It reports that implicit and composed conversational requests expose retrieval gaps not adequately represented by ordinary question-answering tests.
+
+Source:
+- https://aclanthology.org/2026.findings-emnlp.1289/
+
+LoCoMo-Plus:
+
+The benchmark tests whether systems retain and apply implicit constraints across long histories. Its findings support retaining evidence-backed context, but do not justify turning inferred motives, emotions or values into established facts.
+
+Source:
+- https://aclanthology.org/2026.acl-long.1150/
+
+BEAM:
+
+BEAM contains 100 conversations and 2,000 validated questions, with generated histories reaching up to 10 million tokens. Its LIGHT architecture uses episodic memory, working memory and a scratchpad.
+
+This is a scalability and architecture reference, not a requirement to adopt its architecture.
+
+Source:
+- https://proceedings.iclr.cc/paper_files/paper/2026/hash/d7f0cfa0fe759b033d5262e1bb7d4065-Abstract-Conference.html
+
+DolphinBench:
+
+DolphinBench evaluates memory through task completion and requires accuracy, latency and cost to be considered together.
+
+It is relevant to future resource-efficiency evaluation, but does not justify making Mopapa an autonomous task agent.
+
+Source:
+- https://arxiv.org/abs/2609.24971
+
+Local browser inference:
+
+Transformers.js documents WebGPU support at approximately 85% global browser availability as of March 2026.
+
+This is an API compatibility estimate, not a guarantee of model compatibility, available GPU memory, acceptable inference speed or suitability for Android devices.
+
+Any future local model evaluation must measure actual device performance, model size, memory consumption, battery impact and licence conditions.
+
+Source:
+- https://huggingface.co/docs/transformers.js/guides/webgpu
+
+Research interpretation:
+
+These findings reinforce the existing approved architecture direction. They do not independently authorise new production capabilities, a local model, a storage migration or a change to deterministic Ask.
 
 16. Primary research and technical source index
 

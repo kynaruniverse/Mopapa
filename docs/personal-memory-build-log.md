@@ -132,15 +132,15 @@ Main research conclusions
 Approved documentation programme
 
 Item| Status
-Extended research review| Research completed
+Extended research review| Completed; verification addendum being incorporated
 Permanent build log| Created
 Target architecture revision| Approved and documented
 Data model revision| Approved as logical direction and documented
-Module map alignment| In progress
-Build log alignment| In progress
+Module map alignment| Completed in commit 85e67d64492159782f91dcf47c4ede6ece15c37d
+Build log alignment| Correction in progress
 Phased build plan| Not yet completed
-Detailed implementation-level schema| Required before implementation
-Storage and migration design| Required before implementation
+Implementation-level schema| Required before implementation
+Storage and migration decision| Requires workload review before archive implementation
 Evaluation and acceptance criteria| To be finalised in the build plan
 
 Current approved implementation boundary
@@ -328,17 +328,24 @@ Do not silently rewrite history.
 
 Current position
 
-The research review is complete.
+The research review is complete. Its findings have informed the approved target architecture and logical data-model direction.
 
-The target architecture direction and logical data-model direction were approved on 19 November 2026 and documented in:
+The following documents exist:
 
-- `docs/personal-memory-architecture.md`
-- `docs/personal-memory-data-model.md`
+- docs/personal-memory-research-review.md
+- docs/personal-memory-architecture-decisions.md
+- docs/personal-memory-architecture.md
+- docs/personal-memory-data-model.md
+- docs/personal-memory-module-map.md
+- docs/storage-architecture.md
+- docs/personal-memory-build-log.md
 
-The module map and build log are being aligned with those approved documents.
+The architecture and logical data-model direction are approved. Documentation reconciliation is the current task.
 
-No new personal-memory production module has been approved. No schema migration, IndexedDB migration, external AI integration, paid service or cloud synchronisation has been authorised.
+No production memory-ingestion module has been approved.
 
-The next task is to prepare a phased build plan. It must define implementation dependencies, detailed schema requirements, migration and recovery safeguards, evaluation criteria and acceptance conditions before production work begins.
+No schema migration, IndexedDB migration, local model, external AI integration, paid service or cloud synchronisation has been authorised.
 
-The existing application remains intact while this planning work is completed.
+The next substantial deliverable is docs/personal-memory-build-plan.md. It must define the implementation phases, detailed design prerequisites, acceptance criteria, evaluation ownership, migration and recovery requirements, and explicit implementation approval gates.
+
+The existing application remains unchanged while this work is completed.

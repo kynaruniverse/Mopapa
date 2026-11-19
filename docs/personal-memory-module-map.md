@@ -4,6 +4,7 @@ Status: Repository inspection completed
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
 Inspected commit: "851008f01d3b61df9c94ef53771cb159606cecbe"
+Documentation alignment verified through commit: "85e67d64492159782f91dcf47c4ede6ece15c37d"
 Purpose: Map the existing implementation against "docs/personal-memory-architecture.md" before production changes.
 
 ---
@@ -381,51 +382,37 @@ Evaluation:
 
 9. Updated implementation sequence
 
-The architecture and logical data-model direction are approved. The remaining work is to turn that direction into a safe, testable implementation plan.
+The target architecture and logical data-model direction are approved. Documentation alignment is complete. Production implementation remains unauthorised.
 
-Step 1: Align project documentation.
+Step 1: Complete documentation reconciliation.
 
-Keep the module map, build log, architecture and data model consistent. Record the approved decisions and distinguish them from implementation authorisation.
+Align the research review, architecture decisions, architecture specification, data model, module map and build log.
 
-Step 2: Produce the detailed build plan.
+Step 2: Produce the phased build plan.
 
-Define the smallest independently testable phases, dependencies, acceptance criteria, rollback requirements and explicit exclusions.
+Define the implementation stages, dependencies, acceptance criteria, test ownership, failure handling and explicit exclusions.
 
 Step 3: Finalise implementation-level schemas.
 
-Specify exact record fields, validation rules, identifiers, relationships, lifecycle transitions and deletion behaviour. Check the specification against the current application and backup format.
+Specify exact fields, identifiers, participant identity, attribution, provenance, relationships, lifecycle transitions, scope and restrictions.
 
-Step 4: Define migration and recovery.
+Step 4: Define deletion and retention behaviour.
 
-Specify version compatibility, backup and restore behaviour, migration atomicity, rollback and recovery before any new persistent domain is introduced.
+Specify correction, dismissal, revocation, deletion, backup retention and protection against deleted information being reintroduced.
 
-Step 5: Measure realistic storage requirements.
+Step 5: Define storage and migration.
 
-Measure representative conversation and memory volumes on supported mobile browsers. Keep localStorage unless evidence demonstrates a concrete limitation. IndexedDB remains a candidate, not an approved migration.
+Measure representative workloads and decide whether localStorage remains suitable or IndexedDB is justified. Define backup compatibility, migration atomicity, rollback and recovery.
 
-Step 6: Approve the first production phase.
+Step 6: Establish the evaluation harness.
 
-The phase must have a narrow scope, measurable acceptance criteria, regression coverage and a recovery plan. No production change should begin before this approval.
+Separate extraction, attribution, temporal updates, provenance, governance, retrieval and answer evaluation. Preserve the existing regression suites and 50-question Ask evaluation.
 
-Step 7: Extend persistence safely.
+Step 7: Approve the first production phase.
 
-Add the smallest necessary data domains while preserving existing entries, storage safeguards, backups and restore behaviour.
+No production change begins until its scope, acceptance criteria, regression tests and recovery plan are explicitly approved.
 
-Step 8: Implement evidence-preserving ingestion.
-
-Preserve original messages first. Add deterministic extraction, provenance, duplicate handling and safe retry behaviour as separate capabilities.
-
-Step 9: Extend retrieval and Ask.
-
-Introduce new evidence sources incrementally. Preserve deterministic answering, source attribution, historical distinctions and abstention.
-
-Step 10: Add memory governance interfaces.
-
-Allow users to inspect, correct, dismiss, restrict and delete extracted memories and understand the evidence supporting them.
-
-Step 11: Evaluate and expand.
-
-Use separate evaluation for extraction, provenance, temporal updates, retrieval and answer quality. Expand only when measured results justify it.
+Later implementation must preserve existing manual entries, deterministic Ask, storage safeguards and browser behaviour.
 
 10. Explicit non-goals and restrictions
 

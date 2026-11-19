@@ -4,7 +4,8 @@ Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: main
 Decision record date: 19 November 2026
-Status: Proposed target decisions, awaiting implementation approval
+Status: Approved target architecture direction; production implementation not authorised
+Decision date: 19 November 2026
 Implementation status: Documentation only. No production changes authorised.
 
 ---
@@ -13,7 +14,7 @@ Implementation status: Documentation only. No production changes authorised.
 
 This document converts the findings in "docs/personal-memory-research-review.md" into proposed engineering decisions.
 
-It is intended to resolve architectural questions before the existing architecture and data-model specifications are revised.
+It records the architectural direction derived from the research and approved on 19 November 2026. The detailed architecture and logical data-model specifications have subsequently been revised. This record does not authorise production implementation.
 
 It must be read alongside:
 
@@ -651,12 +652,34 @@ No production implementation should begin simply because a document has been wri
 
 18. Current decision
 
-The intended long-term direction is a local-first, evidence-preserving personal memory system with automatic candidate extraction, governed memory records and source-grounded retrieval.
+The target architecture direction was approved on 19 November 2026.
+
+The approved direction is a local-first, evidence-preserving personal memory system with:
+
+- Original evidence preserved independently from extracted memories.
+- Episodic, semantic and relational memory.
+- Explicit attribution, subject and provenance.
+- Temporal updates and contradiction handling.
+- Memory lifecycle and evidence states.
+- Scope and enforceable use restrictions.
+- Deterministic, evidence-grounded retrieval and answering.
+- User inspection, correction, restriction and deletion.
 
 The existing application remains the foundation.
 
-The research does not justify a wholesale rewrite, a paid AI service, a cloud architecture or an immediate IndexedDB migration.
+The approval does not authorise:
 
-The next task is to align the existing architecture and data-model specifications with these decisions.
+- Production code changes.
+- A schema migration.
+- An IndexedDB migration.
+- A local or hosted language model.
+- Paid APIs or recurring services.
+- Cloud synchronisation.
+- Automatic access to other applications.
+- Replacement of deterministic Ask.
 
-This document records proposed target decisions. It does not claim that any new memory capability has been implemented.
+The current localStorage implementation remains in place while storage requirements are evaluated. A separate storage decision is required before any migration.
+
+The next task is to complete documentation reconciliation and prepare the phased build plan.
+
+This record describes the approved target direction. It does not claim that the proposed capabilities have been implemented.
