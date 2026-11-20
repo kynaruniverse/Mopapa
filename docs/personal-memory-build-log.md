@@ -133,19 +133,19 @@ Approved documentation programme
 
 Item| Status
 Extended research review| Completed, including 19 November verification addendum
-Permanent build log| Created; current-position reconciliation in progress
+Permanent build log|Created and reconciled with the current design and build-plan direction
 Target architecture revision| Approved and documented
 Logical data-model revision| Approved and documented
 Participant identity and attribution direction| Documented in logical data model
 Scope, audience and use-policy direction| Documented in logical data model
 Module map alignment| Completed
-Phased build plan| Created; requires reconciliation with latest data-model decisions
+Phased build plan|Created and reconciled with latest data-model decisions
 Implementation-level schema| Outstanding; required before implementation
 Deletion, revocation and provenance specification| Outstanding at implementation level
 Storage workload and migration decision| Outstanding; requires measured workload review
 Backup, restore and rollback specification| Outstanding at implementation level
 Evaluation fixtures and acceptance thresholds| Defined in the build plan; require completion and review
-Architecture and plan consistency review| Next documentation task
+Architecture and plan consistency review|Completed; implementation-level design remains outstanding
 Production implementation| Not authorised
 
 Current approved implementation boundary
@@ -449,6 +449,64 @@ Reconcile the architecture, data model, build plan and build log so that all fou
 
 ---
 
+---
+
+19 November 2026 - Architecture, attribution and governance documentation reconciliation
+
+Status: Documentation change verified
+
+Purpose:
+
+Record the reconciliation of the architecture specification, phased build plan, architecture decisions and permanent build log with the approved logical data-model direction.
+
+Files changed:
+
+- `docs/personal-memory-architecture.md`
+- `docs/personal-memory-build-plan.md`
+- `docs/personal-memory-architecture-decisions.md`
+- `docs/personal-memory-build-log.md`
+
+Implementation:
+
+The architecture specification was expanded to distinguish conversation participants, message roles, original authors, quoted speakers, mentioned people and memory subjects.
+
+Scope, audience visibility and use permissions were specified as independent governance dimensions, including conservative defaults, restriction inheritance and enforcement before retrieval and context assembly.
+
+The phased build plan was updated with implementation-level design requirements, acceptance criteria and evaluation fixtures covering attribution, identity, evidence spans, governance and restricted-information leakage.
+
+The architecture decisions and permanent build log were updated to record the approved logical direction and outstanding implementation requirements.
+
+No production JavaScript, live storage schema or application behaviour was changed.
+
+Tests:
+
+- Unit tests: GitHub Actions test job completed successfully.
+- Browser tests: Not independently run as a separate manual test.
+- Additional checks: Commit contents and changed-file scope inspected.
+
+Verification:
+
+- Commit SHA: `1bfec1bdbf0744b6e366ce8e019756b8b4063730`
+- GitHub Actions: Run `44573846622`, job `135735870490`, completed successfully.
+- Deployment status: Vercel deployment succeeded.
+- Manual verification: Exactly four documentation files changed. No production files changed.
+
+Evidence and limitations:
+
+This commit confirms that the approved logical requirements have been carried into the architecture and build-planning documents.
+
+It does not implement automatic memory ingestion, participant identity resolution, governance enforcement, storage migration or any other proposed memory capability.
+
+Decision:
+
+The documentation reconciliation is accepted, subject to the correction of section numbering and the recording of this verified commit in the permanent build log.
+
+Production implementation remains unauthorised.
+
+Next approved task:
+
+Complete the implementation-level data model and its validation requirements before proposing any production code changes.
+
 Decision record template
 
 [Date] - Decision: [Title]
@@ -522,7 +580,9 @@ The following documents form the current personal-memory design and planning set
 
 The logical model now distinguishes original evidence, candidate extraction, stored memories, provenance, attribution, participant identity, memory subjects, temporal validity, scope, audience visibility, use permissions and retrieval governance.
 
-The architecture, data model and build plan must now be reconciled so that no document describes an already-decided logical requirement as undecided, and no document describes an unimplemented capability as implemented.
+The architecture, data model, build plan and permanent build log have been reconciled to reflect the approved logical direction.
+
+The implementation-level schema, validation, lifecycle, deletion and revocation, storage, migration, backup and restore, governance enforcement and evaluation details remain outstanding.
 
 The next work is to complete the implementation-level design.
 

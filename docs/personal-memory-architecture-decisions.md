@@ -650,7 +650,7 @@ Each stage requires its own acceptance criteria and tests.
 
 No production implementation should begin simply because a document has been written.
 
-19. Logical data-model governance and attribution addendum
+18. Logical data-model governance and attribution addendum
 
 Decision date: 19 November 2026
 
@@ -797,7 +797,7 @@ The exact record fields, validation rules, lifecycle transitions, enforcement im
 
 ---
 
-18. Current decision
+19. Current decision
 
 The target architecture direction was approved on 19 November 2026.
 
@@ -827,7 +827,9 @@ The approval does not authorise:
 
 The current localStorage implementation remains in place while storage requirements are evaluated. A separate storage decision is required before any migration.
 
-The phased build plan has now been created. The next task is to reconcile the architecture, logical data model, build plan and permanent build log, then complete the remaining implementation-level design requirements.
+The phased build plan and permanent build log have now been reconciled with the approved logical data-model direction.
+
+The next task is to complete the remaining implementation-level design requirements before any production implementation is proposed.
 
 Production implementation remains unauthorised.
 
