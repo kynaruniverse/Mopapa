@@ -507,6 +507,46 @@ Next approved task:
 
 Complete the implementation-level data model and its validation requirements before proposing any production code changes.
 
+---
+
+20 November 2026 - Documentation numbering and reconciliation corrections
+
+Status: Verified and completed
+
+Purpose:
+
+Record the corrections made after review of the 19 November documentation reconciliation.
+
+Files changed:
+
+- `docs/personal-memory-architecture-decisions.md`
+- `docs/personal-memory-build-log.md`
+
+Corrections:
+
+- Corrected the numbering of the logical data-model governance addendum and current decision.
+- Updated the architecture decisions document to reflect the completed documentation reconciliation.
+- Updated the permanent build log to show that the architecture and plan consistency review is complete.
+- Confirmed that implementation-level design remains outstanding.
+
+Verification:
+
+- Commit: `cb71527dfc88462568924637b8ab94519cdb9432`
+- GitHub Actions run `44707135731`, job `136189432660`: successful.
+- Vercel deployment: successful.
+- Exactly two documentation files changed.
+- No production code, tests or live storage schema changed.
+
+Decision:
+
+The documentation numbering and reconciliation corrections are accepted.
+
+Production implementation remains unauthorised.
+
+Next task:
+
+Complete the implementation-level data model and validation specification before proposing production code changes.
+
 Decision record template
 
 [Date] - Decision: [Title]
