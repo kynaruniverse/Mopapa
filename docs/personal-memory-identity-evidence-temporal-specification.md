@@ -299,7 +299,7 @@ These must not be collapsed into one identity.
   "speakerLabel": "my manager",
   "attribution": "third_party",
   "textStart": 0,
-  "textEnd": 65,
+  "textEnd": 58,
   "status": "unresolved",
   "quotationType": "reported_speech"
 }
@@ -452,7 +452,7 @@ Proposed structure:
   "evidenceSpans": [
     {
       "textStart": 0,
-      "textEnd": 65
+      "textEnd": 58
     }
   ],
   "sourceAttribution": "user",
@@ -873,6 +873,7 @@ Interpretation:
 - Subject: user.
 - Evidence attribution: user.
 - Provenance: supports.
+- Temporal status: known_start.
 - Temporal validity start: March 2026, month precision.
 - Validity end: unknown.
 - No exact day may be invented.
