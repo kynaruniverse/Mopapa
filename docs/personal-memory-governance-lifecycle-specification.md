@@ -739,7 +739,7 @@ Examples:
 
 Step 2: Identify the memory.
 
-Confirm that it exists, is not deleted and has valid references.
+Confirm that the memory exists in the active dataset, has not been removed through a completed deletion operation and has valid references.
 
 Step 3: Identify every materially supporting source.
 
@@ -871,7 +871,8 @@ active| Eligible subject to all other checks
 historical| Eligible for historical questions; not current-fact answers without qualification
 uncertain| Exclude from established-fact answers; may be shown as uncertain when relevant and permitted
 dismissed| Exclude
-deleted| Must not exist in ordinary retrieval
+
+A record removed through the deletion operation must not exist in ordinary retrieval. This is a deletion outcome, not a lifecycle state.
 
 An active memory with "unsupported" evidence must not be used as an established fact.
 
