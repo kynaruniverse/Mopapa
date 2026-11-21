@@ -234,10 +234,9 @@ The proposed attribution classes are:
 - "user"
 - "assistant"
 - "third_party"
-- "imported"
 - "unknown"
 
-"imported" describes source attribution where the actual author cannot be established. It must not mean that every imported message was written by an importer.
+Import status describes how Mopapa acquired the record, not who authored it. If the original author cannot be established, attribution must be "unknown". The import source and receipt time must be recorded separately from authorship.
 
 Where a source provides a participant author, the participant reference must be used.
 
@@ -310,7 +309,7 @@ Field| Type| Required| Rules
 "id"| String| Yes| Unique within its message.
 "participantId"| String or null| Yes| Existing participant reference only if the speaker is an established conversation participant.
 "speakerLabel"| String or null| Yes| Original descriptive label, maximum 200 characters.
-"attribution"| Enum| Yes| "user", "assistant", "third_party", "imported", "unknown".
+"attribution"| Enum| Yes| "user", "assistant", "third_party", "unknown".
 "textStart"| Integer or null| Yes| Inclusive UTF-16 start offset.
 "textEnd"| Integer or null| Yes| Exclusive UTF-16 end offset.
 "status"| Enum| Yes| "resolved", "unresolved", "ambiguous", "unknown".
@@ -406,7 +405,6 @@ Supported subject attribution classes:
 - "user"
 - "assistant"
 - "third_party"
-- "imported"
 - "unknown"
 
 Subject rules:
@@ -503,7 +501,7 @@ User directly states a personal fact| "user"| Null
 Assistant makes a suggestion| "assistant"| Null
 User reports what their manager said| "third_party"| Manager annotation
 User writes an unattributed report| "unknown" or explicitly "user", depending on the actual claim| Null
-Imported content with unknown original author| "imported" or "unknown"| Null
+Imported content with unknown original author| "unknown"| Null
 
 A user reporting a third-party statement is evidence that the user reported it. It is not independent confirmation that the third party made the statement.
 
