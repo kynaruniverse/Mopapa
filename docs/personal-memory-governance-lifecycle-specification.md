@@ -412,7 +412,11 @@ The proposed lifecycle states are:
 - "uncertain"
 - "dismissed"
 
-Deletion is an operation, not a permanent lifecycle state.
+
+Deletion is an operation, not a lifecycle state.
+
+This specification follows the later schema consistency decision that deletion must not be represented as an ordinary memory lifecycle state. The earlier record specification still lists "deleted" in its proposed lifecycleState enum and describes it as a deletion workflow state. That definition is a known cross-document inconsistency and must be reconciled before implementation. Until reconciliation is complete, "deleted" must not be treated as an approved ordinary lifecycle value.
+
 
 7.2 Candidate
 
@@ -504,7 +508,8 @@ uncertain| active| Uncertainty is resolved and acceptance requirements pass
 uncertain| historical| Evidence establishes a past validity period
 uncertain| dismissed| User rejects the interpretation
 uncertain| deleted| User requests deletion
-dismissed| candidate| Explicit new user instruction or clearly new source requiring review
+dismissed| candidate| Explicit new user instruction to reconsider, or genuinely new independent source requiring review; never an ordinary re-import, duplicate, paraphrase or derived summary
+
 dismissed| deleted| User requests removal of the retained record
 
 A dismissed memory must never transition automatically to active.
