@@ -430,7 +430,8 @@ A candidate may be:
 - Retained for review.
 - Rejected.
 - Dismissed by the user.
-- Deleted.
+- Removed through the deletion operation.
+
 
 7.3 Active
 
@@ -495,26 +496,23 @@ Current state| Proposed next state| Permitted trigger
 candidate| active| Validation and acceptance requirements satisfied
 candidate| uncertain| Meaning, attribution or truth unresolved
 candidate| dismissed| User or authorised review rejects it
-candidate| deleted| User requests deletion
 active| historical| Validity has ended or a confirmed change supersedes it
 active| uncertain| New evidence creates unresolved ambiguity
 active| dismissed| User explicitly rejects the memory
-active| deleted| User requests deletion
 historical| active| New evidence establishes that the same fact applies again
 historical| uncertain| Historical interpretation becomes disputed
 historical| dismissed| User rejects retention or interpretation
-historical| deleted| User requests deletion
 uncertain| active| Uncertainty is resolved and acceptance requirements pass
 uncertain| historical| Evidence establishes a past validity period
 uncertain| dismissed| User rejects the interpretation
-uncertain| deleted| User requests deletion
 dismissed| candidate| Explicit new user instruction to reconsider, or genuinely new independent source requiring review; never an ordinary re-import, duplicate, paraphrase or derived summary
 
-dismissed| deleted| User requests removal of the retained record
+
+Deletion is handled by the deletion operation defined in section 12, not by a lifecycle transition. A deletion request may originate from any lifecycle state.
 
 A dismissed memory must never transition automatically to active.
 
-A deleted memory is removed through a deletion operation and must not be retained as an ordinary lifecycle record.
+A deletion operation removes the memory from the active dataset according to the approved deletion and recovery rules. It does not create a "deleted" lifecycle state.
 
 7.8 Invalid transitions
 
