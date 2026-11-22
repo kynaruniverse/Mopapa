@@ -175,6 +175,14 @@ The "importLedger" collection previously proposed in the record specification re
 
 No other additional top-level collection is authorised by this specification.
 
+Schema version and backup format version are separate concepts.
+
+- Schema version describes the structure of the application data.
+- Backup format version, if introduced, describes the outer backup representation, envelope and integrity metadata.
+- A backup format version must not be used as a substitute for schema version.
+- No final backup envelope or backup format version has been approved.
+- The exact format and compatibility rules must be decided before production backup or migration changes are implemented.
+
 3.3 Existing data must remain separate
 
 The five proposed collections must not replace the existing "entries" domain.
@@ -357,6 +365,21 @@ Existing domain| Required migration behaviour
 "memoryRelations"| Initialise as an empty collection.
 
 The migration must not invent conversations or extracted memories from existing manual entries.
+
+Migration defaults are not yet approved as production behaviour.
+
+The current proposal is that the five new collections begin empty when migrating a valid version 1 dataset, because version 1 contains no equivalent conversation or extracted-memory collections.
+
+Before implementation, the migration must also define:
+
+- How missing, null and malformed fields are distinguished.
+- Whether every required version 1 domain must be present.
+- How existing entries and Ask learning are preserved exactly.
+- How migration is validated before commit.
+- How rollback is verified after a failed migration.
+- How deletion and revocation controls are reconciled before restored or migrated data becomes available.
+
+An empty collection must never be substituted for malformed or missing required data merely to make migration succeed.
 
 6.3 Version 2 to future version 3
 

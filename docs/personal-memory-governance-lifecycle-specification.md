@@ -415,7 +415,11 @@ The proposed lifecycle states are:
 
 Deletion is an operation, not a lifecycle state.
 
-This specification follows the later schema consistency decision that deletion must not be represented as an ordinary memory lifecycle state. The earlier record specification still lists "deleted" in its proposed lifecycleState enum and describes it as a deletion workflow state. That definition is a known cross-document inconsistency and must be reconciled before implementation. Until reconciliation is complete, "deleted" must not be treated as an approved ordinary lifecycle value.
+The record specification, logical data model and architecture now use the same five proposed lifecycle states: "candidate", "active", "historical", "uncertain" and "dismissed".
+
+Deletion is an operation, not a lifecycle state. A completed deletion removes the applicable record from the active dataset under the approved deletion and recovery policy. No ordinary memory record with a "deleted" lifecycle state is retained.
+
+Evidence state remains independent and uses "supported", "partially_supported", "unsupported", "disputed" and "unverified".
 
 
 7.2 Candidate

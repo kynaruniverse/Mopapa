@@ -1240,7 +1240,7 @@ It does not authorise:
 - Schema version 2 activation.
 - A new storage key.
 - IndexedDB migration.
-- A sixth "identities" or "importLedger" collection.
+- Any sixth top-level collection, including a global "identities" collection or an "importLedger" collection.
 - Global identity matching.
 - Automatic identity merging.
 - Automatic ingestion from other applications.

@@ -955,14 +955,15 @@ The following documents must be reconciled:
 - "docs/personal-memory-data-model.md"
 - "docs/personal-memory-build-plan.md"
 
-In particular:
+The current cross-document position is:
 
-1. The record specification's proposed lifecycle enum must no longer list "deleted" as a lifecycle state.
-2. Deletion must be represented as an operation and resulting record removal.
-3. The proposed "importLedger" must remain unapproved unless separately reviewed.
-4. Recovery-copy and backup rules must not contradict the deletion model.
-5. The five-collection logical model must remain consistent.
-6. No production schema version may be activated by documentation alone.
+1. The proposed memory lifecycle contains five states: "candidate", "active", "historical", "uncertain" and "dismissed".
+2. Deletion is an operation that removes applicable records from the active dataset.
+3. No "importLedger" or sixth collection is approved.
+4. The logical personal-memory model contains five proposed collections.
+5. Backup and recovery must not silently restore information removed through a completed deletion operation.
+6. The suppression mechanism and recovery-copy sanitisation rules remain unresolved implementation blockers.
+7. Schema version 2 remains proposed and is not active in the production application.
 
 19. Decisions still required
 
