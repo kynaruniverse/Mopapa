@@ -1144,9 +1144,9 @@ Evidence state must be derived from valid provenance and evidence assessment. It
 
 These values must be used consistently in the record specification, governance rules, validation and evaluation fixtures.
 
-A memory may be active but later become conflicted after new evidence arrives. The lifecycle state and evidence state must therefore be independently representable.
+A memory may be active but later become disputed after new evidence arrives. The lifecycle state and evidence state must therefore be independently representable.
 
-A memory with conflicted or partially supported evidence must not be presented as an unqualified fact.
+A memory with disputed or partially supported evidence must not be presented as an unqualified fact.
 
 
 19.8 Scope, context and applicability

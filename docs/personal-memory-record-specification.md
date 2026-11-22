@@ -97,7 +97,7 @@ The proposed future structure is therefore:
   "messages": [],
   "memories": [],
   "memorySources": [],
-  "memoryRelations": [],
+  "memoryRelations": []
 }
 
 The proposed structure contains exactly the five additional logical collections. No import ledger or sixth collection is included. Schema version 2 remains proposed and is not supported by the live application.
