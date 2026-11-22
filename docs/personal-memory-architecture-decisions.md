@@ -346,8 +346,9 @@ The system must distinguish:
 - User-authored.
 - Assistant-authored.
 - Third-party-authored.
-- Imported.
 - Unknown or unresolved.
+
+Import origin is separate from authorship. An imported message may have been authored by the user, an assistant or a third party.
 
 These labels describe source attribution, not whether a statement is true.
 

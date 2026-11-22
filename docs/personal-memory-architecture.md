@@ -118,7 +118,7 @@ Proposed fields:
 - "updatedAt": most recent activity timestamp.
 - "origin": source of the conversation.
 - "title": optional display title.
-- "status": active, archived or deleted.
+- "status": active or archived. Conversation deletion is handled by the deletion operation, not by a retained status value.
 
 A conversation groups messages. It is not itself a substitute for individual message records.
 
@@ -158,7 +158,7 @@ Proposed fields:
 - "recordedAt": when Mopapa received or extracted it.
 - "sourceMessageIds": original supporting message references.
 - "confidence": extraction confidence, where meaningful.
-- "status": active, historical, uncertain, dismissed or deleted.
+- "status": candidate, active, historical, uncertain or dismissed. Deletion is an operation that removes the applicable record from the active dataset.
 - "createdAt": memory creation timestamp.
 - "updatedAt": most recent modification timestamp.
 
@@ -790,10 +790,11 @@ Supported attribution classes must include:
 - User.
 - Assistant.
 - Third party.
-- Imported source.
 - Unknown.
 
-These classes describe the origin or authorship of information. They do not establish whether the information is true.
+Import origin must be represented separately from authorship. An imported source may contain information authored by the user, an assistant or a third party.
+
+These classes describe authorship or unresolved attribution. They do not establish whether the information is true.
 
 Subject representation
 
@@ -848,7 +849,25 @@ The following dimensions must not be collapsed into one status field:
 - Temporal validity.
 - Scope.
 - Use restrictions.
-- Deletion state.
+- Deletion operation and outcome.
+
+The permitted memory lifecycle states are:
+
+- Candidate.
+- Active.
+- Historical.
+- Uncertain.
+- Dismissed.
+
+Evidence state is independent and uses:
+
+- Supported.
+- Partially supported.
+- Unsupported.
+- Disputed.
+- Unverified.
+
+Deletion is not a lifecycle state. A completed deletion removes the applicable record from the active dataset under the approved deletion and recovery policy.
 
 A newer statement must not automatically supersede an older memory. Supersession requires evidence that the information concerns the same subject and changing fact.
 

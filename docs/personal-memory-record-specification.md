@@ -77,7 +77,7 @@ The logical personal-memory model proposes five additional collections:
 - "memorySources"
 - "memoryRelations"
 
-This specification also proposes an "importLedger" collection to support safe retries and prevent deleted or dismissed imports from silently returning.
+Re-import idempotency and deletion suppression remain required design capabilities. No persistent import-ledger collection or alternative suppression collection is approved. The mechanism must be resolved separately before implementation.
 
 Identity correction history is proposed as embedded participant metadata rather than a separate top-level collection.
 
@@ -98,10 +98,9 @@ The proposed future structure is therefore:
   "memories": [],
   "memorySources": [],
   "memoryRelations": [],
-  "importLedger": []
 }
 
-Important: "importLedger" is an addition to the previously approved five-collection logical model. It requires explicit architectural review and acceptance before implementation. Schema version 2 remains proposed and is not supported by the live application.
+The proposed structure contains exactly the five additional logical collections. No import ledger or sixth collection is included. Schema version 2 remains proposed and is not supported by the live application.
 
 Participants are embedded in conversations. Quoted-speaker annotations are embedded in messages. Subjects are embedded in memories. Scope and governance metadata are embedded in the records to which they apply.
 
@@ -214,7 +213,7 @@ Field| Type| Required| Rules
 "origin.type"| Enum string| Yes| "manual", "chatgpt_import", "file_import", "other"
 "origin.sourceId"| String or null| No| Original stable source ID, if available
 "origin.label"| String or null| No| Human-readable source label; maximum 100 characters
-"status"| Enum string| Yes| "active", "archived", "deleted"
+"status"| Enum string| Yes| "active", "archived"
 "participants"| Array| Yes| Conversation-local participant records
 "createdAt"| Timestamp or null| Yes| Original creation time, if known
 "updatedAt"| Timestamp or null| Yes| Latest known original activity time
@@ -228,8 +227,8 @@ Rules:
 - A participant ID is not automatically a global identity.
 - A conversation must not contain its entire message history in one text field.
 - Conversation ordering is established by message sequence and timestamps, not by array position.
-- "deleted" is a logical state for controlled deletion workflows, not permission to retain original content indefinitely.
-- The final hard-deletion and recovery policy must be defined separately.
+- Conversation deletion is performed through the deletion operation, not by assigning a "deleted" status.
+- A completed deletion removes the conversation and affected dependent records from the active dataset according to the approved deletion and recovery policy.
 
 6. Participant records
 
@@ -340,8 +339,9 @@ The allowed attribution classes are:
 - "user"
 - "assistant"
 - "third_party"
-- "imported"
 - "unknown"
+
+Import origin is recorded separately from authorship. "Imported" must never be used as an author attribution.
 
 Import origin is not the same as authorship. A message imported from another application may still have been written by the user.
 
@@ -378,7 +378,7 @@ Field| Type| Required| Rules
 "id"| String| Yes| Unique within message
 "participantId"| String or null| Yes| Conversation-local participant reference, if resolved
 "speakerLabel"| String or null| No| Maximum 200 characters
-"attribution"| Enum string| Yes| "user", "assistant", "third_party", "imported", "unknown"
+"attribution"| Enum string| Yes| "user", "assistant", "third_party", "unknown"
 "textStart"| Integer or null| Yes| Start offset in original message text
 "textEnd"| Integer or null| Yes| Exclusive end offset
 "status"| Enum string| Yes| "resolved", "unresolved", "ambiguous", "unknown"
@@ -428,7 +428,7 @@ Field| Type| Required| Rules
 "category"| Enum string| Yes| Defined category or "other" / "unknown"
 "content"| String| Yes| Concise representation; non-empty; maximum to be established by measurement
 "subjects"| Array| Yes| One or more subject records, or empty when genuinely unknown
-"lifecycleState"| Enum string| Yes| "candidate", "active", "historical", "uncertain", "dismissed", "deleted"
+"lifecycleState"| Enum string| Yes| "candidate", "active", "historical", "uncertain", "dismissed"
 "evidenceState"| Enum string| Yes| "supported", "partially_supported", "unsupported", "disputed", "unverified"
 "temporal"| Object| Yes| Validity and time certainty
 "recordedAt"| Timestamp| Yes| Time Mopapa recorded the memory
@@ -469,12 +469,15 @@ Type and category are separate dimensions. A preference may be semantic; an even
 
 9.3 Lifecycle states
 
+The permitted lifecycle states are:
+
 - "candidate": Extracted but not yet accepted as a usable memory.
 - "active": Accepted for permitted retrieval, subject to evidence and governance.
 - "historical": Retained as previously applicable information.
-- "uncertain": Meaning or truth cannot currently be established.
+- "uncertain": Meaning, attribution or truth cannot currently be established.
 - "dismissed": Rejected by the user or an explicit review process.
-- "deleted": Deletion workflow state; not a substitute for final deletion.
+
+Deletion is an operation, not a lifecycle state. A completed deletion removes the applicable record from the active dataset under the approved deletion and recovery policy. No ordinary memory record with a "deleted" lifecycle state is retained.
 
 9.4 Evidence states
 
@@ -516,7 +519,7 @@ Field| Type| Required| Rules
 "kind"| Enum string| Yes| "person", "organisation", "place", "event", "object", "topic", "unknown"
 "label"| String| Yes| Maximum 200 characters
 "identityKey"| String or null| Yes| Explicitly resolved identity reference, otherwise null
-"attribution"| Enum string| Yes| "user", "assistant", "third_party", "imported", "unknown"
+"attribution"| Enum string| Yes| "user", "assistant", "third_party", "unknown"
 "identityStatus"| Enum string| Yes| "resolved", "unresolved", "ambiguous", "unknown"
 
 Rules:
@@ -771,47 +774,52 @@ Rules:
 
 The global identity-key ownership and deletion model remains unresolved. This embedded proposal must be reviewed before approval.
 
-16. Deletion and re-import protection
+16. Re-import and deletion suppression requirements
 
-Deletion must remove or invalidate derived information without retaining prohibited content unnecessarily.
+The system must prevent ordinary re-import or automatic extraction from silently reversing a deliberate deletion, dismissal or revocation decision.
 
-The existing five-collection model does not fully specify how a deleted import is recognised if it is imported again later.
+The logical model currently contains five proposed personal-memory collections. No additional persistent collection is approved for import history or deletion suppression.
 
-This document therefore proposes an "importLedger" collection.
+The suppression mechanism remains unresolved and must receive a separate privacy and architecture review before implementation.
 
-Example:
+16.1 Source identity
 
-{
-  "id": "imp_example001",
-  "sourceType": "chatgpt_import",
-  "sourceConversationId": "source_conversation_123",
-  "sourceMessageId": null,
-  "action": "deleted",
-  "contentFingerprint": null,
-  "createdAt": "2026-11-20T10:15:00.000Z"
-}
+- Prefer stable source identifiers supplied by the original source.
+- Keep original source identifiers separate from Mopapa-generated record IDs.
+- Do not use text similarity alone as proof that two records are the same source.
+- Do not claim reliable duplicate detection when stable source identity is unavailable.
+- Do not retain raw deleted message text solely to recognise a previous import.
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique ledger record ID
-"sourceType"| Enum string| Yes| Supported import source
-"sourceConversationId"| String or null| Yes| Original source conversation identifier
-"sourceMessageId"| String or null| Yes| Original source message identifier
-"action"| Enum string| Yes| "imported", "dismissed", "deleted", "revoked"
-"contentFingerprint"| String or null| Yes| Optional non-reversible fingerprint, subject to privacy review
-"createdAt"| Timestamp| Yes| Ledger event time
+16.2 Required re-import behaviour
 
-Rules:
+- A previously processed source must follow normal duplicate-handling rules.
+- A source known to have been deliberately deleted must not silently recreate its deleted records.
+- A dismissed candidate must not silently return as an accepted memory.
+- A revoked source must remain subject to the applicable denial or restriction.
+- Similar wording from a different source must not automatically be treated as the same source.
+- Ambiguous or conflicting source identity must be handled conservatively.
 
-- Stable source identifiers should be used where available.
-- Repeated imports must not silently recreate deleted or dismissed information.
-- A fingerprint must not be treated as a substitute for a source identifier.
-- No raw deleted message text should be retained merely to prevent re-import.
-- The privacy implications of retaining identifiers or fingerprints must be reviewed.
-- Ledger retention and deletion must have an explicit policy.
-- A repeated import after a deliberate deletion must require an explicit user decision before restoring the deleted information.
-- If the source has no stable identifier, the system must disclose that reliable re-import suppression cannot be guaranteed.
+16.3 Suppression mechanism
 
-16.1 Deleting a message
+The minimum metadata, storage location, retention period, deletion behaviour, backup inclusion and restore behaviour remain unresolved.
+
+No "importLedger", sixth collection, fingerprint scheme or alternative persistent suppression mechanism is approved by this specification.
+
+A future design must establish how suppression metadata can prevent accidental re-import without retaining prohibited personal content unnecessarily.
+
+16.4 Explicit reintroduction
+
+A deliberate user instruction to reintroduce previously deleted information must be distinguishable from an ordinary repeated import.
+
+The confirmation, retention and audit behaviour for explicit reintroduction remain subject to a separate design decision.
+
+16.5 Failure and uncertainty
+
+If the system cannot establish whether an import would reverse a previous deletion or revocation, it must not claim that suppression is reliable.
+
+The affected import or restore must be blocked or require an explicitly designed user review process. It must not silently override the unresolved decision.
+
+16.6 Deleting a message
 
 - Remove the original message.
 - Remove provenance links referencing it.
@@ -821,7 +829,7 @@ Rules:
 - Remove derived index material.
 - Record only the minimum permitted deletion metadata.
 
-16.2 Deleting a conversation
+16.7 Deleting a conversation
 
 The user must be told which memories may be affected.
 
@@ -829,7 +837,7 @@ The operation must define whether derived memories are also deleted or retained 
 
 Memories supported by independent sources must be reassessed rather than automatically deleted.
 
-16.3 Deleting a memory
+16.8 Deleting a memory
 
 - Remove the memory.
 - Remove its provenance links.
@@ -839,13 +847,13 @@ Memories supported by independent sources must be reassessed rather than automat
 
 Original messages must not be deleted merely because one derived memory is removed.
 
-16.4 Revocation
+16.9 Revocation
 
 Revocation is a permission change, not merely a status label.
 
 It must prevent the affected information from being used in prohibited contexts, including through derived memories, indexes, cached context and future imports.
 
-16.5 Backups and recovery copies
+16.10 Backups and recovery copies
 
 The design must distinguish deletion from the continued existence of older exported backups or recovery copies.
 
@@ -1032,18 +1040,18 @@ A high retrieval or answer score cannot compensate for a serious privacy, attrib
 
 The following are not finalised by this document:
 
-1. Whether "importLedger" should be a sixth collection or whether an alternative design is safer.
-2. The global identity-key model and whether it requires a separate identity domain.
-3. The exact relationship between message role, author kind and attribution class.
-4. Unicode offset convention for evidence spans.
-5. Exact maximum record and archive sizes.
-6. Working-memory expiry and retention.
-7. Whether candidate memories can ever be automatically promoted to active.
-8. Exact policy-combination algorithm for memories with multiple sources.
-9. Exact deletion behaviour for retained derived memories.
-10. Privacy and retention limits for re-import suppression metadata.
-11. Whether a "deleted" lifecycle state is needed when final deletion is otherwise performed.
-12. Exact migration and rollback transaction boundaries.
+1. The global identity-key model and whether it requires a separate identity domain.
+2. The exact relationship between message role, author kind and attribution class.
+3. Exact maximum record and archive sizes.
+4. Working-memory expiry and retention.
+5. Whether candidate memories can ever be automatically promoted to active.
+6. Exact policy-combination algorithm for memories with multiple sources.
+7. Exact deletion behaviour for retained derived memories.
+8. Privacy, retention and deletion rules for re-import suppression metadata.
+9. Exact backup envelope and integrity requirements.
+10. Exact migration and rollback transaction boundaries.
+11. Recovery-copy sanitisation and retention after deletion.
+12. Explicit reintroduction behaviour after a deliberate deletion.
 
 These must be resolved before this specification is approved as implementation-ready.
 

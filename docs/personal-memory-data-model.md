@@ -1110,22 +1110,21 @@ A category must not determine evidence quality, lifecycle state, scope or permis
 
 The memory lifecycle state must be represented independently of evidence quality.
 
-The proposed lifecycle states are:
+The permitted lifecycle states are:
 
 - candidate: extracted or proposed, not yet accepted as an established memory.
 - active: accepted for permitted current use.
 - historical: retained because it describes an earlier period or state.
 - uncertain: retained with an unresolved interpretation or validity question.
 - dismissed: rejected by the user and not available as established knowledge.
-- unsupported: no remaining valid evidence supports the memory.
 
-Deletion is an operation, not a lifecycle state.
+Deletion is an operation, not a lifecycle state. A completed deletion removes the applicable record from the active dataset under the approved deletion and recovery policy.
 
-A dismissed memory must not be silently reactivated by repeated extraction.
+A dismissed memory must not be silently reactivated by repeated extraction or ordinary re-import.
 
 A candidate must not be presented as an established fact.
 
-An unsupported memory must not be used as an established fact in Ask.
+Evidence state must determine whether the memory has adequate support for a proposed use. An unsupported memory must not be used as an established fact in Ask.
 
 The implementation must define permitted transitions between states before production ingestion begins.
 
@@ -1133,15 +1132,17 @@ The implementation must define permitted transitions between states before produ
 
 Evidence state must be separate from lifecycle state.
 
-The logical evidence states are:
+The canonical proposed evidence states are:
 
-- supported: one or more valid sources support the claim.
-- partially_supported: available evidence supports only part of the claim.
-- conflicted: valid sources materially disagree.
-- unsupported: no valid supporting evidence remains.
-- unknown: evidence quality or availability has not been established.
+- supported: valid evidence supports the complete memory claim.
+- partially_supported: available evidence supports only part of the complete claim.
+- unsupported: no remaining valid evidence supports the claim.
+- disputed: valid evidence materially conflicts and the conflict has not been resolved.
+- unverified: evidence has not been adequately assessed.
 
-Evidence state must be derived from valid provenance and the evidence assessment. It must not be treated as a substitute for source records.
+Evidence state must be derived from valid provenance and evidence assessment. It must not be treated as a substitute for source records.
+
+These values must be used consistently in the record specification, governance rules, validation and evaluation fixtures.
 
 A memory may be active but later become conflicted after new evidence arrives. The lifecycle state and evidence state must therefore be independently representable.
 
@@ -1549,17 +1550,24 @@ It must preserve:
 - the time the relationship was recorded;
 - any supported evidence qualification needed to explain the relationship.
 
-Initial source relationship:
+The proposed source relationship types are:
 
 - supports
+- refutes
+- qualifies
+- context_only
 
-Additional relationship types require a demonstrated need and a documented definition.
+Each relationship must describe the evidential role of the referenced message in relation to the memory.
+
+A source relationship must not be treated as proof that the complete memory is supported. The combined evidence must be assessed at the claim level.
+
+All relationship types require validation and must retain their original source references.
 
 A memory may have several supporting messages. A message may support several memories.
 
 Removing one source must trigger reassessment of the memory's remaining evidence.
 
-A source relationship must not be treated as valid if either referenced record is missing or deleted.
+A source relationship must not be treated as valid if either referenced record is missing or has been removed through a completed deletion operation.
 
 19.12 Relationship rules
 
