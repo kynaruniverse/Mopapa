@@ -382,35 +382,39 @@ Evaluation:
 
 9. Updated implementation sequence
 
-The target architecture and logical data-model direction are approved. Documentation alignment is complete. Production implementation remains unauthorised.
+The target architecture and logical data-model direction are approved. The initial implementation audit, detailed record specification, identity/evidence/temporal specification, governance specification, deletion/revocation specification and backup/restore compatibility matrix have been drafted.
 
-Step 1: Complete documentation reconciliation.
+Documentation reconciliation is in progress. Production implementation remains unauthorised.
 
-Align the research review, architecture decisions, architecture specification, data model, module map and build log.
+Step 1: Complete cross-document reconciliation.
 
-Step 2: Produce the phased build plan.
+Ensure the architecture, logical data model, record specification, identity specification, governance specification, deletion specification, backup matrix, build plan, module map, research review, storage decision and permanent build log describe the same current position.
 
-Define the implementation stages, dependencies, acceptance criteria, test ownership, failure handling and explicit exclusions.
+Step 2: Review implementation-level design readiness.
 
-Step 3: Finalise implementation-level schemas.
+Check every proposed field, enum, reference, validation rule, state transition, permission rule and deletion operation against the other specifications.
 
-Specify exact fields, identifiers, participant identity, attribution, provenance, relationships, lifecycle transitions, scope and restrictions.
+Separate settled proposals from unresolved decisions. Do not treat a documented proposal as an approved production requirement without explicit review.
 
-Step 4: Define deletion and retention behaviour.
+Step 3: Resolve remaining storage and recovery decisions.
 
-Specify correction, dismissal, revocation, deletion, backup retention and protection against deleted information being reintroduced.
+Complete deletion-suppression, recovery-copy sanitisation, backup envelope, migration defaults, rollback and representative archive workload decisions.
 
-Step 5: Define storage and migration.
+Retain localStorage unless measured evidence justifies a separate storage decision.
 
-Measure representative workloads and decide whether localStorage remains suitable or IndexedDB is justified. Define backup compatibility, migration atomicity, rollback and recovery.
+Step 4: Complete evaluation readiness.
 
-Step 6: Establish the evaluation harness.
+Define the fixtures, expected outcomes, critical failure rules and measurable acceptance thresholds for capture, attribution, extraction, provenance, temporal reasoning, governance, retrieval, deletion and recovery.
 
-Separate extraction, attribution, temporal updates, provenance, governance, retrieval and answer evaluation. Preserve the existing regression suites and 50-question Ask evaluation.
+Preserve existing regression tests and the separate 50-question Ask evaluation.
 
-Step 7: Approve the first production phase.
+Step 5: Review the first production phase.
 
-No production change begins until its scope, acceptance criteria, regression tests and recovery plan are explicitly approved.
+Identify exact files, module ownership, dependencies, test coverage, failure handling, migration impact and rollback conditions.
+
+Step 6: Obtain explicit approval.
+
+No production change begins until the user has reviewed and approved the precise implementation phase.
 
 Later implementation must preserve existing manual entries, deterministic Ask, storage safeguards and browser behaviour.
 
@@ -441,6 +445,6 @@ It does not yet provide a persistent conversation archive, a general extracted-m
 
 The correct engineering approach is incremental extension, not a premature rewrite.
 
-The approved architecture and logical data-model direction are now documented. The next task is to produce a phased build plan with precise prerequisites, acceptance criteria, test ownership and rollback conditions.
+The approved architecture and logical data-model direction are documented, and the phased build plan and implementation-level specifications have been drafted. The current task is to complete cross-document reconciliation and resolve the remaining implementation-readiness decisions before any production phase is proposed.
 
 This module map describes the inspected implementation and proposed future ownership. It does not claim that future capabilities have been built.

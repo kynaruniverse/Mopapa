@@ -609,3 +609,43 @@ The specification must also define whole-dataset invariants and validation-failu
 Only after this specification is complete should migration, backup compatibility and implementation-phase acceptance criteria be finalised.
 
 The next milestone is an approved implementation-level data model, not production coding.
+
+---
+
+14. Follow-up: subsequent design work
+
+Date: 22 November 2026
+
+The original audit remains the record of the existing production implementation inspected at the time of the audit.
+
+Since that inspection, the following implementation-level design documents have been created:
+
+- docs/personal-memory-record-specification.md
+- docs/personal-memory-identity-evidence-temporal-specification.md
+- docs/personal-memory-governance-lifecycle-specification.md
+- docs/personal-memory-deletion-revocation-recovery-specification.md
+- docs/personal-memory-backup-restore-compatibility-matrix.md
+- docs/personal-memory-schema-consistency-review.md
+
+These documents address many of the design gaps identified in the original audit.
+
+They do not change the audit's findings about the existing production code.
+
+The current production application still does not provide the proposed persistent conversation archive, extracted-memory collections, complete provenance model or proposed governance enforcement.
+
+The proposed five new collections remain design concepts. Schema version 2 is not active. The current storage key and production schema remain unchanged.
+
+The detailed specifications still require final cross-document review, explicit approval and implementation-readiness decisions.
+
+Outstanding blockers include:
+
+- Final approval of the implementation-level record model.
+- Deletion-suppression and recovery-copy sanitisation.
+- Backup-format and migration decisions.
+- Representative archive storage measurements.
+- Complete evaluation fixtures and acceptance thresholds.
+- Explicit approval of the first production implementation phase.
+
+The next milestone is a reviewed and approved implementation design with a defined first production phase, not automatic coding or an assumed storage migration.
+
+No production implementation is authorised by this follow-up.

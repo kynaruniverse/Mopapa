@@ -268,13 +268,16 @@ The logical model distinguishes:
 - Subject of the extracted memory.
 - Mopapa's interpretation.
 
-The approved attribution classes are:
+The proposed evidence-attribution classes are:
 
 - "user"
 - "assistant"
 - "third_party"
-- "imported"
 - "unknown"
+
+Import origin is separate metadata. "Imported" must not be treated as a person, message author or evidence-attribution class.
+
+The implementation-level record specification and identity/evidence/temporal specification define the proposed attribution fields and their relationships.
 
 The implementation-level schema must define:
 
@@ -403,35 +406,50 @@ No arbitrary confidence percentage should be introduced without a defined and ca
 
 7.6 Deletion, revocation and re-import
 
-Define how the system remembers that a user dismissed, deleted or revoked a memory without retaining prohibited content unnecessarily.
+The proposed deletion, revocation, recovery and re-import transaction model is documented in:
 
-A repeated import must not silently recreate information the user deliberately removed.
+"docs/personal-memory-deletion-revocation-recovery-specification.md"
 
-The design must also address:
+The specification defines:
 
-- Deleting one source message.
-- Deleting an entire conversation.
-- Deleting a memory.
-- Revoking permission to use information.
-- Restricting future use.
-- Removing derived indexes.
-- Existing backups and recovery copies.
-- Future imports of the same source.
+- Message, conversation and memory deletion.
+- Revocation and restriction operations.
+- Propagation through dependent memories and relationships.
+- Reassessment when supporting evidence is removed.
+- Failure and interruption handling.
+- Recovery-copy and backup implications.
+- Protection against deleted information being silently reintroduced.
+
+The backup and restore compatibility requirements are documented separately in:
+
+"docs/personal-memory-backup-restore-compatibility-matrix.md"
+
+These specifications are design proposals, not implemented behaviour.
+
+Remaining blockers include:
+
+- A privacy-preserving deletion-suppression mechanism.
+- Recovery-copy sanitisation and retention rules.
+- Explicit reintroduction after a deliberate deletion.
+- Verified deletion-aware restore behaviour.
+- Complete transaction and rollback tests.
+
+No production deletion, revocation or re-import implementation is authorised by the existence of these documents.
+
 
 7.7 Temporal validity
 
-Define the relationship between:
+The proposed temporal model is documented in:
 
-- Original statement time.
-- Import or receipt time.
-- Time the described fact became true.
-- Time it stopped being true.
-- Memory creation time.
-- Memory update time.
+"docs/personal-memory-identity-evidence-temporal-specification.md"
 
-Unknown dates must remain unknown.
+It distinguishes original message time, receipt time, record creation and update time, recording time and the period during which information is valid.
 
-An import timestamp must not be substituted for the original event date.
+It also defines date precision, unknown and approximate dates, timezone handling and inclusive-start/exclusive-end validity intervals.
+
+Remaining work is to approve the exact implementation validation rules and create tests for temporal ambiguity, corrections, historical facts and contradictory evidence.
+
+An import timestamp must never be substituted for the original event date.
 
 7.8 Schema and validation
 
@@ -512,8 +530,11 @@ Acceptance criteria:
 - Unknown and ambiguous identity remain representable.
 - Evidence spans can be validated against their original messages.
 - Every memory can identify its supporting sources.
-- Candidate, active, historical, uncertain, dismissed and unsupported states have defined transitions.
+- The five proposed lifecycle states are candidate, active, historical, uncertain and dismissed.
+- The five proposed evidence states are supported, partially_supported, unsupported, disputed and unverified.
 - Evidence state is independent from lifecycle state.
+- Deletion is an operation and is not represented as a lifecycle state.
+- The permitted lifecycle transitions and evidence reassessment rules are consistent with the governance specification.
 - Temporal validity is independent from record creation and update timestamps.
 - Scope and audience visibility are independently represented.
 - Use permissions are independent from visibility.
@@ -1142,39 +1163,44 @@ Approval of this document does not tick these gates automatically.
 
 16. Current position and next work
 
-Current status: Target architecture and logical data-model direction approved. Documentation and engineering planning underway. Production implementation not authorised.
+Current status: Target architecture and logical data-model direction approved. The implementation-level specifications have been drafted and are undergoing cross-document reconciliation. Production implementation is not authorised.
 
-The following documents form the current design set:
+The current design and planning set includes:
 
-- "docs/personal-memory-research-review.md"
-- "docs/personal-memory-architecture-decisions.md"
-- "docs/personal-memory-architecture.md"
-- "docs/personal-memory-data-model.md"
-- "docs/personal-memory-module-map.md"
-- "docs/storage-architecture.md"
-- "docs/personal-memory-build-log.md"
-- "docs/personal-memory-build-plan.md"
+- docs/personal-memory-research-review.md
+- docs/personal-memory-architecture-decisions.md
+- docs/personal-memory-architecture.md
+- docs/personal-memory-data-model.md
+- docs/personal-memory-module-map.md
+- docs/storage-architecture.md
+- docs/personal-memory-build-log.md
+- docs/personal-memory-build-plan.md
+- docs/personal-memory-record-specification.md
+- docs/personal-memory-schema-consistency-review.md
+- docs/personal-memory-implementation-audit.md
+- docs/personal-memory-identity-evidence-temporal-specification.md
+- docs/personal-memory-governance-lifecycle-specification.md
+- docs/personal-memory-deletion-revocation-recovery-specification.md
+- docs/personal-memory-backup-restore-compatibility-matrix.md
 
-The next work is to review this plan against the existing specifications and close the remaining implementation-level design gaps.
+The proposed five-collection model, record fields, identity and attribution rules, temporal semantics, lifecycle and evidence states, governance requirements, deletion operations and backup compatibility have dedicated specifications.
 
-The remaining design work should concentrate on:
+A specification being drafted does not mean that it is implementation-ready, formally approved or implemented.
 
-1. Exact implementation-level record fields and validation.
-2. Participant identifier generation and identity-correction behaviour.
-3. Message author, quoted-speaker and subject representation.
-4. Evidence-span validation and provenance integrity.
-5. Candidate acceptance and lifecycle transitions.
-6. Temporal validity and contradiction handling.
-7. Deletion, revocation and re-import protection.
-8. Scope references and applicability rules.
-9. Audience visibility and named-audience representation.
-10. Independent use permissions and explicit denial behaviour.
-11. Multiple-source restriction inheritance.
-12. Governance enforcement before retrieval and context assembly.
-13. Backup, restore, migration and rollback compatibility.
-14. Storage workload and storage decision criteria.
-15. Evaluation fixtures, critical failure rules and acceptance thresholds.
+Remaining design and approval work:
 
-Only after these are resolved should the first production phase be proposed for approval.
+1. Review the complete record specification against every supporting specification.
+2. Resolve deletion-suppression and recovery-copy sanitisation.
+3. Finalise backup envelope and backup-format version decisions.
+4. Finalise migration validation, defaults and rollback acceptance.
+5. Complete representative conversation-archive workload measurements.
+6. Complete evaluation fixtures, critical failure cases and acceptance thresholds.
+7. Reconcile the module map and all historical status summaries.
+8. Define the exact first production phase, affected files, regression coverage and recovery plan.
+9. Obtain explicit approval before making production changes.
 
-Final boundary: Mopapa remains an existing working application while this programme is designed. No new automatic memory capability should be claimed until it has been implemented, tested and verified.
+The existing application remains the working baseline.
+
+No automatic memory capability should be claimed until it has been implemented, tested and verified.
+
+No production schema change, schema version 2 activation, IndexedDB migration, external AI, paid service, cloud synchronisation, external sharing or third-party processing is authorised.

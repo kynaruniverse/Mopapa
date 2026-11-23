@@ -1,7 +1,7 @@
 Mopapa: Personal Memory Schema Consistency and Decision Review
 
 Date: 20 November 2026
-Status: Review completed; decisions proposed, not yet approved
+Status: Historical review completed; findings reconciled by subsequent specifications through 22 November 2026. See section 21 for the current position.
 Product: Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 
@@ -861,3 +861,73 @@ These are foundational because every extracted memory depends on knowing:
 After these decisions, proceed to lifecycle, governance and deletion rules, followed by migration and recovery design.
 
 Current decision: The overall architecture remains valid. The implementation-level record specification requires refinement before it can be treated as implementation-ready. Production implementation remains unauthorised.
+
+---
+
+21. Reconciliation update - 22 November 2026
+
+Status: Historical findings reconciled; implementation approval remains outstanding.
+
+This review identified design conflicts and missing specifications before the detailed personal-memory design was complete.
+
+The following documents have since been created or reconciled:
+
+- docs/personal-memory-record-specification.md
+- docs/personal-memory-schema-consistency-review.md
+- docs/personal-memory-identity-evidence-temporal-specification.md
+- docs/personal-memory-governance-lifecycle-specification.md
+- docs/personal-memory-deletion-revocation-recovery-specification.md
+- docs/personal-memory-backup-restore-compatibility-matrix.md
+- docs/personal-memory-data-model.md
+- docs/personal-memory-architecture.md
+- docs/personal-memory-architecture-decisions.md
+
+The current reconciled logical model contains exactly five proposed collections:
+
+- conversations
+- messages
+- memories
+- memorySources
+- memoryRelations
+
+No sixth top-level collection is approved. The previously proposed importLedger is excluded pending a separate privacy and retention decision.
+
+The proposed memory lifecycle contains:
+
+- candidate
+- active
+- historical
+- uncertain
+- dismissed
+
+Evidence state remains independent:
+
+- supported
+- partially_supported
+- unsupported
+- disputed
+- unverified
+
+Deletion is an operation, not a lifecycle state.
+
+Identity and attribution now distinguish conversation-local participants, message authors, quoted speakers, evidence origin, memory subjects and evidence attribution. Global identity matching remains disabled.
+
+Temporal semantics, evidence-span offsets, provenance relationships, governance inheritance and retrieval eligibility have dedicated specifications.
+
+Deletion, revocation, recovery, re-import suppression and backup compatibility also have dedicated specifications.
+
+These documents represent proposed implementation-level designs. Their existence does not mean every design decision has been approved for production or that the behaviour has been implemented.
+
+Remaining blockers include:
+
+1. Final review and explicit approval of the implementation-level record model.
+2. Resolution of deletion-suppression and recovery-copy sanitisation.
+3. Final backup envelope and backup-format version decisions.
+4. Migration validation, defaults and rollback acceptance.
+5. Representative conversation-archive storage measurements.
+6. Complete evaluation fixtures and measurable acceptance thresholds.
+7. Explicit approval of the first production implementation phase.
+
+The original sections of this review are retained as the historical record of the issues identified at that time. Where an earlier recommendation or outstanding item conflicts with a later specification, the later reconciled specifications and current architecture decision record describe the present position.
+
+No production JavaScript, live schema, schema version 2 activation, IndexedDB migration, paid service, external AI or cloud synchronisation is authorised by this reconciliation.
