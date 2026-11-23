@@ -94,13 +94,15 @@ The existing implementation must be treated as the starting point, not confused 
 
 4. Target information model
 
-The proposed target model is organised around five logical collections:
+The proposed target model introduces five additional personal-memory collections alongside the existing application data domains:
 
 1. "conversations"
 2. "messages"
 3. "memories"
 4. "memorySources"
 5. "memoryRelations"
+
+These five collections are additional to the existing "entries", "learned", "customRooms" and "ask" domains. Existing manually saved entries remain separate from extracted memories.
 
 Their intended responsibilities are:
 
