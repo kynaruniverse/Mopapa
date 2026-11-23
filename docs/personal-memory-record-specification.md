@@ -1,7 +1,8 @@
 Mopapa: Implementation-Level Personal Memory Record Specification
 
 Date: 20 November 2026
-Status: Proposed detailed schema for technical review. Not approved for production implementation.
+Status: Canonical technical specification under final consolidation. The decisions in this document govern the proposed implementation model. Production implementation and schema migration still require explicit approval.
+
 Repository: https://github.com/kynaruniverse/Mopapa
 Architecture authority: "docs/personal-memory-architecture.md"
 Logical data-model authority: "docs/personal-memory-data-model.md"
@@ -1079,3 +1080,458 @@ Production implementation must remain blocked until those designs are complete a
 ---
 
 Current decision: Mopapa's target remains a local-first, evidence-grounded personal memory system. Original conversations, extracted memories, attribution, provenance, temporal history, governance and deletion must be represented separately and validated together. The live application remains unchanged.
+
+
+---
+
+18. Canonical technical resolutions
+
+This section resolves inconsistencies between earlier versions of this specification and the supporting architecture, data-model, identity, governance, deletion and backup documents.
+
+It takes precedence over any conflicting earlier statement in this document or its supporting reference documents.
+
+The following rules establish the canonical proposed implementation model. They do not independently authorise production implementation or a live schema migration.
+
+18.1 Canonical collections
+
+The proposed application data contains the existing domains:
+
+- "entries"
+- "learned"
+- "customRooms"
+- "ask"
+
+And exactly five additional personal-memory collections:
+
+- "conversations"
+- "messages"
+- "memories"
+- "memorySources"
+- "memoryRelations"
+
+No sixth collection is approved.
+
+In particular, no separate persistent import ledger, identity collection, dependency collection or search-index collection is authorised.
+
+Existing manually saved entries remain separate from extracted memories.
+
+18.2 Canonical temporal representation
+
+Every memory uses one "temporal" object.
+
+The canonical structure is:
+
+{
+  "timeStatus": "known_interval",
+  "validFrom": {
+    "value": "2026-01-01",
+    "precision": "day",
+    "timezone": null
+  },
+  "validTo": {
+    "value": "2026-06-30",
+    "precision": "day",
+    "timezone": null
+  }
+}
+
+Each endpoint is either null or an object containing:
+
+- "value"
+- "precision"
+- "timezone"
+
+Permitted "timeStatus" values:
+
+- "known_interval"
+- "known_start"
+- "known_end"
+- "approximate"
+- "unknown"
+
+Permitted precision values:
+
+- "instant"
+- "day"
+- "month"
+- "year"
+- "approximate"
+- "unknown"
+
+Rules:
+
+- An exact instant uses ISO 8601 with an explicit timezone or UTC designator.
+- Date-only information remains a date-only value.
+- A month or year must not be converted into an invented day.
+- Unknown values remain null.
+- An approximate value must not be represented as an exact instant.
+- "known_interval" requires both endpoints.
+- "known_start" requires a start endpoint.
+- "known_end" requires an end endpoint.
+- "unknown" requires both endpoints to be null.
+- Endpoint ordering must be validated when both endpoints are comparable.
+- Invalid or contradictory temporal data must not be silently normalised.
+
+This structure replaces nullable timestamp-only validity fields wherever they appear in earlier specifications.
+
+Message time, receipt time, record creation time, update time and memory recording time remain separate concepts.
+
+18.3 Canonical evidence spans
+
+All source-text offsets use UTF-16 code units.
+
+Offsets are zero-based, inclusive at the start and exclusive at the end.
+
+A located evidence span has this structure:
+
+{
+  "textStart": 0,
+  "textEnd": 24
+}
+
+A whole-message reference must be explicit:
+
+{
+  "kind": "whole_message"
+}
+
+A located span uses:
+
+{
+  "kind": "span",
+  "textStart": 0,
+  "textEnd": 24
+}
+
+A provenance record contains one or more evidence references using this structure.
+
+Rules:
+
+- A span must point into the original, unchanged message text.
+- Start and end must be integers.
+- Start must be non-negative.
+- End must be greater than start.
+- End must not exceed the JavaScript string length of the original text.
+- The same UTF-16 convention must be used for creation, validation, highlighting, export and restore.
+- Whole-message evidence must never be inferred from a missing span.
+- Invalid spans must be rejected or explicitly reviewed; they must not be silently clamped.
+
+18.4 Canonical provenance records
+
+The "memorySources" collection records direct evidence relationships between memories and original messages.
+
+Canonical structure:
+
+{
+  "id": "src_example001",
+  "memoryId": "mem_example001",
+  "messageId": "msg_example001",
+  "relationship": "supports",
+  "evidenceSpans": [
+    {
+      "kind": "span",
+      "textStart": 0,
+      "textEnd": 24
+    }
+  ],
+  "sourceAttribution": "user",
+  "quotedSpeakerId": null,
+  "createdAt": "2026-11-20T09:35:00.000Z"
+}
+
+Permitted provenance relationships:
+
+- "supports"
+- "refutes"
+- "qualifies"
+- "context_only"
+
+Every provenance record must include:
+
+- A unique provenance ID.
+- An existing memory ID.
+- An existing message ID.
+- One permitted relationship.
+- One or more explicit evidence references.
+- Source attribution.
+- A quoted-speaker reference or null.
+- A creation timestamp.
+
+"quotedSpeakerId", when non-null, must reference an annotation in the exact source message.
+
+Source attribution values are:
+
+- "user"
+- "assistant"
+- "third_party"
+- "unknown"
+
+Import origin is not an attribution value.
+
+A provenance relationship describes how the source relates to the memory claim. Its existence does not automatically make the memory supported.
+
+One memory/message pair has one provenance record. That record may contain multiple non-overlapping evidence spans.
+
+If different parts of one message have materially different evidence relationships, create separate independently assessable memories rather than creating ambiguous duplicate links.
+
+A memory may have multiple source records. A message may support or qualify multiple memories.
+
+This canonical structure replaces earlier definitions that allowed only "supports" or used message IDs directly as memory relationship evidence.
+
+18.5 Canonical memory derivation metadata
+
+Direct evidence and memory-to-memory derivation are different relationships.
+
+Every memory record must contain a "derivation" object.
+
+Canonical structure:
+
+{
+  "kind": "direct",
+  "method": "deterministic_extraction",
+  "sourceMemoryIds": [],
+  "createdAt": "2026-11-20T09:35:00.000Z"
+}
+
+Permitted derivation kinds:
+
+- "direct"
+- "derived"
+- "user_corrected"
+- "consolidated"
+
+Rules:
+
+- "direct" memories are derived from original message evidence and have no source memory IDs.
+- "derived" memories must reference one or more existing source memories.
+- "user_corrected" memories must retain traceable references to the prior interpretation and the evidence for the correction.
+- "consolidated" memories must reference every source memory materially used in the consolidation.
+- Source memory references must not be replaced by a summary or copied text.
+- Derivation dependencies must be traversable in both directions.
+- A derived memory must not become independent merely because it has been rewritten or summarised.
+- Dependency cycles are invalid.
+- Missing or malformed dependency references block affected retrieval and relevant destructive operations.
+- Derivation metadata must not grant broader permissions than its source material permits.
+
+The exact permitted "method" values may expand as implementation capabilities are evaluated. No external AI or paid inference method is approved by this field.
+
+Derivation metadata is embedded in "memories". It does not create another collection.
+
+18.6 Canonical semantic memory relationships
+
+The "memoryRelations" collection is reserved for semantic relationships between memories.
+
+Permitted relationship types:
+
+- "supersedes"
+- "contradicts"
+- "related"
+
+A semantic relationship must not be used as a substitute for a derivation dependency.
+
+Canonical structure:
+
+{
+  "id": "rel_example001",
+  "fromMemoryId": "mem_newer001",
+  "toMemoryId": "mem_older001",
+  "type": "supersedes",
+  "evidenceSourceIds": [
+    "src_example001"
+  ],
+  "createdAt": "2026-11-20T09:40:00.000Z"
+}
+
+Rules:
+
+- Both memory references must exist.
+- Self-references are invalid.
+- Duplicate semantic relationships are invalid.
+- Supersession requires evidence that the newer memory updates the same underlying fact.
+- A later timestamp alone is insufficient.
+- The older memory remains available as historical information where permitted.
+- Contradictory memories must not be silently resolved.
+- Related memories require an identifiable reason.
+- Supersession cycles are invalid.
+- Evidence supporting a semantic relationship must use existing provenance IDs.
+- Deletion or revocation of relationship evidence requires reassessment of the relationship.
+
+"evidenceSourceIds" always refers to "memorySources" IDs. It must not contain message IDs.
+
+18.7 Identity boundary
+
+The initial implementation uses conversation-local participants only.
+
+Participant identity, quoted-speaker identity and memory subject identity remain distinct.
+
+Global identity resolution is deferred.
+
+Until a separately approved global identity model exists:
+
+- Participant "identityKey" must be null.
+- Subject "identityKey" must be null.
+- No cross-conversation identity matching is permitted.
+- No automatic identity merging is permitted.
+- A display name is not proof of identity.
+- Corrections must remain conversation-local and reversible.
+- Identity corrections must trigger reassessment of dependent memories and relationships.
+
+The initial implementation may distinguish unresolved, ambiguous and unknown identities. It must not use a "resolved" state to imply a global identity record that does not exist.
+
+18.8 Canonical lifecycle and evidence states
+
+Lifecycle states:
+
+- "candidate"
+- "active"
+- "historical"
+- "uncertain"
+- "dismissed"
+
+Evidence states:
+
+- "supported"
+- "partially_supported"
+- "unsupported"
+- "disputed"
+- "unverified"
+
+These are independent dimensions.
+
+Deletion is an operation, not a lifecycle state.
+
+An active memory is not automatically eligible for retrieval. Evidence, attribution, temporal validity and governance must also permit the requested use.
+
+A dismissed memory must not silently return through ordinary extraction or re-import.
+
+18.9 Canonical dependency and deletion rules
+
+Deletion and revocation must traverse both:
+
+1. Direct memory-to-message provenance through "memorySources".
+2. Memory-to-memory derivation through "memories.derivation.sourceMemoryIds".
+
+Semantic relationships in "memoryRelations" must also be reassessed when their endpoints or supporting provenance are affected.
+
+After source deletion or revocation:
+
+- Identify all direct dependencies.
+- Traverse all indirect derivation dependencies.
+- Recalculate remaining evidence.
+- Recalculate applicable permissions and restrictions.
+- Reassess lifecycle and evidence states.
+- Invalidate affected retrieval representations.
+- Remove dependent information that cannot remain valid.
+- Retain a memory only when remaining permitted evidence independently supports its complete claim.
+
+A memory must not be silently rewritten to survive deletion.
+
+A narrower replacement claim requires an explicit, evidence-grounded correction.
+
+If dependency traversal encounters a cycle, missing reference, malformed record or uncertain permission, affected retrieval must fail closed.
+
+Deleting a memory does not automatically delete its original messages.
+
+Deleting a message or conversation requires reassessment of all dependent memories.
+
+Revocation blocks the uses that have been withdrawn, even if the original source remains stored.
+
+18.10 Re-import and deletion suppression boundary
+
+No sixth collection or import ledger is approved.
+
+Where stable source identifiers exist, they should be used to identify previously processed material.
+
+Where reliable source identity is unavailable:
+
+- Text similarity alone must not establish identity.
+- Mopapa must not claim reliable deletion suppression.
+- Ambiguous re-import must require an explicit review process.
+- Ordinary import must not silently reverse a known deletion, dismissal or revocation.
+- Raw deleted message text must not be retained solely to identify a future import.
+
+The initial implementation must not claim complete re-import suppression until a privacy-reviewed mechanism has been approved and tested.
+
+18.11 Canonical backup and migration rules
+
+Application schema version and backup format version are separate.
+
+The proposed schema version 2 remains inactive until explicitly approved.
+
+A future migration must:
+
+1. Inventory the complete current dataset.
+2. Validate the existing schema.
+3. Preserve all existing manual entries and learning data.
+4. Construct the proposed replacement without modifying the active dataset.
+5. Validate every collection and cross-collection reference.
+6. Validate provenance, derivation, semantic relationships and governance.
+7. Create and verify a protected recovery copy.
+8. Commit the replacement using the approved storage transaction.
+9. Read back and validate the committed dataset.
+10. Confirm success only after verification.
+11. Provide a tested recovery path for failure.
+
+An older application must not open and save a newer unsupported schema as though it were compatible.
+
+A malformed record or broken reference must not be silently discarded during a complete restore.
+
+Deletion and revocation decisions must not be undone by restoring an older backup.
+
+The final backup envelope, format version, deletion-aware recovery-copy policy and migration transaction remain explicit pre-implementation decisions.
+
+18.12 Storage and performance boundary
+
+The current application continues to use localStorage and schema version 1.
+
+No live schema change is implied by this specification.
+
+IndexedDB remains a candidate, not an approved migration.
+
+Before archive-scale implementation is considered complete, performance testing must include:
+
+- Realistic conversation counts.
+- Realistic message counts.
+- Long messages.
+- Multiple provenance records per memory.
+- Memory derivation chains.
+- Search and retrieval workloads.
+- Backup and restore workloads.
+- Deletion and revocation workloads.
+- Storage quota and interrupted-write behaviour.
+- Actual Android browser performance.
+
+Existing small-dataset benchmarks do not establish performance for a substantial conversation archive.
+
+18.13 Implementation approval boundary
+
+The following remain outside approval until explicitly authorised:
+
+- Production schema version 2.
+- A storage-key change.
+- IndexedDB migration.
+- Global identity resolution.
+- External AI or hosted inference.
+- Paid services.
+- Cloud synchronisation.
+- Automatic access to other applications.
+- Replacement of deterministic Ask.
+- A wholesale application rewrite.
+
+The initial implementation must preserve the existing application and introduce the new capabilities in independently testable phases.
+
+18.14 Authority and conflict rule
+
+This document is the sole technical authority for proposed personal-memory record structures and validation rules.
+
+The product and architecture blueprint defines product intent and system boundaries.
+
+The build roadmap defines implementation order and acceptance criteria.
+
+Supporting research and historical specifications provide rationale, examples and traceability only. They must not introduce competing field definitions or implementation requirements.
+
+Where a supporting document conflicts with this specification, this specification takes precedence until the supporting document is reconciled or marked reference-only.
+
+No unresolved technical issue may be treated as approved merely because an example or earlier draft contains it.
+
+---
