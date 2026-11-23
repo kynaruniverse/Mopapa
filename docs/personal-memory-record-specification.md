@@ -1084,7 +1084,7 @@ Current decision: Mopapa's target remains a local-first, evidence-grounded perso
 
 ---
 
-18. Canonical technical resolutions
+24. Canonical technical resolutions
 
 This section resolves inconsistencies between earlier versions of this specification and the supporting architecture, data-model, identity, governance, deletion and backup documents.
 
@@ -1092,7 +1092,7 @@ It takes precedence over any conflicting earlier statement in this document or i
 
 The following rules establish the canonical proposed implementation model. They do not independently authorise production implementation or a live schema migration.
 
-18.1 Canonical collections
+24.1 Canonical collections
 
 The proposed application data contains the existing domains:
 
@@ -1115,7 +1115,7 @@ In particular, no separate persistent import ledger, identity collection, depend
 
 Existing manually saved entries remain separate from extracted memories.
 
-18.2 Canonical temporal representation
+24.2 Canonical temporal representation
 
 Every memory uses one "temporal" object.
 
@@ -1176,7 +1176,7 @@ This structure replaces nullable timestamp-only validity fields wherever they ap
 
 Message time, receipt time, record creation time, update time and memory recording time remain separate concepts.
 
-18.3 Canonical evidence spans
+24.3 Canonical evidence spans
 
 All source-text offsets use UTF-16 code units.
 
@@ -1216,7 +1216,7 @@ Rules:
 - Whole-message evidence must never be inferred from a missing span.
 - Invalid spans must be rejected or explicitly reviewed; they must not be silently clamped.
 
-18.4 Canonical provenance records
+24.4 Canonical provenance records
 
 The "memorySources" collection records direct evidence relationships between memories and original messages.
 
@@ -1278,7 +1278,7 @@ A memory may have multiple source records. A message may support or qualify mult
 
 This canonical structure replaces earlier definitions that allowed only "supports" or used message IDs directly as memory relationship evidence.
 
-18.5 Canonical memory derivation metadata
+24.5 Canonical memory derivation metadata
 
 Direct evidence and memory-to-memory derivation are different relationships.
 
@@ -1317,7 +1317,7 @@ The exact permitted "method" values may expand as implementation capabilities ar
 
 Derivation metadata is embedded in "memories". It does not create another collection.
 
-18.6 Canonical semantic memory relationships
+24.6 Canonical semantic memory relationships
 
 The "memoryRelations" collection is reserved for semantic relationships between memories.
 
@@ -1358,7 +1358,7 @@ Rules:
 
 "evidenceSourceIds" always refers to "memorySources" IDs. It must not contain message IDs.
 
-18.7 Identity boundary
+24.7 Identity boundary
 
 The initial implementation uses conversation-local participants only.
 
@@ -1378,7 +1378,7 @@ Until a separately approved global identity model exists:
 
 The initial implementation may distinguish unresolved, ambiguous and unknown identities. It must not use a "resolved" state to imply a global identity record that does not exist.
 
-18.8 Canonical lifecycle and evidence states
+24.8 Canonical lifecycle and evidence states
 
 Lifecycle states:
 
@@ -1404,7 +1404,7 @@ An active memory is not automatically eligible for retrieval. Evidence, attribut
 
 A dismissed memory must not silently return through ordinary extraction or re-import.
 
-18.9 Canonical dependency and deletion rules
+24.9 Canonical dependency and deletion rules
 
 Deletion and revocation must traverse both:
 
@@ -1436,7 +1436,7 @@ Deleting a message or conversation requires reassessment of all dependent memori
 
 Revocation blocks the uses that have been withdrawn, even if the original source remains stored.
 
-18.10 Re-import and deletion suppression boundary
+24.10 Re-import and deletion suppression boundary
 
 No sixth collection or import ledger is approved.
 
@@ -1452,7 +1452,7 @@ Where reliable source identity is unavailable:
 
 The initial implementation must not claim complete re-import suppression until a privacy-reviewed mechanism has been approved and tested.
 
-18.11 Canonical backup and migration rules
+24.11 Canonical backup and migration rules
 
 Application schema version and backup format version are separate.
 
@@ -1480,7 +1480,7 @@ Deletion and revocation decisions must not be undone by restoring an older backu
 
 The final backup envelope, format version, deletion-aware recovery-copy policy and migration transaction remain explicit pre-implementation decisions.
 
-18.12 Storage and performance boundary
+24.12 Storage and performance boundary
 
 The current application continues to use localStorage and schema version 1.
 
@@ -1503,7 +1503,7 @@ Before archive-scale implementation is considered complete, performance testing 
 
 Existing small-dataset benchmarks do not establish performance for a substantial conversation archive.
 
-18.13 Implementation approval boundary
+24.13 Implementation approval boundary
 
 The following remain outside approval until explicitly authorised:
 
@@ -1520,7 +1520,7 @@ The following remain outside approval until explicitly authorised:
 
 The initial implementation must preserve the existing application and introduce the new capabilities in independently testable phases.
 
-18.14 Authority and conflict rule
+24.14 Authority and conflict rule
 
 This document is the sole technical authority for proposed personal-memory record structures and validation rules.
 
