@@ -1,202 +1,129 @@
 Mopapa Personal Memory Companion
 
-Phased Engineering Build Plan
+Build Roadmap and Verification Log
 
-Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
-Document date: 19 November 2026
-Status: Proposed engineering plan. Production implementation not authorised.
-Architecture authority: "docs/personal-memory-architecture.md"
-Data-model authority: "docs/personal-memory-data-model.md"
-Research authority: "docs/personal-memory-research-review.md"
-Existing implementation map: "docs/personal-memory-module-map.md"
-Storage authority: "docs/storage-architecture.md"
+Document date: 23 November 2026
+Status: Consolidated roadmap. Production implementation has not yet been authorised.
 
----
+1. Purpose and authority
 
-1. Purpose
-
-This document converts Mopapa's approved target architecture into a phased engineering programme.
+This is the authoritative implementation roadmap and ongoing engineering record for Mopapa's Personal Memory Companion.
 
 It defines:
 
-- The order in which design and implementation work must happen.
-- The prerequisites for each phase.
-- The unresolved decisions that must be settled before implementation.
-- The responsibilities of existing and proposed modules.
-- The required evaluation and regression coverage.
-- Storage, backup, migration and recovery requirements.
-- Acceptance criteria for each phase.
-- The conditions under which production implementation may be authorised.
+- The implementation sequence.
+- The prerequisites for each stage.
+- The acceptance criteria and verification requirements.
+- The remaining decisions that genuinely block implementation.
+- The rules for recording completed work.
 
-The purpose is to prevent premature implementation, unnecessary rewrites and the introduction of capabilities that cannot yet be tested or safely maintained.
+The three master documents have distinct responsibilities:
 
-This plan does not claim that automatic conversation memory exists. It does not authorise production code changes, a live schema change, a storage migration or an AI integration.
+1. "docs/personal-memory-architecture.md"
+   Product purpose, intended capabilities, architecture and non-negotiable boundaries.
+
+2. "docs/personal-memory-record-specification.md"
+   Canonical technical specification for records, fields, relationships, validation and data integrity.
+
+3. "docs/personal-memory-build-plan.md"
+   Implementation order, acceptance criteria, approval gates and engineering history.
+
+The architecture document defines what Mopapa is intended to become. The record specification defines how its proposed information is represented. This roadmap defines how it will be built and verified.
+
+Supporting research and historical specifications provide rationale and traceability. They are not competing implementation authorities.
+
+Where a conflict is discovered, record it as a specific issue and resolve it in the appropriate master document. Do not create another parallel specification.
 
 2. Product objective
 
-Mopapa is intended to become a local-first Personal Memory Companion.
+Mopapa is intended to become a local-first Personal Memory Companion that can progressively preserve, organise and retrieve useful information from conversations and other sources explicitly supplied or authorised by the user.
 
-Its long-term purpose is to preserve useful information from conversations and other sources explicitly supplied or authorised by the user, identify potentially useful memories, retain the evidence behind them and retrieve them appropriately in later interactions.
+The long-term product must support:
 
-The product should reduce the amount of information users have to remember and manually organise themselves.
+- Original conversation and message preservation.
+- Automatic identification of candidate memories.
+- Separation of message author, quoted speaker and memory subject.
+- Independent memory records.
+- Evidence provenance and source inspection.
+- Historical facts, changing information and contradictions.
+- Conversation-local identity and traceable corrections.
+- Scope, audience and use restrictions.
+- Memory inspection, correction, dismissal, revocation and deletion.
+- Cross-conversation retrieval.
+- Evidence-grounded answers and appropriate abstention.
+- Eventual improvement of memory formation without sacrificing reliability or user control.
 
-It must not achieve that objective by collecting everything indiscriminately, treating uncertain interpretations as facts or sacrificing privacy and reliability for a higher answer rate.
+Automatic memory formation is a central product objective, not an optional note-taking feature.
 
-The intended system must eventually support:
+However, information must not be collected indiscriminately or converted into established facts without adequate evidence.
 
-1. Original conversation and message preservation.
-2. Automatic identification of candidate memories.
-3. Explicit source and author attribution.
-4. Separation of statement author from statement subject.
-5. Independent memory records.
-6. Evidence provenance.
-7. Historical changes and contradictions.
-8. Contextual scope and enforceable use restrictions.
-9. Cross-conversation retrieval.
-10. Source-grounded answers and appropriate abstention.
-11. User inspection, correction, dismissal, restriction and deletion.
+3. Non-negotiable engineering boundaries
 
-3. Authority and implementation boundary
+Cost and infrastructure
 
-The target architecture direction and logical data-model direction were approved on 19 November 2026.
+- No paid APIs, subscriptions or hosted inference.
+- No recurring financial obligations before revenue and a separate approval.
+- No cloud synchronisation or mandatory accounts.
+- No external AI processing.
+- No hidden paid dependencies or fallbacks.
+- No infrastructure introduced without a demonstrated need.
 
-That approval establishes the intended design direction. It does not authorise implementation.
+Privacy and source authorisation
 
-The following remain unauthorised:
+- Local-first operation remains the default.
+- Automatic processing applies only to information supplied to Mopapa or explicitly authorised for import.
+- No silent access to other Android applications.
+- No external transmission without a separate explicit decision.
+- Unknown or conflicting permissions must not grant access.
 
-- Production JavaScript changes for the new memory system.
-- A change to the live storage schema.
-- A change to the existing "mopapa.v1" storage key.
-- An IndexedDB migration.
-- A local language model.
-- A hosted language model or external AI API.
-- Paid services or recurring subscriptions.
-- Cloud synchronisation or mandatory accounts.
-- Automatic access to other applications.
-- Replacement of the existing deterministic Ask engine.
-- A wholesale rewrite of the existing application.
+Existing application
 
-A phase being documented, designed or accepted does not automatically authorise the next phase.
+Preserve the working application:
 
-Each production phase requires explicit approval after its design, acceptance criteria, tests and recovery strategy are available.
-
-4. Non-negotiable project constraints
-
-4.1 Cost
-
-No new recurring financial obligation is permitted before the product can support it through revenue and a separate decision has been made.
-
-Do not introduce:
-
-- Paid AI APIs.
-- Hosted inference.
-- Paid embeddings or reranking.
-- Paid databases or vector stores.
-- Paid cloud storage.
-- Hidden paid fallbacks.
-- Dependencies with unavoidable usage charges.
-
-Free software is not automatically cost-free. Licensing, device resources, battery consumption, maintenance and storage must also be considered.
-
-4.2 Privacy and source authorisation
-
-Local-first is the default.
-
-Automatic memory means processing information supplied to Mopapa or explicitly authorised for import. It does not mean silently reading other Android applications.
-
-No external transmission or processing is authorised.
-
-4.3 Existing application
-
-Preserve the working foundation:
-
-- Vanilla JavaScript.
-- ES5-compatible IIFEs.
+- Vanilla JavaScript and ES5-compatible IIFEs.
 - "window.Mopapa".
 - Existing script loading and dependency order.
-- Existing manual entries.
-- Existing rooms, tags and learning data.
+- Existing manual entries, rooms, tags and learning data.
 - Existing lexical search.
 - Existing deterministic Ask.
 - Existing backup, restore and recovery safeguards.
 - Existing regression tests.
 
-Do not introduce a framework or rewrite an existing module without a demonstrated technical reason.
+Do not introduce a framework or undertake a wholesale rewrite without measured evidence.
 
-4.4 Evidence and trust
+Storage
 
-Original evidence must remain distinct from extracted interpretations.
+- The live application remains on localStorage and schema version 1.
+- The current storage key remains "mopapa.v1".
+- IndexedDB is a candidate, not an approved migration.
+- No production schema version 2 is active.
+- No second unprotected source of truth may be introduced.
 
-An assistant statement must not automatically become a user fact. A statement about another person must not automatically become a statement by that person. A newer statement must not automatically supersede an older one.
+Evidence and reliability
 
-Unsupported information must not be presented as established knowledge.
+- Original evidence remains distinct from extracted interpretations.
+- Assistant-generated statements must not automatically become user facts.
+- Statements about other people must not automatically become statements by those people.
+- A newer statement does not automatically supersede an older one.
+- Unsupported memories must not be presented as established facts.
+- Failed writes, imports, restores and deletions must not be reported as successful.
 
-4.5 User control
+4. Current implementation baseline
 
-The eventual system must provide meaningful inspection, correction, dismissal, restriction, revocation and deletion.
+The existing application uses:
 
-These operations must have defined effects on source messages, derived memories, relationships, indexes and backups.
-
-5. Existing implementation baseline
-
-The current application uses:
-
-- Vanilla JavaScript and ES5-compatible IIFEs.
-- Browser DOM interfaces.
-- "window.Mopapa".
-- "localStorage".
-- Storage key "mopapa.v1".
-- Existing schema version 1.
-- Existing manual entries and learning data.
-- Deterministic search and Ask.
-- Existing backup and recovery handling.
-
-The main existing ownership boundaries are:
-
-Responsibility| Existing owner
+Responsibility| Current owner
 Persistence, validation, backup and restore| "js/store.js"
 Manual entry operations| "js/memory/entries.js"
 Lexical search| "js/memory/search.js"
-Deterministic answer engine| "js/ask/"
-Application loading and dependency order| "index.html"
-Unit regression tests| "tests/run.js"
-Browser regression tests| "tests/browser.js"
+Deterministic Ask| "js/ask/"
+Application loading| "index.html"
+Unit tests| "tests/run.js"
+Browser tests| "tests/browser.js"
 
-The module map is based on a repository inspection at commit "851008f01d3b61df9c94ef53771cb159606cecbe". Before production work, the relevant modules, tests and current branch must be re-inspected. A previous inspection is not proof that the code has remained unchanged.
-
-The current application does not yet provide the complete persistent conversation archive, extracted-memory lifecycle or governance model described in the target architecture.
-
-Baseline verification required before implementation
-
-Record a fresh baseline for:
-
-- Current "main" commit.
-- Unit test total and result.
-- Browser test total and result.
-- GitHub Actions status.
-- Deployment status.
-- Existing storage schema and backup format.
-- Existing Ask regression evaluation.
-- Existing 50-question evaluation.
-- Existing browser storage and recovery behaviour.
-
-Do not copy old test totals into a new build entry as if they were current.
-
-6. Target architecture and data ownership
-
-The target architecture has six distinct layers.
-
-Layer| Responsibility
-1. Original evidence| Preserve messages and other authorised source material
-2. Candidate extraction| Identify possible memories without treating candidates as established facts
-3. Stored memory| Maintain independently retrievable memory records
-4. Relationships and governance| Preserve provenance, temporal relationships, scope and restrictions
-5. Retrieval and context assembly| Find relevant information and select what may be used
-6. Answering| Produce a supported answer, clarification or abstention
-
-The logical storage model currently proposes five new collections:
+The proposed personal-memory model introduces exactly five additional collections:
 
 - "conversations"
 - "messages"
@@ -204,1003 +131,475 @@ The logical storage model currently proposes five new collections:
 - "memorySources"
 - "memoryRelations"
 
-Existing manual entries remain in "entries".
+Existing manual entries remain separate.
 
-These collections are logical design concepts. They are not present in the live schema merely because they appear in the specification.
+No sixth collection or persistent import ledger is approved.
 
-Ownership principles
+The proposed collections and capabilities are not present in the live schema merely because they have been documented.
 
-1. Original messages are authoritative evidence.
-2. Extracted memories are derived representations.
-3. "memorySources" links memories to supporting messages.
-4. "memoryRelations" records supported relationships between memories.
-5. Search indexes are derived and rebuildable.
-6. Existing manual entries remain independently supported by their existing model.
-7. No second persistence mechanism may become an unprotected competing source of truth.
+Before the first production change, record a fresh baseline against the exact current "main" commit:
 
-7. Outstanding design decisions
+- Unit test result.
+- Browser test result.
+- GitHub Actions result.
+- Vercel deployment result.
+- Current schema and storage key.
+- Backup and restore behaviour.
+- Existing Ask regression result.
+- Existing browser storage and recovery behaviour.
 
-These questions must be resolved before the implementation-level schema is approved.
+Historical test counts must not be presented as current results.
 
-7.1 Participant identity and conversation-local attribution
+5. Canonical design decisions
 
-The logical participant and attribution direction is established in the approved data model.
+The following direction has been established in the master technical specification:
 
-The implementation-level schema must now define the exact representation and validation rules.
+1. Original evidence, candidate extraction, stored memory, governance and retrieval remain separate responsibilities.
+2. The proposed model contains exactly five new collections.
+3. Temporal validity uses structured endpoints with explicit precision and timezone information.
+4. Evidence offsets use zero-based UTF-16 code units, with an exclusive end.
+5. Provenance relationships are "supports", "refutes", "qualifies" and "context_only".
+6. Quoted-speaker references must resolve within the exact source message.
+7. Memory derivation dependencies are separate from semantic memory relationships.
+8. Semantic memory relationships are "supersedes", "contradicts" and "related".
+9. Initial identity handling is conversation-local. Global identity resolution is deferred.
+10. Lifecycle and evidence states are independent.
+11. Deletion is an operation, not a lifecycle state.
+12. Deletion and revocation require dependency reassessment.
+13. A derived memory may remain only when its remaining permitted evidence independently supports its complete claim.
+14. Backup format version and application schema version are separate.
+15. Existing manual entries and learning data must be preserved during any future migration.
 
-The approved logical requirements are:
+These are proposed implementation rules, not claims about existing production behaviour.
 
-- Participants are represented within their originating conversation.
-- Source-provided participant identifiers are retained where available.
-- Message authorship is separate from message role.
-- Quoted speakers are separate from message authors.
-- Mentioned people are separate from message authors and quoted speakers.
-- Unknown and unresolved participants remain representable.
-- Cross-conversation identity matching is not automatic.
-- Identity corrections must be traceable.
-- Memories affected by identity corrections must be reassessed.
+6. Remaining implementation-readiness decisions
 
-The implementation-level design must specify:
+The documentation reconciliation programme was completed on 23 November 2026.
 
-- Exact participant record fields.
-- Participant identifier generation and uniqueness.
-- Source identifier retention.
-- Display-name handling.
-- Unknown participant representation.
-- Duplicate participant handling within one conversation.
-- Identity correction history.
-- Behaviour when a participant is removed or reassigned.
-- Referential integrity between messages, participants and memories.
+The remaining work is a finite implementation-readiness review, not another general documentation-discovery cycle.
 
-Do not assume that two people with the same display name are the same person.
+The following issues must be resolved or given an explicitly bounded implementation decision.
 
-Do not infer identity from writing style, a name mentioned in a message or contextual resemblance.
+A. Deletion suppression and re-import
 
-7.2 Message authorship, quoted speakers and memory subjects
+Decide how deliberate deletion, dismissal and revocation can be respected when previously processed material is imported again.
 
-The logical model distinguishes:
+Requirements:
 
-- Message role.
-- Original message author.
-- Quoted speaker.
-- Source or import origin.
-- Person or entity mentioned.
-- Subject of the extracted memory.
-- Mopapa's interpretation.
+- No sixth collection or import ledger without a new approval.
+- No retention of raw deleted text solely to identify future imports.
+- Stable source identifiers should be used where available.
+- Text similarity alone must not establish identity.
+- Ambiguous re-import must not silently restore deleted information.
 
-The proposed evidence-attribution classes are:
+If complete suppression cannot be implemented safely, the limitation must be explicit. Do not claim complete suppression.
 
-- "user"
-- "assistant"
-- "third_party"
-- "unknown"
+B. Recovery-copy sanitisation
 
-Import origin is separate metadata. "Imported" must not be treated as a person, message author or evidence-attribution class.
+Define how recovery copies are handled after deletion or revocation.
 
-The implementation-level record specification and identity/evidence/temporal specification define the proposed attribution fields and their relationships.
+The policy must establish:
 
-The implementation-level schema must define:
+- Which recovery copies can contain affected information.
+- When they are invalidated, replaced or retained.
+- How retention is bounded.
+- How recovery is prevented from silently undoing deletion.
+- What happens if sanitisation fails.
 
-- How each attribution class is represented.
-- How a message author references a conversation participant.
-- How quoted speakers are represented.
-- How multiple subjects are represented where necessary.
-- How unknown and ambiguous subjects are represented.
-- How source attribution is retained for memories supported by multiple messages.
-- How attribution corrections affect derived memories.
-- How original source content remains unchanged.
+C. Backup format and migration transaction
 
-A statement about the user must not automatically be treated as a statement made by the user.
+Finalise:
 
-A statement made by the user must not automatically be treated as a statement about the user.
+- Backup envelope.
+- Independent backup-format version.
+- Compatibility behaviour.
+- Validation before restore.
+- Recovery-copy creation and verification.
+- Replacement and read-back behaviour.
+- Rollback after interrupted or failed migration.
+- Protection against older backups undoing deletion or revocation.
 
-7.3 Scope, audience visibility and use policy
+A restore must not silently discard malformed records or broken references.
 
-The logical model now defines three independent governance dimensions.
+D. Migration defaults and validation
 
-Scope describes where or in what context information applies.
+Define the exact defaults for every new field and collection.
 
-Audience describes who is permitted to see or receive it.
+Unknown information must remain unknown rather than receiving invented values.
 
-Use policy describes what Mopapa is permitted to do with it.
+Migration must preserve all existing entries, learning data, rooms and Ask state.
 
-The approved logical scope types are:
-
-- "personal"
-- "conversation"
-- "project"
-- "topic"
-- "event"
-- "relationship"
-- "other"
-- "unknown"
+E. Representative archive performance
 
-The approved audience types are:
+Existing small-dataset benchmarks are not proof of archive-scale performance.
 
-- "owner_only"
-- "named_audience"
-- "restricted_context"
-- "unknown"
-
-The use-policy model must distinguish permission for:
+Measure:
 
-- Direct answers.
-- Contextual answers.
-- Proactive surfacing.
-- Cross-context reuse.
-- Inference.
-- Export.
+- Realistic conversation and message counts.
+- Long messages.
+- Provenance and derivation chains.
+- Search and retrieval.
+- Backup and restore.
+- Deletion and revocation.
+- Quota and interrupted-write behaviour.
+- Actual Android browser performance.
 
-The implementation-level design must define:
+Use measured evidence to decide whether localStorage remains sufficient or a separate storage migration is justified.
 
-- Exact fields and allowed values.
-- Scope reference formats.
-- Named audience representation.
-- Context matching rules.
-- Default behaviour when metadata is missing.
-- Permission evaluation order.
-- How explicit denial is represented.
-- How conflicting policies are handled.
-- How multiple source restrictions combine.
-- How restrictions propagate to derived memories.
-- How source deletion or revocation affects derived permissions.
-- How policy changes are audited.
-- How permission metadata is preserved in backup and restore.
-- How export handles metadata it cannot preserve.
+F. Evaluation fixtures and thresholds
 
-The approved conservative direction is:
+Create a fixed, repeatable evaluation set covering:
 
-- Owner-only visibility by default.
-- Unknown scope is not unrestricted scope.
-- Unknown audience is not permission to disclose.
-- Proactive surfacing is not permitted without explicit permission.
-- Cross-context reuse is not permitted without explicit permission.
-- External sharing is not authorised.
-- Explicit denial takes precedence.
-- Missing or conflicting permissions deny the disputed use.
-
-7.4 Governance enforcement and evidence spans
-
-Governance must be enforced before information enters retrieval or answer context.
-
-The implementation-level design must specify:
-
-- The exact point at which governance checks run.
-- How current conversation and project context are established.
-- How scope applicability is evaluated.
-- How audience permissions are checked.
-- How each use permission is checked.
-- How restrictions from multiple sources are combined.
-- How deleted and revoked evidence is excluded.
-- How prohibited information is prevented from entering summaries, caches and derived indexes.
-- How governance failures are recorded and tested.
-- How evidence spans identify supporting portions of original messages.
-- How evidence spans remain valid if records are migrated or corrected.
-
-Permission to answer a direct question must not automatically grant permission for proactive surfacing or cross-context reuse.
-
-Information that fails a governance check must be excluded before context assembly, not merely ignored by the answer layer.
-
-The design must specify exact behaviour for unknown, missing, invalid and conflicting metadata.
-
-A missing permission must never silently become permission.
-
-The implementation-level schema and governance rules remain unapproved until their fields, validation, evaluation fixtures and acceptance criteria are complete.
-
-7.5 Candidate acceptance
-
-Define which candidate types may become active automatically and which require user review.
-
-The system must distinguish:
-
-- Directly stated information.
-- Repeated information.
-- Information supported by multiple independent sources.
-- Interpretations.
-- Uncertain statements.
-- Hypothetical statements.
-- Assistant-generated suggestions.
-- Quoted or imported third-party information.
-
-No arbitrary confidence percentage should be introduced without a defined and calibrated meaning.
-
-7.6 Deletion, revocation and re-import
-
-The proposed deletion, revocation, recovery and re-import transaction model is documented in:
-
-"docs/personal-memory-deletion-revocation-recovery-specification.md"
-
-The specification defines:
-
-- Message, conversation and memory deletion.
-- Revocation and restriction operations.
-- Propagation through dependent memories and relationships.
-- Reassessment when supporting evidence is removed.
-- Failure and interruption handling.
-- Recovery-copy and backup implications.
-- Protection against deleted information being silently reintroduced.
-
-The backup and restore compatibility requirements are documented separately in:
-
-"docs/personal-memory-backup-restore-compatibility-matrix.md"
-
-These specifications are design proposals, not implemented behaviour.
-
-Remaining blockers include:
-
-- A privacy-preserving deletion-suppression mechanism.
-- Recovery-copy sanitisation and retention rules.
-- Explicit reintroduction after a deliberate deletion.
-- Verified deletion-aware restore behaviour.
-- Complete transaction and rollback tests.
-
-No production deletion, revocation or re-import implementation is authorised by the existence of these documents.
-
-
-7.7 Temporal validity
-
-The proposed temporal model is documented in:
-
-"docs/personal-memory-identity-evidence-temporal-specification.md"
-
-It distinguishes original message time, receipt time, record creation and update time, recording time and the period during which information is valid.
-
-It also defines date precision, unknown and approximate dates, timezone handling and inclusive-start/exclusive-end validity intervals.
-
-Remaining work is to approve the exact implementation validation rules and create tests for temporal ambiguity, corrections, historical facts and contradictory evidence.
-
-An import timestamp must never be substituted for the original event date.
-
-7.8 Schema and validation
-
-Finalise exact fields, types, required values, optional values, null behaviour, enum values, identifier rules, reference integrity and validation failure policy.
-
-The logical model is not a substitute for an implementation-level schema.
-
-8. Phased engineering programme
-
-The following phases are sequential dependencies. They are not blanket authorisation to implement the whole system.
-
-Phase 0: Documentation and baseline control
-
-Purpose: Establish one consistent engineering specification and a trustworthy baseline.
-
-Work:
-
-- Reconcile the research review, architecture decisions, architecture specification, data model, module map and build log.
-- Create and maintain this build plan.
-- Re-inspect the live repository before implementation.
-- Record the current test and deployment baseline.
-- Identify existing test coverage before adding new tests.
-- Identify the exact files and modules affected by each future phase.
-
-Acceptance criteria:
-
-- All architecture documents agree about what is approved and what is not.
-- No document describes a proposed feature as implemented.
-- The module map matches the current code inspection.
-- Existing test totals and CI status are recorded accurately.
-- The build plan identifies the remaining design decisions.
-- No production code has been changed as part of this phase.
-
-Exit gate: Documentation reconciliation is complete and the build plan is accepted as the planning authority.
-
-Phase 1: Finalise the implementation-level data model
-
-Purpose: Turn the approved logical model into a precise, testable schema without authorising production implementation.
-
-Work:
-
-1. Finalise conversation records.
-2. Finalise message records.
-3. Define conversation-local participant records and identifiers.
-4. Define message roles and original author attribution.
-5. Define quoted-speaker representation.
-6. Define memory subject representation and unresolved identity handling.
-7. Define evidence spans and source references.
-8. Finalise memory records and memory types.
-9. Define candidate and lifecycle transitions.
-10. Define independent evidence states.
-11. Define temporal validity and historical relationships.
-12. Define scope types and scope references.
-13. Define audience visibility and named-audience representation.
-14. Define independent use permissions.
-15. Define explicit restrictions and denial rules.
-16. Define restriction inheritance across derived memories.
-17. Define policy combination when multiple sources support one memory.
-18. Define behaviour for unknown, missing and conflicting permissions.
-19. Define governance enforcement before retrieval and context assembly.
-20. Define provenance and relationship records.
-21. Define deletion, revocation and identity-correction operations.
-22. Define stable identifier generation.
-23. Define validation rules for individual records and the complete dataset.
-24. Define valid, invalid, ambiguous and conflicting example datasets.
-
-The schema must specify exact behaviour for missing, null, unknown and invalid values.
-
-It must not rely on undocumented assumptions.
-
-Acceptance criteria:
-
-- Every required field has a defined type, allowed values and validation rule.
-- Every relationship has a defined direction and integrity rule.
-- Participant identifiers are unique within their defined conversation scope.
-- Message role, message author, quoted speaker and memory subject are independently represented.
-- Cross-conversation identity is not inferred automatically.
-- Unknown and ambiguous identity remain representable.
-- Evidence spans can be validated against their original messages.
-- Every memory can identify its supporting sources.
-- The five proposed lifecycle states are candidate, active, historical, uncertain and dismissed.
-- The five proposed evidence states are supported, partially_supported, unsupported, disputed and unverified.
-- Evidence state is independent from lifecycle state.
-- Deletion is an operation and is not represented as a lifecycle state.
-- The permitted lifecycle transitions and evidence reassessment rules are consistent with the governance specification.
-- Temporal validity is independent from record creation and update timestamps.
-- Scope and audience visibility are independently represented.
-- Use permissions are independent from visibility.
-- Owner-only visibility is the conservative default.
-- Missing or conflicting permission metadata cannot grant permission.
-- Explicit denials take precedence over permissive rules.
-- Restrictions from multiple sources combine conservatively.
-- Derived memories cannot silently weaken source restrictions.
-- Governance checks occur before prohibited information enters retrieval or answer context.
-- Summaries, caches and derived indexes cannot bypass governance.
-- Existing manual entries remain separate and retain their current meaning.
-- Invalid records have a defined rejection or quarantine policy.
-- A complete valid example dataset and invalid example dataset exist.
-- Ambiguous identity and permission cases have explicit expected outcomes.
-- The schema can be validated without relying on UI behaviour.
-
-Exit gate: The implementation-level schema, attribution rules, scope model, audience model, use-policy model, validation rules and governance enforcement specification are complete and explicitly approved.
-
-Phase 2: Deletion, provenance and governance design
-
-Purpose: Ensure that the system can safely manage evidence and user decisions.
-
-Work:
-
-- Define source deletion behaviour.
-- Define conversation deletion choices.
-- Define memory deletion behaviour.
-- Define revocation.
-- Define restrictions.
-- Define dismissal and correction.
-- Define how shared evidence affects multiple memories.
-- Define what happens when the final supporting source disappears.
-- Define how relationships are reassessed after deletion.
-- Define protection against unwanted re-import.
-- Define derived-index cleanup and rebuilding.
-- Define the treatment of existing backups and recovery copies.
-
-Acceptance criteria:
-
-- No active memory can silently remain established after losing all valid support.
-- A memory with remaining independent evidence is not unnecessarily destroyed when one source is deleted.
-- Deletion cannot leave orphaned provenance or relationship records.
-- Revoked or restricted information is excluded from prohibited retrieval contexts.
-- Dismissed information is not silently reactivated by repeated extraction.
-- The user-facing consequences of conversation deletion are explicit.
-- Operations either complete consistently or leave the prior valid state intact.
-- The behaviour can be tested independently of the interface.
-
-Exit gate: Deletion, revocation, restriction and provenance rules are approved and testable.
-
-Phase 3: Storage workload and migration decision
-
-Purpose: Establish whether the current storage architecture can support the new workload.
-
-The existing storage decision is to retain "localStorage" for the current application. IndexedDB is a candidate, not an approved migration.
-
-Do not reopen that decision merely because conversation history is larger than manual notes.
-
-Work:
-
-- Define realistic conversation and message volumes.
-- Define typical and upper-bound message sizes.
-- Estimate memory and provenance growth.
-- Estimate backup growth.
-- Measure serialisation, save, load and search costs.
-- Measure backup export and restore time.
-- Measure recovery-copy growth.
-- Test quota and write-failure behaviour.
-- Test on representative Android devices and additional browser engines where available.
-- Compare the existing storage design with an IndexedDB prototype only if evidence justifies the comparison.
-
-Use the provisional targets in "docs/storage-architecture.md" as investigation thresholds, not proven guarantees.
-
-The existing save benchmark is not sufficient to establish p95 performance. Search latency on the same large dataset and representative device measurements remain important gaps.
-
-Acceptance criteria:
-
-- A representative workload is documented.
-- Measurements include browser, device, data volume and repetition count.
-- Median and p95 are reported where the sample size supports them.
-- Backup and recovery costs are included.
-- Quota failures and interrupted operations are tested.
-- The decision explicitly states whether localStorage remains suitable for the first implementation.
-- Any proposal to adopt IndexedDB includes a migration, rollback and recovery design.
-- No second authoritative store is introduced.
-
-Exit gate: A separate storage decision is approved. If localStorage remains suitable, the plan must say so and explain the evidence. If IndexedDB is proposed, migration approval is still required separately.
-
-Phase 4: Backup, restore and migration specification
-
-Purpose: Ensure new data can be recovered before it is introduced into production.
-
-Work:
-
-- Define backup format compatibility.
-- Define version 1 backup restoration.
-- Define the proposed future schema backup.
-- Define complete relationship validation.
-- Define migration ordering.
-- Define interrupted migration handling.
-- Define rollback behaviour.
-- Define recovery-copy creation and retention implications.
-- Define backup size limits using measured data.
-- Define the treatment of invalid and partially recoverable backups.
-
-Acceptance criteria:
-
-- Existing version 1 backups remain restorable.
-- Existing entries, rooms, learning data and Ask state remain intact.
-- New collections are included in future backups.
-- Restore validates the complete dataset before replacing current data.
-- Invalid backups cannot partially replace valid data.
-- Failed migration cannot leave mixed schema versions.
-- Failed restore leaves the existing state unchanged.
-- Recovery behaviour is tested for every new data domain.
-- Backup limits are evidence-based rather than increased arbitrarily.
-- The user receives truthful success and failure messages.
-
-Exit gate: Backup, restore, migration and rollback specifications are approved, with tests designed before production persistence changes.
-
-Phase 5: Evaluation harness and fixtures
-
-Purpose: Make the new capabilities measurable before implementing them.
-
-Evaluation must be divided by capability. A good final answer must not conceal a failure in attribution, extraction or deletion.
-
-Create separate fixtures for:
-
-- Original-message preservation.
-- Message role attribution.
-- Original message author attribution.
-- Quoted-speaker attribution.
-- Subject attribution.
-- Participant identity within a conversation.
-- Unknown and ambiguous participant identity.
-- Cross-conversation identity separation.
-- Identity correction and reassessment of derived memories.
-- Evidence-span accuracy.
+- Attribution and subject identification.
+- Quoted speakers.
 - Candidate extraction.
-- Candidate rejection.
-- Provenance.
-- Multiple supporting sources.
-- Duplicate imports.
-- Retry behaviour.
-- Temporal changes.
-- Contradictions.
-- Scope applicability.
-- Conversation-only scope.
-- Project and topic scope.
-- Unknown scope.
-- Owner-only visibility defaults.
-- Named-audience restrictions.
-- Unknown audience.
-- Direct-answer permission.
-- Contextual-answer permission.
-- Proactive-use denial.
-- Cross-context reuse denial.
-- Inference restrictions.
-- Export restrictions.
-- Explicit permission denial.
-- Missing permission metadata.
-- Conflicting permissions.
-- Multiple-source restriction inheritance.
-- Derived-memory restriction inheritance.
-- Source deletion and restriction reassessment.
-- Revocation.
-- Deletion.
-- Governance enforcement before context assembly.
-- Restricted information excluded from summaries.
-- Restricted information excluded from caches and derived indexes.
-- Backup and restore preserving permission metadata.
-- Export behaviour when permission metadata cannot be preserved.
-- Retrieval.
-- Answer support and abstention.
+- Evidence completeness.
+- Temporal reasoning.
+- Contradictions and supersession.
+- Scope and restrictions.
+- Identity correction.
+- Deletion and revocation.
+- Re-import behaviour.
+- Backup and restore.
+- Retrieval and answer abstention.
 
-Preserve the existing regression suites and existing 50-question Ask evaluation.
+Critical privacy, attribution, provenance and deletion failures must be release blockers. They must not be averaged away by a high overall score.
 
-Keep the LongMemEval diagnostic and external benchmark material separate from Mopapa-native regression totals.
+7. Consolidated implementation sequence
 
-Acceptance criteria:
+The build is divided into eight stages. Completing one stage does not automatically authorise the next.
 
-- Each evaluation has a defined purpose and scoring method.
-- Expected outputs are fixed and reviewable.
-- Positive and negative cases are represented.
-- Ambiguous cases test whether the system abstains or requests clarification.
-- Attribution failures are reported separately from extraction and answer accuracy.
-- Participant identity errors are reported separately from subject attribution errors.
-- Scope and audience violations are reported separately from ordinary retrieval errors.
-- Prohibited proactive use and cross-context reuse are treated as governance failures.
-- Missing or conflicting permissions never produce an unintended permission grant.
-- Restriction inheritance is tested across single-source and multiple-source memories.
-- Derived indexes, summaries and caches are tested for restricted-information leakage.
-- Backup, restore and export tests verify that permissions are not silently broadened.
-- Deletion and restriction failures are treated as critical, not averaged away.
-- Benchmark licensing and permitted use are recorded.
-- Evaluation data can be rerun consistently.
+Stage 0: Design closure and baseline
 
-Exit gate: The evaluation harness is ready to assess the first implementation phase.
+Purpose: Finish the finite readiness review and establish the verified production baseline.
 
-Phase 6: Authorise and implement original evidence preservation
+Work:
 
-Purpose: Introduce the smallest safe persistent conversation and message capability.
+- Review the three master documents together.
+- Resolve the remaining decisions in Section 6.
+- Confirm supporting documents are reference-only.
+- Re-inspect the live repository and existing tests.
+- Record the current commit and verification baseline.
+- Identify the exact first implementation files and dependencies.
 
-This is the first potential production implementation phase.
+Acceptance:
 
-It must not begin until Phases 1 to 5 have been completed to the required level and the user has explicitly approved this phase.
+- No contradictory implementation instructions remain.
+- The canonical record model is internally consistent.
+- Critical deletion and recovery behaviour has a defined policy.
+- Backup and migration behaviour is sufficiently specified for the first storage change.
+- The first implementation phase has measurable tests and a recovery plan.
 
-Potential responsibilities:
+Exit: Explicit approval of the first production implementation phase.
 
-- Conversation creation and retrieval.
+Stage 1: Storage and schema foundation
+
+Purpose: Introduce a safe foundation for the personal-memory data without damaging the existing application.
+
+Work:
+
+- Implement the approved schema extension.
+- Validate all five new collections.
+- Preserve existing data domains.
+- Implement cross-collection reference validation.
+- Implement safe migration and rollback.
+- Extend backup, restore and recovery.
+- Verify persistence after reload.
+
+Acceptance:
+
+- Existing data is preserved.
+- Invalid references are rejected.
+- Unsupported schema versions fail safely.
+- Failed migration leaves the original data usable.
+- Backup and restore preserve all supported domains.
+- Recovery behaviour is verified.
+- Existing tests remain passing.
+- No feature is reported as saved before persistence is verified.
+
+Stage 2: Conversation and message preservation
+
+Purpose: Give Mopapa a reliable original-evidence archive.
+
+Work:
+
+- Conversation creation and management.
 - Message preservation.
-- Stable source identity.
+- Conversation-local participants.
 - Original author attribution.
-- Message ordering.
-- Unknown timestamp handling.
+- Message ordering and timestamps.
+- Stable source identifiers where available.
 - Duplicate import protection.
-- Backup and restore participation.
+- Archive inspection and deletion.
 
-Do not add automatic memory extraction in this phase.
+Acceptance:
 
-Acceptance criteria:
-
-- Original message text is preserved without rewriting.
-- Conversation boundaries and message ordering are preserved.
-- Source origin and author attribution remain available.
+- Original message text is preserved unchanged.
+- Message ordering and conversation boundaries are correct.
+- Author and quoted-speaker distinctions are preserved.
 - Unknown timestamps remain unknown.
-- Duplicate processing of the same stable source identifier does not create duplicate messages.
+- Retry does not create uncontrolled duplicates.
 - Failed imports do not corrupt existing data.
-- Existing manual entries and Ask behaviour remain unchanged.
-- New records participate in validation, backup and restore.
-- The complete existing regression suite passes.
-- Browser tests cover reload, invalid data and recovery.
-- No information is reported as stored unless persistence has been verified.
+- Backup, restore and deletion include the archive.
 
-Exit gate: Evidence preservation is verified before candidate extraction is considered.
+No automatic memory extraction is introduced until evidence preservation is reliable.
 
-Phase 7: Authorise and implement deterministic candidate extraction
+Stage 3: Deterministic candidate extraction
 
-Purpose: Identify useful information without requiring a paid or hosted model.
+Purpose: Identify potentially useful memories without paid or hosted AI.
 
-Initial extraction should be conservative and deterministic.
+Initial supported cases should be conservative:
 
-Potential supported cases:
-
-- Explicit dates.
-- Explicit amounts.
-- Directly stated preferences with unambiguous wording.
+- Explicit dates and amounts.
+- Clear directly stated preferences.
 - Clearly stated facts.
 - Explicit corrections.
-- Explicit changes to an earlier fact.
+- Unambiguous changes to earlier facts.
 - Unambiguous named relationships.
 
-Do not force ambiguous statements into established memories.
+Acceptance:
 
-Do not treat questions, hypotheticals, examples, assistant suggestions or quoted third-party statements as user facts.
-
-Candidate extraction must remain separate from acceptance as an established memory.
-
-Acceptance criteria:
-
-- Every candidate points to its original supporting message.
-- Author and subject are preserved separately.
-- Uncertain attribution remains uncertain.
-- Unsupported or ambiguous statements do not become active facts.
+- Every candidate links to original evidence.
+- Author and subject remain separate.
+- Questions, hypotheticals and suggestions are not silently converted into facts.
+- Ambiguous information remains uncertain.
 - Candidate creation is safe to retry.
-- Reprocessing does not create uncontrolled duplicates.
-- Candidate rejection is respected on later processing.
+- Rejected candidates are not silently recreated.
 - Extraction failure does not affect preserved messages.
-- Candidate quality is measured against a fixed evaluation set.
-- No model or external service is required.
+- Candidate quality is measured against fixed fixtures.
 
-Exit gate: Candidate extraction demonstrates acceptable precision and safe failure behaviour before automatic activation is considered.
+Stage 4: Stored memories and governance
 
-Phase 8: Authorise and implement stored memories and provenance
-
-Purpose: Turn accepted candidates into independently retrievable memories.
+Purpose: Turn reliable candidates into independently inspectable and controllable memories.
 
 Work:
 
-- Implement memory records.
-- Implement memory-source relationships.
-- Implement evidence-state assessment.
-- Implement lifecycle transitions.
-- Implement duplicate review.
-- Implement source removal and reassessment.
-- Preserve independent support from multiple messages.
+- Memory records and types.
+- Provenance and evidence spans.
+- Lifecycle and evidence states.
+- Derivation dependencies.
+- Semantic relationships.
+- Scope and use restrictions.
+- Identity correction.
+- Inspection, correction and dismissal.
+- Revocation and deletion.
 
-Acceptance criteria:
+Acceptance:
 
-- A memory can have multiple supporting messages.
-- A message can support multiple memories.
-- Invalid source links are rejected.
-- Duplicate provenance links are rejected.
-- A memory without valid evidence cannot be presented as established.
-- Source deletion reassesses all dependent memories.
-- Existing manual entries are not duplicated automatically.
-- Memory records remain independently inspectable.
-- Every change is safe to retry or recover from.
-
-Exit gate: Memory and provenance integrity pass the complete fixture suite.
-
-Phase 9: Authorise and implement temporal relationships
-
-Purpose: Support changing facts without destroying history.
-
-Initial relationships:
-
-- "supersedes"
-- "contradicts"
-- "related"
-
-Work:
-
-- Define matching criteria for the same changing fact.
-- Define evidence requirements for supersession.
-- Preserve historical records.
-- Preserve unresolved contradictions.
-- Define how temporal retrieval selects current and historical information.
-
-Acceptance criteria:
-
-- A newer timestamp alone never proves supersession.
-- A supported update preserves the older memory as historical.
-- Contradictory memories remain available and unresolved.
-- Related memories are not linked merely because their wording is similar.
-- Historical questions can retrieve earlier values.
-- Current-state questions do not silently select an unsupported value.
-- Ambiguous changes result in clarification or abstention where appropriate.
-
-Exit gate: Temporal and contradiction evaluation passes before these relationships influence ordinary answers.
-
-Phase 10: Authorise and implement governance controls
-
-Purpose: Give users practical control over extracted information.
-
-Work:
-
-- Memory inspection.
-- Evidence inspection.
-- Correction.
-- Dismissal.
-- Restriction.
-- Revocation.
-- Deletion.
-- Conversation deletion choices.
-- Clear status and failure reporting.
-
-Acceptance criteria:
-
-- Users can identify why a memory exists.
-- Users can inspect its supporting evidence.
-- Users can correct an incorrect extraction without rewriting original evidence.
+- Every memory has traceable evidence.
+- Invalid provenance and dependency references are rejected.
+- Corrections do not rewrite original evidence.
+- Restrictions propagate conservatively.
 - Dismissed memories are not silently reactivated.
-- Restricted memories are excluded from prohibited contexts.
-- Revoked information is not available to ordinary retrieval.
-- Deletion updates dependent records consistently.
-- The interface distinguishes saved, candidate, uncertain, unsupported and failed states.
-- No success message is shown before the operation has actually succeeded.
+- Deletion reassesses direct and indirect dependencies.
+- Revoked information is excluded from prohibited use.
+- Failure and recovery paths are tested.
 
-Exit gate: Governance and deletion tests pass, including cross-record and recovery scenarios.
+Stage 5: Temporal and relational memory
 
-Phase 11: Extend retrieval and deterministic Ask
+Purpose: Support changes, history and relationships without silently destroying previous information.
 
-Purpose: Make the new information useful without weakening the existing answer system.
+Work:
+
+- Temporal validity.
+- Historical memory retrieval.
+- Supersession.
+- Contradiction handling.
+- Related-memory relationships.
+- Conversation-local identity corrections.
+
+Acceptance:
+
+- A later timestamp alone never proves supersession.
+- Historical information remains available where permitted.
+- Contradictions are not silently resolved.
+- Invalid relationship cycles are rejected.
+- Ambiguous changes produce clarification or abstention where appropriate.
+
+Stage 6: Retrieval and deterministic Ask expansion
+
+Purpose: Make the memory archive useful while preserving the existing answer engine's reliability.
 
 Work:
 
 - Search original messages.
 - Search eligible extracted memories.
 - Retrieve supporting evidence.
-- Apply author and subject attribution.
+- Apply attribution and subject rules.
 - Apply temporal validity.
-- Apply scope and restrictions.
-- Resolve conflicts.
+- Enforce scope and use restrictions before context assembly.
 - Assemble a bounded evidence set.
-- Extend deterministic answer handling only where justified.
+- Extend deterministic Ask only where justified.
 
-The existing Ask engine remains the initial answer implementation.
+Acceptance:
 
-Acceptance criteria:
-
+- Existing manual-entry search remains intact.
 - Existing Ask regression tests remain intact.
-- Existing manual entries remain searchable.
-- New results include valid source references.
+- New answers can identify their supporting evidence.
 - Restricted and revoked memories are excluded.
-- Historical information is distinguished from current information.
-- Contradictions are not silently resolved.
+- Historical and current information are distinguished.
 - Unsupported questions receive appropriate abstention.
-- Retrieval precision and recall are measured separately.
-- Answer correctness and source support are measured separately.
-- No answer is presented as supported by a source that does not establish it.
+- Retrieval quality and answer support are measured separately.
 
-Exit gate: Cross-conversation retrieval demonstrates measurable benefit without regression in existing Ask behaviour.
+Stage 7: Product completion and controlled expansion
 
-Phase 12: Controlled expansion
+Purpose: Turn the verified memory system into a complete, usable product.
 
-Purpose: Expand only when evidence supports doing so.
+Work:
 
-Possible later investigations:
+- Clear conversation and memory management.
+- Useful memory inspection and correction interfaces.
+- Reliable import, export and recovery experiences.
+- Mobile usability and performance.
+- Accessible status and error reporting.
+- Further evaluation and quality improvements.
+
+Later investigations may include:
 
 - More advanced deterministic extraction.
-- Local model inference.
+- Local inference.
 - Semantic retrieval.
-- Larger archive workloads.
-- Additional authorised import formats.
 - Procedural memory.
-- More advanced participant and relationship handling.
+- Additional authorised import formats.
+- More advanced relationship reasoning.
 
-Each requires its own research, cost, privacy, licensing, performance and evaluation decision.
+Each requires a separate evidence-based decision. None is automatically approved by completing earlier stages.
 
-No capability in this phase is automatically approved by completion of earlier phases.
-
-9. Evaluation and quality standards
-
-The following quality dimensions must be reported separately.
-
-Dimension| What must be measured
-Capture| Completeness and fidelity of original evidence
-Attribution| Correct message author and source identity
-Subject| Correct person or entity the statement concerns
-Extraction| Correct candidate identification and interpretation
-Provenance| Valid evidence links and source support
-Updating| Correct handling of changes and historical facts
-Contradictions| Preservation and correct handling of conflicts
-Governance| Correct scope and restriction enforcement
-Deletion| Complete removal or reassessment of dependent data
-Retrieval| Relevant evidence found and irrelevant evidence excluded
-Answering| Correctness, source support and appropriate abstention
-Reliability| Retry safety, persistence, backup and recovery
-Performance| Save, load, search and backup latency at measured volumes
-
-A high aggregate score cannot compensate for a serious privacy, attribution, deletion or provenance failure.
-
-Critical failure categories
-
-The following must be treated as release-blocking defects:
-
-- Assistant-generated information represented as a user statement.
-- A third-party statement incorrectly attributed to the user.
-- An unsupported memory presented as established fact.
-- A restricted memory used in a prohibited context.
-- Revoked information remaining available to ordinary retrieval.
-- Deleted evidence silently reappearing.
-- A failed write reported as successful.
-- A failed restore partially replacing valid user data.
-- An invalid relationship silently corrupting the dataset.
-- A historical fact silently overwritten.
-
-10. Test ownership and regression policy
+8. Test and release policy
 
 Before adding tests:
 
 1. Inspect "tests/run.js".
 2. Inspect "tests/browser.js".
-3. Identify existing tests that already cover the scenario.
-4. Extend existing tests where appropriate.
-5. Add a new test only when it covers a genuinely missing behaviour.
+3. Identify existing coverage.
+4. Extend an existing test where appropriate.
+5. Add a new test only for genuinely missing behaviour.
 
-Avoid duplicate assertions that test the same condition without adding meaningful coverage.
+Avoid duplicate assertions that do not add meaningful coverage.
 
-Every implementation phase must report:
+Every implementation batch must report:
 
-- Unit test result.
-- Browser test result.
-- Additional validation or benchmark result.
-- GitHub Actions result.
-- Deployment result.
-- Manual verification, where required.
-- Known limitations.
-
-A passing unit suite does not prove browser download, mobile storage or real-device performance.
-
-A successful deployment does not prove that the new functionality works.
-
-No test total should be reported without the commit against which it was run.
-
-11. Storage, backup and recovery rules
-
-Until a separate decision changes it:
-
-- Keep "localStorage" as the current primary persistence mechanism.
-- Keep the existing storage key and schema unchanged.
-- Do not introduce IndexedDB as a second authoritative store.
-- Do not increase the 5 MB import limit without evidence.
-- Preserve existing recovery-copy safeguards.
-- Keep backup and restore compatibility as a requirement for every new data domain.
-
-Any future migration must:
-
-1. Preserve the original data.
-2. Validate the source before migration.
-3. Write to the destination safely.
-4. Read back and verify the migrated data.
-5. Preserve the original source until verification succeeds.
-6. Handle interruption and retry.
-7. Provide a tested rollback or recovery path.
-8. Preserve existing manual entries and learning data.
-9. Test normal, empty, large, malformed and partially recoverable datasets.
-10. Verify backup compatibility.
-
-Recovery copies stored in the same browser profile are not independent backups. The interface must not imply otherwise.
-
-12. Performance and device requirements
-
-Mopapa must remain usable on ordinary mobile devices.
-
-Performance work must measure:
-
-- Complete save operations.
-- Load and initialisation.
-- Search execution.
-- Search result rendering.
-- Backup export.
-- Restore validation and completion.
-- Recovery-copy creation.
-- Large archive behaviour.
-
-Use the provisional targets in "docs/storage-architecture.md" as investigation thresholds. They are not guarantees.
-
-For meaningful performance comparisons:
-
-- Use the same dataset.
-- Record browser and device.
-- Warm up the code.
-- Collect enough repetitions to report median and p95.
-- Separate CI measurements from real-device measurements.
-- Include failure rates as well as successful operation timings.
-
-Do not adopt an index, database or model merely to improve a synthetic benchmark if it does not solve a demonstrated product problem.
-
-13. Build-log and documentation rules
-
-"docs/personal-memory-build-log.md" is the permanent history of completed engineering work.
-
-For every completed batch, record:
-
-- Date and batch name.
 - Exact commit SHA.
 - Files changed.
-- Actual implementation or documentation changes.
-- Unit test results.
-- Browser test results.
-- GitHub Actions status.
-- Deployment status.
-- Manual verification.
-- Evidence and limitations.
-- Outstanding issues.
-- Decision and next approved task.
+- Unit test result.
+- Browser test result.
+- GitHub Actions result.
+- Vercel deployment result.
+- Manual verification where necessary.
+- Known limitations and outstanding defects.
 
-Preserve historical entries.
+A successful deployment does not prove application functionality.
 
-Correct outdated status summaries without rewriting the historical record.
+A passing unit suite does not prove browser storage, download, restore or real-device performance.
 
-Do not record a task as verified merely because a file exists or a commit was pushed.
+No test total may be reported without its associated commit.
 
-The build plan itself must be updated when an approved decision materially changes the implementation sequence or acceptance criteria.
+9. Critical release-blocking failures
 
-14. Explicit exclusions
+The following always block release of the affected capability:
 
-The following are not part of the initial implementation programme:
+- Assistant text represented as a user-authored fact.
+- Third-party statements incorrectly attributed to the user.
+- Unsupported memories presented as established facts.
+- Invalid provenance presented as valid evidence.
+- Restricted information used in a prohibited context.
+- Revoked information remaining available to ordinary retrieval.
+- Deleted information silently reintroduced.
+- Failed writes reported as successful.
+- Failed restores partially replacing valid user data.
+- Broken relationships silently corrupting the dataset.
+- Historical facts silently overwritten.
+- A migration losing existing manual entries or learning data.
 
-- Paid APIs or subscriptions.
-- Hosted AI inference.
-- Cloud synchronisation.
-- Mandatory accounts.
-- Automatic access to other applications.
-- An external vector database.
-- A mandatory embedding model.
-- A mandatory local language model.
-- A replacement for deterministic Ask.
-- A wholesale framework migration.
-- A complete UI redesign.
-- Procedural memory before foundational memory reliability.
-- Autonomous agent behaviour.
-- Unbounded background extraction.
-- Unrestricted collection of personal information.
+A high aggregate benchmark score cannot compensate for any of these failures.
 
-A future proposal must identify the problem it solves, evidence that the problem exists, its cost and maintenance burden, privacy implications and measurable acceptance criteria.
+10. Engineering workflow
 
-15. Implementation authorisation gates
+The repository remains the source of truth.
 
-No production implementation begins until the following conditions are satisfied.
+For each work batch:
 
-Design readiness
+1. Inspect the current "main" commit.
+2. Inspect relevant source files and tests.
+3. Identify existing coverage and avoid duplication.
+4. Provide exact edits for the user to apply.
+5. User applies changes and pushes.
+6. Inspect the resulting commit and exact diff.
+7. Check relevant tests, Actions and deployment status.
+8. Record only verified results.
+9. Mark the completed checklist item explicitly.
+10. Proceed to the next meaningful batch.
 
-- [ ] Architecture and logical data-model documents are consistent.
-- [ ] Participant identity and attribution are fully specified.
-- [ ] Subject representation is fully specified.
-- [ ] Scope, visibility and restrictions are enforceable and specified.
-- [ ] Candidate and memory lifecycle transitions are defined.
-- [ ] Provenance and temporal relationships are defined.
-- [ ] Deletion, revocation and re-import behaviour is defined.
-- [ ] Implementation-level schema and validation rules are complete.
+Do not claim a check passed merely because the user reports a successful push.
 
-Reliability readiness
+Documentation changes should be made only when they resolve a real decision, correct an inconsistency, define an acceptance requirement or record verified work.
 
-- [ ] Storage workload has been measured.
-- [ ] Storage decision has been documented.
-- [ ] Backup and restore compatibility is defined.
-- [ ] Migration and rollback behaviour is defined where applicable.
-- [ ] Recovery requirements cover all new data domains.
-- [ ] Failure and interruption scenarios are testable.
+Do not restart completed research or rewrite settled documents without new evidence.
 
-Evaluation readiness
+11. Verification log
 
-- [ ] Evaluation fixtures exist.
-- [ ] Attribution tests exist.
-- [ ] Extraction tests exist.
-- [ ] Provenance tests exist.
-- [ ] Temporal and contradiction tests exist.
-- [ ] Restriction and deletion tests exist.
-- [ ] Existing regression suites are preserved.
-- [ ] Acceptance thresholds are documented.
+This section records completed work. Preserve historical entries and append new verified batches.
 
-Phase authorisation
+23 November 2026: Documentation reconciliation
 
-- [ ] The exact first production phase is identified.
-- [ ] Its files and module responsibilities are identified.
-- [ ] Its acceptance criteria are measurable.
-- [ ] Its regression coverage is identified.
-- [ ] Its recovery plan is documented.
-- [ ] Its exclusions are explicit.
-- [ ] The user has explicitly approved that production phase.
+Completed:
 
-Approval of this document does not tick these gates automatically.
+- Reconciled the canonical record model and supporting technical specifications.
+- Standardised the proposed five-collection model.
+- Reconciled temporal representation and UTF-16 evidence spans.
+- Reconciled provenance, quoted-speaker attribution and source references.
+- Separated memory derivation from semantic relationships.
+- Reconciled identity, lifecycle, evidence, deletion and backup boundaries.
+- Updated the schema consistency review, module map, implementation audit and architecture decisions.
+- Completed the planned cross-document reconciliation programme.
 
-16. Current position and next work
+23 November 2026: Canonical technical specification
 
-Current status: Target architecture and logical data-model direction approved. The implementation-level specifications have been drafted and are undergoing cross-document reconciliation. Production implementation is not authorised.
+Commit: "f49d0068ce952bfc3d67d51347037928d3cd7c95"
 
-The current design and planning set includes:
+Changed:
 
-- docs/personal-memory-research-review.md
-- docs/personal-memory-architecture-decisions.md
-- docs/personal-memory-architecture.md
-- docs/personal-memory-data-model.md
-- docs/personal-memory-module-map.md
-- docs/storage-architecture.md
-- docs/personal-memory-build-log.md
-- docs/personal-memory-build-plan.md
-- docs/personal-memory-record-specification.md
-- docs/personal-memory-schema-consistency-review.md
-- docs/personal-memory-implementation-audit.md
-- docs/personal-memory-identity-evidence-temporal-specification.md
-- docs/personal-memory-governance-lifecycle-specification.md
-- docs/personal-memory-deletion-revocation-recovery-specification.md
-- docs/personal-memory-backup-restore-compatibility-matrix.md
+- "docs/personal-memory-record-specification.md"
 
-The proposed five-collection model, record fields, identity and attribution rules, temporal semantics, lifecycle and evidence states, governance requirements, deletion operations and backup compatibility have dedicated specifications.
+Added the canonical technical resolutions section covering collections, temporal representation, evidence spans, provenance, derivation, relationships, identity, lifecycle, deletion, re-import, backup and migration.
 
-A specification being drafted does not mean that it is implementation-ready, formally approved or implemented.
+Verification:
 
-Remaining design and approval work:
+- Vercel: successful.
+- GitHub Actions: no workflow run returned.
+- Production code: unchanged.
+- Tests: unchanged.
+- Live schema: unchanged.
 
-1. Review the complete record specification against every supporting specification.
-2. Resolve deletion-suppression and recovery-copy sanitisation.
-3. Finalise backup envelope and backup-format version decisions.
-4. Finalise migration validation, defaults and rollback acceptance.
-5. Complete representative conversation-archive workload measurements.
-6. Complete evaluation fixtures, critical failure cases and acceptance thresholds.
-7. Reconcile the module map and all historical status summaries.
-8. Define the exact first production phase, affected files, regression coverage and recovery plan.
-9. Obtain explicit approval before making production changes.
+23 November 2026: Technical section numbering correction
 
-The existing application remains the working baseline.
+Commit: "f06aa7dcc7bfc62d15e5217f635bd9ab63e46c52"
 
-No automatic memory capability should be claimed until it has been implemented, tested and verified.
+Changed:
 
-No production schema change, schema version 2 activation, IndexedDB migration, external AI, paid service, cloud synchronisation, external sharing or third-party processing is authorised.
+- "docs/personal-memory-record-specification.md"
+
+Corrected the appended canonical technical section to section 24 and its subsections to 24.1–24.14. Original sections 1–23 remain intact.
+
+Verification:
+
+- Exact diff inspected.
+- Vercel: successful.
+- GitHub Actions: no workflow run returned.
+- Production code: unchanged.
+- Tests: unchanged.
+- Live schema: unchanged.
+
+12. Current position and next action
+
+The target architecture direction and logical data-model direction are approved.
+
+The documentation reconciliation programme is complete.
+
+The canonical technical specification has been consolidated and corrected.
+
+The current task is to consolidate this roadmap and complete the finite implementation-readiness review.
+
+The next production milestone is not a wholesale rewrite. It is the smallest safe, independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
+
+No production implementation, schema version 2 activation, IndexedDB migration, external AI, paid services or cloud synchronisation is authorised until the relevant phase has been explicitly approved.
