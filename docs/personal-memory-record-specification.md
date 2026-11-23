@@ -1,76 +1,112 @@
-Mopapa: Implementation-Level Personal Memory Record Specification
+Mopapa: Personal Memory Record Specification
 
-Date: 20 November 2026
-Status: Canonical technical specification under final consolidation. The decisions in this document govern the proposed implementation model. Production implementation and schema migration still require explicit approval.
-
+Status: Consolidated canonical technical specification
+Date: 23 November 2026
 Repository: https://github.com/kynaruniverse/Mopapa
-Architecture authority: "docs/personal-memory-architecture.md"
-Logical data-model authority: "docs/personal-memory-data-model.md"
-Implementation audit: "docs/personal-memory-implementation-audit.md"
+Authority: This document is the technical authority for the proposed personal-memory record model.
+Implementation status: Design only. Production implementation and schema migration remain unauthorised.
 
 ---
 
-1. Purpose and status
+1. Purpose, scope and authority
 
-This document converts Mopapa's approved logical personal-memory model into proposed serialised record structures.
+This document defines the proposed technical model for storing, validating, governing and retrieving personal memories in Mopapa.
 
-It defines:
+It covers:
 
-- Exact record shapes.
-- Field types and requirements.
-- Identifier and reference rules.
-- Authorship and subject attribution.
-- Evidence and provenance.
-- Memory lifecycle and evidence state.
+- The existing application data domains and five proposed additional collections.
+- Conversation, participant and message records.
+- Memory records and subjects.
 - Temporal information.
-- Relationships between memories.
-- Scope, audience and use permissions.
-- Restrictions and their inheritance.
-- Identity corrections.
-- Deletion and re-import protection.
-- Whole-dataset validation requirements.
+- Evidence spans and provenance.
+- Memory derivation and semantic relationships.
+- Lifecycle and evidence states.
+- Scope, audience, permissions and restrictions.
+- Identity boundaries and corrections.
+- Deletion, revocation and re-import safeguards.
+- Backup, restore, migration and validation requirements.
+- Failure handling, performance and evaluation requirements.
 
-This document is a design proposal. It does not authorise:
+This is a design specification. It does not establish that the proposed model is implemented or that any proposed field exists in the live application.
+
+1.1 Authority hierarchy
+
+The six-document documentation structure has distinct responsibilities:
+
+1. "docs/README.md" explains the documentation structure and current project position.
+2. "docs/personal-memory-architecture.md" defines product intent, principles, capabilities and system boundaries.
+3. This document defines the proposed record structures, data relationships and technical validation rules.
+4. "docs/personal-memory-build-plan.md" defines implementation stages, acceptance criteria, approvals and verified progress.
+5. "docs/personal-memory-research-review.md" records supporting research and its relevance to Mopapa.
+6. "docs/personal-memory-evaluation.md" defines the evaluation approach and retained Ask regression material.
+
+Supporting or historical documents may explain why a decision was made. They must not create competing field definitions or override this specification.
+
+Where a supporting document conflicts with this specification, this specification governs the proposed record model until the supporting document is reconciled or retired.
+
+1.2 Explicit non-authorisations
+
+This document does not authorise:
 
 - Production JavaScript changes.
-- A live storage schema change.
-- A schema version change.
-- An IndexedDB migration.
-- External AI or hosted inference.
-- Paid services or recurring dependencies.
-- Cloud synchronisation.
+- Activation of schema version 2.
+- A storage-key change.
+- IndexedDB migration.
+- External AI processing or hosted inference.
+- Paid APIs, subscriptions or recurring dependencies.
+- Cloud synchronisation or mandatory accounts.
+- Automatic access to other applications.
+- A new persistent collection beyond the five specified here.
 - Replacement of manual entries.
 - Replacement of deterministic Ask.
+- A wholesale application rewrite.
 
-Every proposed field and rule must be reviewed against the existing application before implementation approval.
+Each implementation stage requires its own explicit approval under the build plan.
 
-2. Core design principles
+---
 
-The schema must enforce the following distinctions.
+2. Core data principles
 
-1. Original evidence is not the same thing as an extracted memory.
-2. A message author is not necessarily the person discussed in the message.
+The model must preserve the following distinctions.
+
+1. Original conversation evidence is not an extracted memory.
+2. A message author is not necessarily the person discussed.
 3. A quoted speaker is not necessarily the message author.
 4. Import origin is not authorship.
-5. A subject is not automatically a verified identity.
-6. A memory's lifecycle state is separate from its evidence state.
-7. A memory's temporal validity is separate from when Mopapa recorded it.
-8. A newer statement does not automatically supersede an older statement.
-9. Similar wording does not prove two memories are duplicates.
-10. Missing permission is not permission.
-11. Deletion and revocation must affect derived information.
-12. Search indexes and summaries are never the only authoritative copy.
+5. A subject label is not proof of identity.
+6. A candidate is not an accepted memory.
+7. Memory lifecycle and evidence state are independent.
+8. A memory's validity period is separate from when Mopapa recorded it.
+9. A newer statement does not automatically supersede an older statement.
+10. Similar wording does not prove two records have the same source.
+11. Missing or unknown permission does not grant permission.
+12. Derived information must not gain broader permissions than its sources.
+13. Deletion and revocation must be considered across dependent information.
+14. Search indexes, summaries and caches are not authoritative evidence.
+15. Original evidence must remain inspectable and must not be silently rewritten during extraction.
+16. Unknown information must remain unknown. The system must not invent dates, identities, attribution or certainty.
+17. A memory must be traceable to the evidence and interpretation from which it was produced.
 
-3. Proposed collection structure
+---
 
-The existing application currently has four top-level data domains:
+3. Collections and data ownership
+
+3.1 Existing application domains
+
+The current application has four existing top-level data domains:
 
 - "entries"
 - "learned"
 - "customRooms"
 - "ask"
 
-The logical personal-memory model proposes five additional collections:
+These remain distinct from the proposed personal-memory model.
+
+In particular, manually saved entries must not be silently converted into extracted memories or merged with them. Existing manual-entry behaviour must remain available.
+
+3.2 Five proposed additional collections
+
+The proposed model adds exactly five top-level collections:
 
 - "conversations"
 - "messages"
@@ -78,11 +114,7 @@ The logical personal-memory model proposes five additional collections:
 - "memorySources"
 - "memoryRelations"
 
-Re-import idempotency and deletion suppression remain required design capabilities. No persistent import-ledger collection or alternative suppression collection is approved. The mechanism must be resolved separately before implementation.
-
-Identity correction history is proposed as embedded participant metadata rather than a separate top-level collection.
-
-The proposed future structure is therefore:
+The proposed logical dataset is:
 
 {
   "schemaVersion": 2,
@@ -101,95 +133,104 @@ The proposed future structure is therefore:
   "memoryRelations": []
 }
 
-The proposed structure contains exactly the five additional logical collections. No import ledger or sixth collection is included. Schema version 2 remains proposed and is not supported by the live application.
+This is an illustrative target structure, not the live schema. Schema version 2 remains proposed and inactive.
 
-Participants are embedded in conversations. Quoted-speaker annotations are embedded in messages. Subjects are embedded in memories. Scope and governance metadata are embedded in the records to which they apply.
+3.3 No additional collection is approved
 
-No separate persistent search-index collection is required initially.
+The following are not approved as additional persistent collections:
 
-4. Shared conventions
+- An import ledger.
+- A global identity collection.
+- A separate derivation-dependency collection.
+- A persistent search-index collection.
+- A deletion-suppression collection.
+
+Derivation dependencies are embedded in memory records. Participants are embedded in conversations. Quoted-speaker annotations are embedded in messages. Subjects are embedded in memories.
+
+Re-import suppression remains a required design capability, but its safe implementation has not been approved. It must not be used to justify an unapproved sixth collection or the retention of deleted personal content.
+
+3.4 Data ownership
+
+- "conversations" owns conversation metadata and embedded participant records.
+- "messages" owns original message content and embedded quoted-speaker annotations.
+- "memories" owns extracted memory claims, subjects, temporal data, governance and derivation metadata.
+- "memorySources" owns direct links between memories and original message evidence.
+- "memoryRelations" owns semantic relationships between memory records.
+
+A record must not duplicate another collection's authoritative content merely for convenience.
+
+---
+
+4. Shared record conventions
 
 4.1 Identifiers
 
-All new records use stable string identifiers.
+New records require stable string identifiers.
 
-Proposed format:
+Proposed readable prefixes are:
 
-- Prefix identifying the record type.
-- A generated unique suffix.
-- No dependence on array position.
-- No dependence on display names.
-- No external service or identifier-generation dependency.
+- "con_" for conversations.
+- "par_" for participants.
+- "msg_" for messages.
+- "mem_" for memories.
+- "src_" for provenance records.
+- "rel_" for semantic relationships.
 
-Examples:
+These are examples, not a final identifier-generation algorithm.
 
-- "con_..."
-- "par_..."
-- "msg_..."
-- "mem_..."
-- "src_..."
-- "rel_..."
-- "imp_..."
+Requirements:
 
-The exact generator must be selected after reviewing the existing identifier implementation.
+- IDs must not depend on array position.
+- IDs must not depend on display names.
+- IDs must be unique within their relevant collection or embedded parent.
+- Generated IDs must be checked for collisions.
+- Original source identifiers must be stored separately from Mopapa-generated IDs.
+- The generator must not require a paid or hosted service.
 
-Every generated ID must be checked for collision within its collection. Imported source identifiers must be stored separately from Mopapa-generated IDs.
+The exact generator must be reviewed against the existing identifier implementation before development.
 
-4.2 Timestamps
+4.2 Timestamps and dates
 
-All known absolute timestamps use ISO 8601 UTC strings.
+Known absolute instants use ISO 8601 timestamps with an explicit timezone or UTC designator.
 
 Example:
 
-"2026-11-20T09:30:00.000Z"
+2026-11-20T09:30:00.000Z
 
 Rules:
 
-- Unknown timestamps use "null".
-- Do not invent timestamps.
-- Do not replace an original event time with an import time.
-- Do not interpret a date-only value as midnight UTC.
-- Date-only values use "YYYY-MM-DD" where the underlying information genuinely has no time.
+- Unknown timestamps are represented as "null".
+- Do not invent a timestamp to fill a missing value.
+- Original event time, message time, import receipt time, record creation time and update time are distinct.
+- A date-only value remains date-only when the source supplies no time.
+- A month or year must not be converted into an invented day.
 - Original timezone information should be retained separately when supplied and relevant.
 - Invalid timestamps must be rejected, not silently normalised into a different date.
 
-4.3 Optional values and null
+4.3 Null and optional values
 
-Use "null" when a field is part of the record but its value is genuinely unknown.
+- Use "null" for a defined field whose value is genuinely unknown.
+- Omit a field only where the specification explicitly makes it optional.
+- Do not use empty strings as substitutes for unknown values.
+- Missing data in an older import must not be interpreted as permission, confirmation or evidence.
 
-Omit a field only when it is explicitly optional and has no applicable value.
+4.4 Original and derived data
 
-Do not use empty strings as substitutes for unknown values.
+Original data includes source message text, source-provided timestamps, source identifiers, participant identifiers and original role information.
 
-Do not treat missing fields in older imported data as permission or proof.
+Derived data includes extracted claims, categories, subjects, temporal interpretations, evidence assessments, relationships, governance interpretations and retrieval representations.
 
-4.4 Original and derived information
+Derived data must remain traceable to its source and correctable without rewriting the original message.
 
-Original evidence includes:
+---
 
-- Original message text.
-- Source-provided timestamps.
-- Source-provided message identifiers.
-- Source-provided participant identifiers.
-- Original role and author information.
+5. Conversation records and participants
 
-Derived metadata includes:
-
-- Extracted memory content.
-- Memory categories and types.
-- Subject interpretations.
-- Relationships.
-- Evidence assessments.
-- Scope interpretations.
-- Search terms and indexes.
-
-Derived metadata must remain traceable to the original evidence and must be correctable without rewriting it.
-
-5. Conversation records
+5.1 Conversation record
 
 A conversation groups related messages and conversation-local participants.
 
-Example:
+Illustrative structure:
 
 {
   "id": "con_example001",
@@ -201,77 +242,81 @@ Example:
   },
   "status": "active",
   "participants": [],
-  "createdAt": "2026-11-18T09:00:00.000Z",
-  "updatedAt": "2026-11-18T10:30:00.000Z",
+  "createdAt": null,
+  "updatedAt": null,
   "receivedAt": "2026-11-20T09:30:00.000Z",
   "governance": {}
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique Mopapa conversation ID
-"title"| String or null| No| Maximum 200 characters; null if unknown
-"origin"| Object| Yes| Describes source and import origin
-"origin.type"| Enum string| Yes| "manual", "chatgpt_import", "file_import", "other"
-"origin.sourceId"| String or null| No| Original stable source ID, if available
-"origin.label"| String or null| No| Human-readable source label; maximum 100 characters
-"status"| Enum string| Yes| "active", "archived"
-"participants"| Array| Yes| Conversation-local participant records
-"createdAt"| Timestamp or null| Yes| Original creation time, if known
-"updatedAt"| Timestamp or null| Yes| Latest known original activity time
-"receivedAt"| Timestamp| Yes| Time received by Mopapa
-"governance"| Object| Yes| Scope, audience, policy and restrictions
+Field| Requirement| Rule
+"id"| Required| Unique Mopapa conversation ID
+"title"| Optional or null| Maximum 200 characters
+"origin"| Required| Source and import-origin metadata
+"origin.type"| Required| "manual", "chatgpt_import", "file_import" or "other"
+"origin.sourceId"| Optional or null| Original stable source ID, if available
+"origin.label"| Optional or null| Human-readable label, maximum 100 characters
+"status"| Required| "active" or "archived"
+"participants"| Required| Embedded conversation-local participants
+"createdAt"| Required, nullable| Original creation time, if known
+"updatedAt"| Required, nullable| Latest known original activity time
+"receivedAt"| Required| Time received by Mopapa
+"governance"| Required| Applicable scope, audience, permissions and restrictions
 
 Rules:
 
-- One conversation may contain multiple participants.
-- Participant IDs must be unique within the conversation.
-- A participant ID is not automatically a global identity.
-- A conversation must not contain its entire message history in one text field.
-- Conversation ordering is established by message sequence and timestamps, not by array position.
-- Conversation deletion is performed through the deletion operation, not by assigning a "deleted" status.
-- A completed deletion removes the conversation and affected dependent records from the active dataset according to the approved deletion and recovery policy.
+- Participant IDs must be unique within their conversation.
+- A participant ID is not a global identity.
+- A conversation must not store its complete message history in one text field.
+- Message order must be established through message sequence and source timestamps, not array position.
+- Conversation deletion is an operation, not a status value.
+- A completed deletion must process dependent records under the approved deletion policy.
 
-6. Participant records
+5.2 Participant records
 
-Participants are embedded in their conversation.
+Participants are embedded in their parent conversation.
 
-Example:
+Illustrative structure:
 
 {
   "id": "par_example001",
-  "sourceParticipantId": "user_123",
+  "sourceParticipantId": "source_user_123",
   "kind": "user",
-  "displayName": "Charles",
+  "displayName": "User",
   "identityStatus": "unresolved",
   "identityKey": null,
   "identityHistory": []
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique within parent conversation
-"sourceParticipantId"| String or null| No| Original source identifier, if supplied
-"kind"| Enum string| Yes| "user", "assistant", "third_party", "system", "unknown"
-"displayName"| String or null| No| Maximum 200 characters
-"identityStatus"| Enum string| Yes| "unresolved", "identified", "ambiguous", "unknown"
-"identityKey"| String or null| No| Stable identity reference only after an explicit resolution decision
-"identityHistory"| Array| Yes| Correction history; initially empty
+Field| Requirement| Rule
+"id"| Required| Unique within the parent conversation
+"sourceParticipantId"| Optional or null| Original source identifier, if supplied
+"kind"| Required| "user", "assistant", "third_party", "system" or "unknown"
+"displayName"| Optional or null| Maximum 200 characters
+"identityStatus"| Required| "unresolved", "ambiguous" or "unknown" in the initial model
+"identityKey"| Required, null initially| Must remain null under the initial identity boundary
+"identityHistory"| Required| Embedded correction history; initially empty
 
 Rules:
 
-- Two participants with the same display name must not automatically be merged.
-- A person mentioned in a message is not automatically a conversation participant.
-- A participant's identity must not be inferred from writing style.
-- Cross-conversation identity matching requires an explicit, reviewable resolution.
-- A correction must preserve the original participant record's history.
-- A correction must trigger reassessment of memories and relationships that depend on the affected identity.
+- Participants with the same display name must not automatically be merged.
+- A person mentioned in a message is not automatically a participant.
+- Identity must not be inferred from writing style.
+- Initial identity handling is conversation-local.
+- Global identity resolution and cross-conversation matching are deferred.
+- Corrections must be explicit, traceable and reversible.
+- A correction must trigger reassessment of dependent memories and relationships.
 
-The exact global identity model remains a decision requiring further review. "identityKey" must not be treated as a verified identity merely because it is populated.
+The initial model must not use a populated global "identityKey" or a "resolved" state to imply a global identity system that has not been approved.
 
-7. Message records
+---
+
+6. Message records, authorship and quoted speakers
+
+6.1 Message record
 
 Messages preserve original statements.
 
-Example:
+Illustrative structure:
 
 {
   "id": "msg_example001",
@@ -284,7 +329,7 @@ Example:
     "attribution": "user"
   },
   "text": "I now work at Company B.",
-  "timestamp": "2026-11-18T14:30:00.000Z",
+  "timestamp": null,
   "receivedAt": "2026-11-20T09:30:00.000Z",
   "origin": {
     "type": "chatgpt_import",
@@ -294,24 +339,22 @@ Example:
   "governance": {}
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique Mopapa message ID
-"conversationId"| String| Yes| Must reference an existing conversation
-"sequence"| Integer| Yes| Non-negative; unique within conversation
-"role"| Enum string| Yes| "user", "assistant", "system", "other"
-"author"| Object| Yes| Explicit author attribution
-"text"| String| Yes| Original unmodified text; non-empty
-"timestamp"| Timestamp or null| Yes| Original message time, if known
-"receivedAt"| Timestamp| Yes| Time received or imported by Mopapa
-"origin"| Object| Yes| Source and original message identifier
-"quotedSpeakers"| Array| Yes| Explicit quoted-speaker annotations
-"governance"| Object| Yes| Applicable scope, audience, policy and restrictions
+Field| Requirement| Rule
+"id"| Required| Unique Mopapa message ID
+"conversationId"| Required| Must reference an existing conversation
+"sequence"| Required| Non-negative integer, unique within conversation
+"role"| Required| "user", "assistant", "system" or "other"
+"author"| Required| Explicit author attribution
+"text"| Required| Original, non-empty, unmodified text
+"timestamp"| Required, nullable| Original message time, if known
+"receivedAt"| Required| Time received or imported by Mopapa
+"origin"| Required| Source type and original message identifier
+"quotedSpeakers"| Required| Embedded quoted-speaker annotations
+"governance"| Required| Applicable scope, audience, permissions and restrictions
 
-7.1 Author representation
+6.2 Author representation
 
-The "author" object uses one of these forms:
-
-Participant author:
+A participant author may use:
 
 {
   "kind": "participant",
@@ -319,7 +362,7 @@ Participant author:
   "attribution": "user"
 }
 
-Unknown author:
+An unknown author may use:
 
 {
   "kind": "unknown",
@@ -327,43 +370,33 @@ Unknown author:
   "attribution": "unknown"
 }
 
-System or assistant author:
-
-{
-  "kind": "system",
-  "participantId": null,
-  "attribution": "assistant"
-}
-
-The allowed attribution classes are:
+The attribution classes are:
 
 - "user"
 - "assistant"
 - "third_party"
 - "unknown"
 
-Import origin is recorded separately from authorship. "Imported" must never be used as an author attribution.
+Import origin must never be used as an authorship value. An imported message may still have been written by the user.
 
-Import origin is not the same as authorship. A message imported from another application may still have been written by the user.
+The valid combinations of message "role", "author.kind" and "author.attribution" require an explicit validation decision table before implementation. Invalid combinations must be rejected rather than guessed.
 
-The exact mapping between "role", "author.kind" and "author.attribution" must be validated as a combination. Invalid combinations must be rejected.
+6.3 Message invariants
 
-7.2 Message rules
-
-- Original message text must never be rewritten during extraction.
-- Message sequence must preserve original order.
-- A message must belong to exactly one existing conversation.
-- Sequence numbers must not be reused within the same conversation.
-- Unknown authors must remain unknown.
+- Original message text must not be rewritten during extraction.
+- Each message belongs to exactly one existing conversation.
+- Sequence numbers must be unique within their conversation.
+- Message ordering must be deterministic.
+- Unknown authors remain unknown.
 - Assistant statements must not automatically become user facts.
-- Imported content must retain its original source identity.
-- A message's original timestamp must remain separate from "receivedAt".
+- A message's original timestamp remains separate from its receipt time.
+- Original source identifiers remain distinct from Mopapa identifiers.
 
-8. Quoted-speaker annotations
+6.4 Quoted-speaker annotations
 
-Quoted speakers are stored within the message's "quotedSpeakers" array.
+Quoted-speaker annotations are embedded in the message.
 
-Example:
+Illustrative structure:
 
 {
   "id": "quote_example001",
@@ -375,70 +408,74 @@ Example:
   "status": "unresolved"
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique within message
-"participantId"| String or null| Yes| Conversation-local participant reference, if resolved
-"speakerLabel"| String or null| No| Maximum 200 characters
-"attribution"| Enum string| Yes| "user", "assistant", "third_party", "unknown"
-"textStart"| Integer or null| Yes| Start offset in original message text
-"textEnd"| Integer or null| Yes| Exclusive end offset
-"status"| Enum string| Yes| "resolved", "unresolved", "ambiguous", "unknown"
-
 Rules:
 
-- Original message text remains unchanged.
-- Offsets use a single documented indexing convention.
-- The implementation must choose and test whether offsets count UTF-16 code units or Unicode code points.
-- "textStart" must be less than "textEnd".
-- Both offsets must remain within the original message text.
-- A quoted speaker must not be treated as the author of the entire message.
-- An unresolved speaker must not be assigned to a participant by guesswork.
-- If message text is corrected through an explicit source correction, affected spans must be revalidated.
+- A quoted speaker is not automatically the author of the message.
+- A quoted-speaker participant reference, when present, must resolve within the exact source message's conversation.
+- A speaker label does not establish identity.
+- Unresolved or ambiguous speakers must not be assigned by guesswork.
+- Quoted text must be located in the original, unchanged message text.
+- Any explicit source-text correction requires affected offsets to be revalidated.
 
-The offset convention is a blocking implementation decision. Do not implement span storage until it is fixed and tested with emoji, combining characters and other non-ASCII text.
+The canonical offset convention is defined in Section 8.
 
-9. Memory records
+Nested quotations, compound claims and conflicting attribution require dedicated evaluation fixtures. Their complete interpretation rules are not yet settled.
 
-A memory is an independently retrievable representation derived from one or more sources.
+---
 
-Example:
+7. Memory records and subjects
+
+7.1 Memory record
+
+A memory is an independently retrievable representation derived from original evidence or, where explicitly permitted, other memories.
+
+Illustrative structure:
 
 {
   "id": "mem_example001",
   "type": "semantic",
   "category": "personal_fact",
-  "content": "Charles works at Company B.",
+  "content": "The user works at Company B.",
   "subjects": [],
-  "lifecycleState": "active",
-  "evidenceState": "supported",
+  "lifecycleState": "candidate",
+  "evidenceState": "unverified",
   "temporal": {
+    "timeStatus": "unknown",
     "validFrom": null,
-    "validTo": null,
-    "timeStatus": "unknown"
+    "validTo": null
   },
   "recordedAt": "2026-11-20T09:35:00.000Z",
   "createdAt": "2026-11-20T09:35:00.000Z",
   "updatedAt": "2026-11-20T09:35:00.000Z",
   "governance": {},
+  "derivation": {
+    "kind": "direct",
+    "method": "deterministic_extraction",
+    "sourceMemoryIds": [],
+    "createdAt": "2026-11-20T09:35:00.000Z"
+  },
   "revision": 1
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique Mopapa memory ID
-"type"| Enum string| Yes| "episodic", "semantic", "relational", "procedural", "working"
-"category"| Enum string| Yes| Defined category or "other" / "unknown"
-"content"| String| Yes| Concise representation; non-empty; maximum to be established by measurement
-"subjects"| Array| Yes| One or more subject records, or empty when genuinely unknown
-"lifecycleState"| Enum string| Yes| "candidate", "active", "historical", "uncertain", "dismissed"
-"evidenceState"| Enum string| Yes| "supported", "partially_supported", "unsupported", "disputed", "unverified"
-"temporal"| Object| Yes| Validity and time certainty
-"recordedAt"| Timestamp| Yes| Time Mopapa recorded the memory
-"createdAt"| Timestamp| Yes| Creation time of the memory record
-"updatedAt"| Timestamp| Yes| Most recent record modification
-"governance"| Object| Yes| Scope, audience, use policy and restrictions
-"revision"| Integer| Yes| Positive integer, incremented on meaningful edit
+Field| Requirement| Rule
+"id"| Required| Unique Mopapa memory ID
+"type"| Required| "episodic", "semantic", "relational", "procedural" or "working"
+"category"| Required| Defined category, "other" or "unknown"
+"content"| Required| Non-empty claim or representation; maximum awaits measurement
+"subjects"| Required| Embedded subject records; may be empty only when genuinely unknown
+"lifecycleState"| Required| One permitted lifecycle state
+"evidenceState"| Required| One permitted evidence state
+"temporal"| Required| Canonical temporal object
+"recordedAt"| Required| Time Mopapa recorded the memory
+"createdAt"| Required| Record creation time
+"updatedAt"| Required| Most recent record modification
+"governance"| Required| Scope, audience, permissions and restrictions
+"derivation"| Required| Canonical derivation metadata
+"revision"| Required| Positive integer, incremented on meaningful edit
 
-9.1 Memory types
+Every memory must contain a "derivation" object. Direct evidence and memory-to-memory derivation are different relationships and must not be conflated.
+
+7.2 Memory types
 
 - "episodic": A specific event or experience.
 - "semantic": A fact, preference or general piece of knowledge.
@@ -446,11 +483,11 @@ Field| Type| Required| Rules
 - "procedural": A method, routine or way of doing something.
 - "working": Temporary information relevant to an active task or context.
 
-Procedural memory must not be treated as an instruction that can override user intent or application safety rules.
+Procedural memory must not override user intent or application safety rules.
 
 Working memory must have an explicit expiry or review policy before implementation. It must not become permanent merely because it was not cleaned up.
 
-9.2 Categories
+7.3 Categories
 
 Initial proposed categories:
 
@@ -466,660 +503,59 @@ Initial proposed categories:
 - "other"
 - "unknown"
 
-Type and category are separate dimensions. A preference may be semantic; an event may be episodic.
+Type and category are separate dimensions. For example, a preference may be semantic and an event may be episodic.
 
-9.3 Lifecycle states
+The category list may be extended only through a documented decision and corresponding validation and evaluation updates.
 
-The permitted lifecycle states are:
+7.4 Subjects
 
-- "candidate": Extracted but not yet accepted as a usable memory.
-- "active": Accepted for permitted retrieval, subject to evidence and governance.
-- "historical": Retained as previously applicable information.
-- "uncertain": Meaning, attribution or truth cannot currently be established.
-- "dismissed": Rejected by the user or an explicit review process.
+Subjects are embedded in memories.
 
-Deletion is an operation, not a lifecycle state. A completed deletion removes the applicable record from the active dataset under the approved deletion and recovery policy. No ordinary memory record with a "deleted" lifecycle state is retained.
-
-9.4 Evidence states
-
-- "supported": Valid supporting evidence exists.
-- "partially_supported": Some claims are supported but the complete memory is not.
-- "unsupported": No remaining valid supporting evidence.
-- "disputed": Evidence conflicts and has not been resolved.
-- "unverified": Evidence has not been adequately assessed.
-
-Lifecycle and evidence state must be validated independently.
-
-An "active" memory must not be usable as an established fact unless its evidence state and governance permit that use.
-
-A dismissed memory must not silently return to active status through re-import.
-
-9.5 Confidence
-
-Do not introduce an arbitrary numerical confidence score.
-
-Evidence quality, attribution, uncertainty and review status must be represented explicitly. A numerical score may be considered only after its meaning, calibration and evaluation method are defined.
-
-10. Memory subject records
-
-Subjects are embedded in a memory.
-
-Example:
+Illustrative structure:
 
 {
   "id": "sub_example001",
   "kind": "person",
-  "label": "Charles",
+  "label": "User",
   "identityKey": null,
   "attribution": "user",
   "identityStatus": "unresolved"
 }
 
-Field| Type| Required| Rules
-"id"| String| Yes| Unique within memory
-"kind"| Enum string| Yes| "person", "organisation", "place", "event", "object", "topic", "unknown"
-"label"| String| Yes| Maximum 200 characters
-"identityKey"| String or null| Yes| Explicitly resolved identity reference, otherwise null
-"attribution"| Enum string| Yes| "user", "assistant", "third_party", "unknown"
-"identityStatus"| Enum string| Yes| "resolved", "unresolved", "ambiguous", "unknown"
+Subject fields:
+
+- "id": unique within the parent memory.
+- "kind": "person", "organisation", "place", "event", "object", "topic" or "unknown".
+- "label": required, maximum 200 characters.
+- "identityKey": null under the initial identity boundary.
+- "attribution": "user", "assistant", "third_party" or "unknown".
+- "identityStatus": "unresolved", "ambiguous" or "unknown" in the initial model.
+
+Subject attribution describes who or what the memory concerns. It does not describe who made the statement.
 
 Rules:
 
-- Subject attribution identifies who or what the memory concerns.
-- It does not identify who made the statement.
-- A subject may be unknown.
-- Multiple subjects may be present.
 - A subject label is not proof of identity.
-- Cross-conversation identity resolution must be explicit and reversible.
-- Subject changes must trigger reassessment of memory relationships and retrieval.
+- Multiple subjects may be present.
+- A subject may be unknown.
+- Global identity resolution is deferred.
+- Subject corrections must trigger reassessment of affected relationships and retrieval eligibility.
 
-The exact global identity-key model remains subject to review.
+7.5 Confidence
 
-11. Memory-source and provenance records
+Do not introduce an arbitrary numerical confidence score.
 
-A provenance record links a memory to an original message and the evidence within that message.
-
-Example:
-
-{
-  "id": "src_example001",
-  "memoryId": "mem_example001",
-  "messageId": "msg_example001",
-  "relationship": "supports",
-  "evidenceSpans": [
-    {
-      "textStart": 0,
-      "textEnd": 32
-    }
-  ],
-  "sourceAttribution": "user",
-  "createdAt": "2026-11-20T09:35:00.000Z"
-}
-
-Field| Type| Required| Rules
-"id"| String| Yes| Unique provenance ID
-"memoryId"| String| Yes| Existing memory reference
-"messageId"| String| Yes| Existing message reference
-"relationship"| Enum string| Yes| Initially "supports"
-"evidenceSpans"| Array| Yes| One or more source spans, unless whole-message evidence is explicitly justified
-"sourceAttribution"| Enum string| Yes| Attribution of the supporting statement
-"createdAt"| Timestamp| Yes| Time link was created
-
-Evidence span:
-
-Field| Type| Required| Rules
-"textStart"| Integer| Yes| Inclusive start offset
-"textEnd"| Integer| Yes| Exclusive end offset
-
-Rules:
-
-- Every provenance record must reference an existing memory and message.
-- Duplicate memory/message links must be rejected unless a reviewed model permits distinct non-overlapping evidence links.
-- Every active supported extracted memory must have at least one valid source link.
-- One message may support multiple memories.
-- One memory may have multiple supporting messages.
-- The source author must remain distinguishable from the memory subject.
-- Evidence spans must point to the original message text.
-- If offsets are unavailable or unreliable, the record must explicitly identify whole-message support rather than inventing offsets.
-- A source link must not be treated as valid after its message has been deleted or revoked.
-
-A memory with multiple sources remains supported only to the extent that valid remaining sources support its complete meaning.
-
-12. Memory relationships
-
-Relationships are separate records.
-
-Example:
-
-{
-  "id": "rel_example001",
-  "fromMemoryId": "mem_newer001",
-  "toMemoryId": "mem_older001",
-  "type": "supersedes",
-  "evidenceSourceIds": ["src_example001"],
-  "createdAt": "2026-11-20T09:40:00.000Z"
-}
-
-Field| Type| Required| Rules
-"id"| String| Yes| Unique relation ID
-"fromMemoryId"| String| Yes| Existing memory ID
-"toMemoryId"| String| Yes| Existing memory ID; must differ from "fromMemoryId"
-"type"| Enum string| Yes| "supersedes", "contradicts", "related"
-"evidenceSourceIds"| Array| Yes| Existing provenance references supporting the relationship
-"createdAt"| Timestamp| Yes| Relationship creation time
-
-Rules:
-
-- "fromMemoryId" is the newer or initiating side for "supersedes".
-- "toMemoryId" is the older memory being superseded.
-- Supersession must not erase the older memory.
-- Supersession requires evidence that the newer statement updates the same underlying fact.
-- A later timestamp alone is insufficient.
-- Contradictory memories must remain unresolved until sufficient evidence or user correction exists.
-- Related memories must have an identifiable reason.
-- Similar wording alone does not justify a relationship.
-- Self-references and duplicate relationships are invalid.
-- Supersession cycles are invalid.
-- Relationships must be reassessed when their supporting evidence is deleted or revoked.
-
-13. Scope, audience and use-policy metadata
-
-Governance is embedded in conversations, messages and memories.
-
-The governing rule is conservative: information must pass its applicable restrictions before it enters retrieval or answer context.
-
-Example:
-
-{
-  "scope": {
-    "type": "personal",
-    "reference": null
-  },
-  "audience": {
-    "type": "owner_only",
-    "references": []
-  },
-  "usePolicy": {
-    "directAnswer": "allow",
-    "contextualAnswer": "allow",
-    "proactiveSurfacing": "deny",
-    "crossContextReuse": "deny",
-    "inference": "deny",
-    "export": "allow"
-  },
-  "restrictions": []
-}
-
-13.1 Scope
-
-Field| Type| Required| Rules
-"scope.type"| Enum string| Yes| "personal", "conversation", "project", "topic", "event", "relationship", "other", "unknown"
-"scope.reference"| String or null| Yes| Required for reference-dependent scope types
-
-Scope describes where information applies. It does not itself grant permission to use or disclose information.
-
-13.2 Audience
-
-Field| Type| Required| Rules
-"audience.type"| Enum string| Yes| "owner_only", "named_audience", "restricted_context", "unknown"
-"audience.references"| Array| Yes| Explicit audience references; empty unless required
-
-Unknown audience must not be interpreted as unrestricted visibility.
-
-13.3 Use policy
-
-Each permission is independently represented.
-
-Allowed values:
-
-- "allow"
-- "deny"
-- "unknown"
-
-Field| Type| Required| Purpose
-"directAnswer"| Enum string| Yes| Use in response to a direct question
-"contextualAnswer"| Enum string| Yes| Use as supporting context in an answer
-"proactiveSurfacing"| Enum string| Yes| Surface information without a direct request
-"crossContextReuse"| Enum string| Yes| Reuse information in a different conversation or project
-"inference"| Enum string| Yes| Derive additional conclusions from the information
-"export"| Enum string| Yes| Include information in an export
-
-Missing, unknown or conflicting permission must deny the disputed use.
-
-Permission to answer a direct question does not imply permission for proactive surfacing, inference or cross-context reuse.
-
-External disclosure is not authorised by this model.
-
-14. Restrictions and restriction provenance
-
-Restrictions are embedded in the governance object.
-
-Example:
-
-{
-  "id": "restriction_example001",
-  "type": "context_only",
-  "effect": "deny",
-  "appliesTo": [
-    "crossContextReuse",
-    "proactiveSurfacing"
-  ],
-  "reason": "Information is restricted to its original context.",
-  "sourceMessageId": "msg_example001",
-  "createdAt": "2026-11-20T09:35:00.000Z"
-}
-
-Field| Type| Required| Rules
-"id"| String| Yes| Unique within governance object
-"type"| Enum string| Yes| Defined restriction type
-"effect"| Enum string| Yes| "deny"
-"appliesTo"| Array| Yes| One or more supported use permissions
-"reason"| String or null| No| Maximum 500 characters
-"sourceMessageId"| String or null| No| Evidence source for restriction
-"createdAt"| Timestamp| Yes| Creation time
-
-Initial restriction types:
-
-- "context_only"
-- "no_proactive_use"
-- "no_cross_context_reuse"
-- "no_inference"
-- "no_export"
-- "explicit_denial"
-- "other"
-- "unknown"
-
-Rules:
-
-- Explicit denial takes precedence over permission.
-- Restrictions from multiple supporting sources must be combined conservatively.
-- A derived memory must not receive broader permissions than its source evidence permits.
-- A restriction must be checked before retrieval and context assembly.
-- Deleted or revoked source evidence must not remain usable through a derived memory.
-- Restriction provenance must be preserved sufficiently to explain why a use was denied.
-- If a policy cannot be evaluated safely, the information must be excluded from that use.
-
-The precise policy-combination algorithm and treatment of mixed-source memories require a separate worked decision table before implementation.
-
-15. Identity correction history
-
-Identity corrections are embedded in the relevant participant's "identityHistory" array.
-
-Example:
-
-{
-  "id": "identity_change001",
-  "previousIdentityKey": null,
-  "newIdentityKey": "identity_example001",
-  "reason": "User-confirmed identity correction",
-  "sourceMessageIds": ["msg_example001"],
-  "createdAt": "2026-11-20T10:00:00.000Z"
-}
-
-Field| Type| Required| Rules
-"id"| String| Yes| Unique within participant history
-"previousIdentityKey"| String or null| Yes| Previous identity reference
-"newIdentityKey"| String or null| Yes| Corrected identity reference
-"reason"| String| Yes| Maximum 500 characters
-"sourceMessageIds"| Array| Yes| Existing messages supporting correction
-"createdAt"| Timestamp| Yes| Correction time
-
-Rules:
-
-- Corrections must not silently overwrite original attribution.
-- A correction must be traceable.
-- A correction must trigger reassessment of affected memories and relationships.
-- An identity correction must not automatically merge all records sharing a name.
-- A correction must be reversible through a further explicit correction.
-- Historical identity information must not be used as current identity without evaluation.
-
-The global identity-key ownership and deletion model remains unresolved. This embedded proposal must be reviewed before approval.
-
-16. Re-import and deletion suppression requirements
-
-The system must prevent ordinary re-import or automatic extraction from silently reversing a deliberate deletion, dismissal or revocation decision.
-
-The logical model currently contains five proposed personal-memory collections. No additional persistent collection is approved for import history or deletion suppression.
-
-The suppression mechanism remains unresolved and must receive a separate privacy and architecture review before implementation.
-
-16.1 Source identity
-
-- Prefer stable source identifiers supplied by the original source.
-- Keep original source identifiers separate from Mopapa-generated record IDs.
-- Do not use text similarity alone as proof that two records are the same source.
-- Do not claim reliable duplicate detection when stable source identity is unavailable.
-- Do not retain raw deleted message text solely to recognise a previous import.
-
-16.2 Required re-import behaviour
-
-- A previously processed source must follow normal duplicate-handling rules.
-- A source known to have been deliberately deleted must not silently recreate its deleted records.
-- A dismissed candidate must not silently return as an accepted memory.
-- A revoked source must remain subject to the applicable denial or restriction.
-- Similar wording from a different source must not automatically be treated as the same source.
-- Ambiguous or conflicting source identity must be handled conservatively.
-
-16.3 Suppression mechanism
-
-The minimum metadata, storage location, retention period, deletion behaviour, backup inclusion and restore behaviour remain unresolved.
-
-No "importLedger", sixth collection, fingerprint scheme or alternative persistent suppression mechanism is approved by this specification.
-
-A future design must establish how suppression metadata can prevent accidental re-import without retaining prohibited personal content unnecessarily.
-
-16.4 Explicit reintroduction
-
-A deliberate user instruction to reintroduce previously deleted information must be distinguishable from an ordinary repeated import.
-
-The confirmation, retention and audit behaviour for explicit reintroduction remain subject to a separate design decision.
-
-16.5 Failure and uncertainty
-
-If the system cannot establish whether an import would reverse a previous deletion or revocation, it must not claim that suppression is reliable.
-
-The affected import or restore must be blocked or require an explicitly designed user review process. It must not silently override the unresolved decision.
-
-16.6 Deleting a message
-
-- Remove the original message.
-- Remove provenance links referencing it.
-- Reassess dependent memories.
-- Mark memories without valid remaining evidence as "unsupported".
-- Reassess relationships depending on the affected evidence.
-- Remove derived index material.
-- Record only the minimum permitted deletion metadata.
-
-16.7 Deleting a conversation
-
-The user must be told which memories may be affected.
-
-The operation must define whether derived memories are also deleted or retained as unsupported records.
-
-Memories supported by independent sources must be reassessed rather than automatically deleted.
-
-16.8 Deleting a memory
-
-- Remove the memory.
-- Remove its provenance links.
-- Remove its relationships.
-- Remove derived index material.
-- Apply re-import suppression where the deletion represents a deliberate user decision.
-
-Original messages must not be deleted merely because one derived memory is removed.
-
-16.9 Revocation
-
-Revocation is a permission change, not merely a status label.
-
-It must prevent the affected information from being used in prohibited contexts, including through derived memories, indexes, cached context and future imports.
-
-16.10 Backups and recovery copies
-
-The design must distinguish deletion from the continued existence of older exported backups or recovery copies.
-
-The application must not claim that deleting a live record has also erased every previously exported copy.
-
-Backup retention, recovery-copy deletion and restored-data suppression require explicit policy and tests.
-
-17. Whole-dataset invariants
-
-The following must hold for a valid dataset.
-
-17.1 Identifier integrity
-
-- Every record ID is non-empty and unique within its collection.
-- No reference depends on array position.
-- All references resolve to the correct record type.
-- Participant IDs resolve within their parent conversation.
-- Message sequence numbers are unique within their conversation.
-
-17.2 Conversation and message integrity
-
-- Every message references exactly one existing conversation.
-- Every participant reference resolves within that conversation.
-- Every quoted-speaker participant reference resolves within that conversation.
-- Original message text remains unchanged by extraction.
-- Message ordering remains deterministic.
-
-17.3 Memory and provenance integrity
-
-- Every provenance link references an existing memory and message.
-- Every supported extracted memory has sufficient valid evidence.
-- Unsupported memories cannot be treated as established facts.
-- Provenance attribution remains consistent with the source message.
-- Evidence spans are within the original message text.
-- No memory may claim support from deleted or revoked evidence.
-
-17.4 Relationship integrity
-
-- Every relationship references two distinct existing memories.
-- Evidence references resolve.
-- Duplicate relationships are rejected.
-- Supersession cycles are rejected.
-- Contradictory memories remain distinguishable.
-- Relationship validity is reassessed when evidence changes.
-
-17.5 Governance integrity
-
-- Missing permission does not grant permission.
-- Explicit denial overrides allow.
-- Unknown scope is not unrestricted scope.
-- Unknown audience does not permit disclosure.
-- Derived memories cannot broaden source permissions.
-- Governance is checked before retrieval and context assembly.
-- Deleted and revoked evidence is excluded.
-
-17.6 Temporal integrity
-
-- All known timestamps are valid.
-- Unknown timestamps remain null.
-- "validFrom" must not be later than "validTo" when both are known.
-- Original time and import time remain distinct.
-- Historical facts are not automatically treated as current.
-
-18. Validation-failure policy
-
-Validation must distinguish record errors from dataset integrity errors.
-
-18.1 Normal loading
-
-The existing application has a recovery-oriented loading path that can reject malformed individual legacy entries while preserving valid neighbouring records.
-
-The new collections must not silently inherit that behaviour without an explicit decision.
-
-A malformed relationship or provenance record can change the meaning or safety of an otherwise valid memory.
-
-The new data domains must therefore be validated as a connected dataset.
-
-18.2 Backup restore
-
-A user-requested restore must reject a backup that fails required schema or relationship validation.
-
-It must not silently discard invalid new records and then report a complete successful restore.
-
-18.3 Failed operations
-
-A failed migration, import or restore must leave the previous application state unchanged.
-
-No partially migrated or mixed-schema dataset may be reported as successful.
-
-18.4 Error reporting
-
-Errors should identify:
-
-- The affected collection.
-- The record identifier, where safe.
-- The validation rule.
-- Whether the operation was rejected.
-- Whether existing data remains unchanged.
-
-Error messages must not expose unnecessary personal message content.
-
-19. Backup and migration implications
-
-The live application remains schema version 1.
-
-The proposed schema version 2 is not implemented.
-
-Before migration approval, the design must specify:
-
-1. Exact version 1 to version 2 conversion.
-2. Treatment of unversioned legacy data.
-3. Preservation of all existing entries.
-4. Preservation of learning data.
-5. Preservation of custom rooms.
-6. Preservation of Ask state.
-7. Initialisation of all new collections.
-8. Validation of every new record domain.
-9. Referential-integrity validation.
-10. Backup compatibility.
-11. Restore compatibility.
-12. Recovery-copy behaviour.
-13. Failed migration rollback.
-14. Failed restore rollback.
-15. Retry behaviour.
-16. Re-import suppression.
-17. Import-size and storage-volume limits.
-
-The existing storage key "mopapa.v1" and the internal schema version are separate concerns.
-
-No storage-key change is implied.
-
-All new domains must remain within the existing storage ownership boundary unless a separately approved storage decision changes it.
-
-20. Performance and size limits
-
-Do not invent maximum sizes based solely on convenience.
-
-The following limits require measurement before implementation:
-
-- Maximum conversation count.
-- Maximum messages per conversation.
-- Maximum message text length.
-- Maximum memory count.
-- Maximum subjects per memory.
-- Maximum provenance links per memory.
-- Maximum evidence spans per source.
-- Maximum relationship count.
-- Maximum import-ledger retention.
-- Maximum total serialised dataset size.
-- Maximum backup size.
-
-Measurements must include representative conversation archives, not only the existing manual-entry benchmark.
-
-The existing CI Chromium results do not establish Android device performance or safe archive capacity.
-
-21. Evaluation requirements
-
-The implementation must be independently testable for:
-
-- Correct message author attribution.
-- Correct subject attribution.
-- Quoted-speaker attribution.
-- Preservation of original messages.
-- Candidate extraction quality.
-- Evidence completeness.
-- Memory lifecycle transitions.
-- Independent evidence-state transitions.
-- Temporal reasoning.
-- Supersession.
-- Contradiction handling.
-- Scope enforcement.
-- Audience enforcement.
-- Restriction inheritance.
-- Revocation.
-- Deletion.
-- Re-import suppression.
-- Duplicate import and retry behaviour.
-- Identity correction.
-- Backup and restore integrity.
-
-A high retrieval or answer score cannot compensate for a serious privacy, attribution, restriction or deletion failure.
-
-22. Decisions still requiring explicit review
-
-The following are not finalised by this document:
-
-1. The global identity-key model and whether it requires a separate identity domain.
-2. The exact relationship between message role, author kind and attribution class.
-3. Exact maximum record and archive sizes.
-4. Working-memory expiry and retention.
-5. Whether candidate memories can ever be automatically promoted to active.
-6. Exact policy-combination algorithm for memories with multiple sources.
-7. Exact deletion behaviour for retained derived memories.
-8. Privacy, retention and deletion rules for re-import suppression metadata.
-9. Exact backup envelope and integrity requirements.
-10. Exact migration and rollback transaction boundaries.
-11. Recovery-copy sanitisation and retention after deletion.
-12. Explicit reintroduction behaviour after a deliberate deletion.
-
-These must be resolved before this specification is approved as implementation-ready.
-
-23. Implementation boundary
-
-This specification is a design artefact only.
-
-It does not authorise:
-
-- Production code changes.
-- Live schema changes.
-- IndexedDB.
-- Local language models.
-- External AI services.
-- Paid services.
-- Cloud synchronisation.
-- Automatic access to other applications.
-- Replacing manual entries.
-- Replacing deterministic Ask.
-
-The next stage is a technical review of this specification, followed by migration, backup, recovery and acceptance design.
-
-Production implementation must remain blocked until those designs are complete and explicitly approved.
+Evidence quality, attribution, uncertainty and review status must be represented explicitly. A numerical score may be considered only after its meaning, calibration and evaluation method have been defined and tested.
 
 ---
 
-Current decision: Mopapa's target remains a local-first, evidence-grounded personal memory system. Original conversations, extracted memories, attribution, provenance, temporal history, governance and deletion must be represented separately and validated together. The live application remains unchanged.
+8. Canonical temporal representation and evidence spans
 
-
----
-
-24. Canonical technical resolutions
-
-This section resolves inconsistencies between earlier versions of this specification and the supporting architecture, data-model, identity, governance, deletion and backup documents.
-
-It takes precedence over any conflicting earlier statement in this document or its supporting reference documents.
-
-The following rules establish the canonical proposed implementation model. They do not independently authorise production implementation or a live schema migration.
-
-24.1 Canonical collections
-
-The proposed application data contains the existing domains:
-
-- "entries"
-- "learned"
-- "customRooms"
-- "ask"
-
-And exactly five additional personal-memory collections:
-
-- "conversations"
-- "messages"
-- "memories"
-- "memorySources"
-- "memoryRelations"
-
-No sixth collection is approved.
-
-In particular, no separate persistent import ledger, identity collection, dependency collection or search-index collection is authorised.
-
-Existing manually saved entries remain separate from extracted memories.
-
-24.2 Canonical temporal representation
+8.1 Temporal object
 
 Every memory uses one "temporal" object.
 
-The canonical structure is:
+Canonical structure:
 
 {
   "timeStatus": "known_interval",
@@ -1135,7 +571,7 @@ The canonical structure is:
   }
 }
 
-Each endpoint is either null or an object containing:
+Each endpoint is either "null" or an object containing:
 
 - "value"
 - "precision"
@@ -1160,31 +596,34 @@ Permitted precision values:
 
 Rules:
 
-- An exact instant uses ISO 8601 with an explicit timezone or UTC designator.
+- Exact instants use ISO 8601 with an explicit timezone or UTC designator.
 - Date-only information remains a date-only value.
 - A month or year must not be converted into an invented day.
-- Unknown values remain null.
-- An approximate value must not be represented as an exact instant.
+- Unknown endpoints remain "null".
+- Approximate information must not be represented as an exact instant.
 - "known_interval" requires both endpoints.
 - "known_start" requires a start endpoint.
 - "known_end" requires an end endpoint.
-- "unknown" requires both endpoints to be null.
-- Endpoint ordering must be validated when both endpoints are comparable.
-- Invalid or contradictory temporal data must not be silently normalised.
+- "unknown" requires both endpoints to be "null".
+- Endpoint ordering must be validated when endpoints are comparable.
+- Invalid or contradictory temporal information must not be silently normalised.
 
-This structure replaces nullable timestamp-only validity fields wherever they appear in earlier specifications.
+This structure replaces earlier timestamp-only validity fields.
 
 Message time, receipt time, record creation time, update time and memory recording time remain separate concepts.
 
-24.3 Canonical evidence spans
+8.2 Canonical evidence offset convention
 
-All source-text offsets use UTF-16 code units.
+All offsets into original message text use zero-based UTF-16 code units.
 
-Offsets are zero-based, inclusive at the start and exclusive at the end.
+- Start offsets are inclusive.
+- End offsets are exclusive.
+- The same convention must be used when creating, validating, highlighting, exporting and restoring evidence references.
 
-A located evidence span has this structure:
+A located span has this structure:
 
 {
+  "kind": "span",
   "textStart": 0,
   "textEnd": 24
 }
@@ -1195,32 +634,28 @@ A whole-message reference must be explicit:
   "kind": "whole_message"
 }
 
-A located span uses:
+Rules for a located span:
 
-{
-  "kind": "span",
-  "textStart": 0,
-  "textEnd": 24
-}
-
-A provenance record contains one or more evidence references using this structure.
-
-Rules:
-
-- A span must point into the original, unchanged message text.
-- Start and end must be integers.
+- Both offsets must be integers.
 - Start must be non-negative.
 - End must be greater than start.
-- End must not exceed the JavaScript string length of the original text.
-- The same UTF-16 convention must be used for creation, validation, highlighting, export and restore.
+- End must not exceed the JavaScript string length of the original message.
+- The span must point into the original, unchanged text.
+- Invalid spans must be rejected or explicitly reviewed.
+- Offsets must never be silently clamped.
 - Whole-message evidence must never be inferred from a missing span.
-- Invalid spans must be rejected or explicitly reviewed; they must not be silently clamped.
 
-24.4 Canonical provenance records
+Tests must include emoji, surrogate pairs, combining characters and other non-ASCII text.
 
-The "memorySources" collection records direct evidence relationships between memories and original messages.
+---
 
-Canonical structure:
+9. Provenance records
+
+9.1 Canonical structure
+
+The "memorySources" collection links a memory to original message evidence.
+
+Illustrative structure:
 
 {
   "id": "src_example001",
@@ -1239,6 +674,17 @@ Canonical structure:
   "createdAt": "2026-11-20T09:35:00.000Z"
 }
 
+Every provenance record requires:
+
+- A unique provenance ID.
+- An existing memory ID.
+- An existing message ID.
+- One permitted provenance relationship.
+- One or more explicit evidence references.
+- Source attribution.
+- A quoted-speaker reference or "null".
+- A creation timestamp.
+
 Permitted provenance relationships:
 
 - "supports"
@@ -1246,20 +692,7 @@ Permitted provenance relationships:
 - "qualifies"
 - "context_only"
 
-Every provenance record must include:
-
-- A unique provenance ID.
-- An existing memory ID.
-- An existing message ID.
-- One permitted relationship.
-- One or more explicit evidence references.
-- Source attribution.
-- A quoted-speaker reference or null.
-- A creation timestamp.
-
-"quotedSpeakerId", when non-null, must reference an annotation in the exact source message.
-
-Source attribution values are:
+Permitted source attribution values:
 
 - "user"
 - "assistant"
@@ -1268,23 +701,31 @@ Source attribution values are:
 
 Import origin is not an attribution value.
 
-A provenance relationship describes how the source relates to the memory claim. Its existence does not automatically make the memory supported.
+9.2 Provenance rules
 
-One memory/message pair has one provenance record. That record may contain multiple non-overlapping evidence spans.
+- Every provenance record must reference an existing memory and message.
+- A non-null "quotedSpeakerId" must reference an annotation in that exact source message.
+- Evidence references must use the canonical Section 8 structures.
+- One memory/message pair has one provenance record.
+- That record may contain multiple non-overlapping evidence spans.
+- If materially different parts of one message have different evidence relationships, use separate independently assessable memories rather than an ambiguous duplicate link.
+- One message may support or qualify multiple memories.
+- A memory may have multiple provenance records.
+- A provenance link does not automatically establish that the complete memory is supported.
+- Provenance attribution must be consistent with the original message and any explicitly resolved quoted-speaker annotation.
+- A deleted or revoked source must not continue to support ordinary retrieval.
 
-If different parts of one message have materially different evidence relationships, create separate independently assessable memories rather than creating ambiguous duplicate links.
+The relationship describes how the source relates to the memory claim. It does not by itself establish truth.
 
-A memory may have multiple source records. A message may support or qualify multiple memories.
+---
 
-This canonical structure replaces earlier definitions that allowed only "supports" or used message IDs directly as memory relationship evidence.
+10. Memory derivation and semantic relationships
 
-24.5 Canonical memory derivation metadata
+10.1 Derivation metadata
 
-Direct evidence and memory-to-memory derivation are different relationships.
+Every memory contains a "derivation" object.
 
-Every memory record must contain a "derivation" object.
-
-Canonical structure:
+Canonical direct-memory structure:
 
 {
   "kind": "direct",
@@ -1302,32 +743,30 @@ Permitted derivation kinds:
 
 Rules:
 
-- "direct" memories are derived from original message evidence and have no source memory IDs.
-- "derived" memories must reference one or more existing source memories.
-- "user_corrected" memories must retain traceable references to the prior interpretation and the evidence for the correction.
-- "consolidated" memories must reference every source memory materially used in the consolidation.
-- Source memory references must not be replaced by a summary or copied text.
+- "direct" memories derive from original message evidence and have no source memory IDs.
+- "derived" memories reference one or more existing source memories.
+- "user_corrected" memories retain traceable references to the prior interpretation and evidence for the correction.
+- "consolidated" memories reference every source memory materially used in the consolidation.
+- Source memory references must not be replaced by copied text or a summary.
 - Derivation dependencies must be traversable in both directions.
 - A derived memory must not become independent merely because it has been rewritten or summarised.
 - Dependency cycles are invalid.
-- Missing or malformed dependency references block affected retrieval and relevant destructive operations.
-- Derivation metadata must not grant broader permissions than its source material permits.
+- Missing or malformed dependencies block affected retrieval and relevant destructive operations.
+- Derivation metadata must not grant broader permissions than the source material permits.
 
-The exact permitted "method" values may expand as implementation capabilities are evaluated. No external AI or paid inference method is approved by this field.
+The exact permitted "method" values may expand only after the relevant extraction methods are evaluated. This field does not approve external AI or paid inference.
 
 Derivation metadata is embedded in "memories". It does not create another collection.
 
-24.6 Canonical semantic memory relationships
+10.2 Semantic memory relationships
 
 The "memoryRelations" collection is reserved for semantic relationships between memories.
 
-Permitted relationship types:
+Permitted types:
 
 - "supersedes"
 - "contradicts"
 - "related"
-
-A semantic relationship must not be used as a substitute for a derivation dependency.
 
 Canonical structure:
 
@@ -1347,18 +786,138 @@ Rules:
 - Both memory references must exist.
 - Self-references are invalid.
 - Duplicate semantic relationships are invalid.
+- "evidenceSourceIds" must reference existing "memorySources" IDs, not message IDs.
 - Supersession requires evidence that the newer memory updates the same underlying fact.
 - A later timestamp alone is insufficient.
 - The older memory remains available as historical information where permitted.
 - Contradictory memories must not be silently resolved.
 - Related memories require an identifiable reason.
 - Supersession cycles are invalid.
-- Evidence supporting a semantic relationship must use existing provenance IDs.
 - Deletion or revocation of relationship evidence requires reassessment of the relationship.
 
-"evidenceSourceIds" always refers to "memorySources" IDs. It must not contain message IDs.
+A semantic relationship is not a derivation dependency. The two must remain separate.
 
-24.7 Identity boundary
+---
+
+11. Lifecycle and evidence states
+
+11.1 Lifecycle states
+
+Permitted lifecycle states:
+
+- "candidate"
+- "active"
+- "historical"
+- "uncertain"
+- "dismissed"
+
+Definitions:
+
+- "candidate": extracted but not accepted as a usable memory.
+- "active": accepted for possible retrieval, subject to evidence, temporal and governance checks.
+- "historical": retained as previously applicable information.
+- "uncertain": meaning, attribution or truth cannot currently be established.
+- "dismissed": rejected by the user or an explicit review process.
+
+Deletion is an operation, not a lifecycle state. Do not retain an ordinary memory record with a "deleted" lifecycle state as a substitute for deletion.
+
+11.2 Evidence states
+
+Permitted evidence states:
+
+- "supported"
+- "partially_supported"
+- "unsupported"
+- "disputed"
+- "unverified"
+
+Definitions:
+
+- "supported": valid evidence supports the complete memory claim.
+- "partially_supported": some parts of the claim are supported but the complete claim is not.
+- "unsupported": no remaining valid evidence supports the claim.
+- "disputed": evidence conflicts and has not been resolved.
+- "unverified": evidence has not been adequately assessed.
+
+11.3 Independent validation
+
+Lifecycle and evidence state are independent dimensions.
+
+An "active" memory is not automatically eligible to be used as an established fact. Attribution, provenance, temporal validity and governance must also permit the requested use.
+
+A dismissed memory must not silently return to active status through ordinary extraction or re-import.
+
+A candidate must not be treated as an accepted memory.
+
+11.4 Lifecycle policy still requiring decisions
+
+The exact transition history representation, candidate acceptance criteria, mandatory confirmation categories and automatic-promotion policy remain unresolved.
+
+The initial implementation must not assume that every candidate can be promoted automatically.
+
+---
+
+12. Governance, scope, audience and permissions
+
+12.1 Purpose
+
+Governance determines whether a memory may be retrieved or used in a particular context.
+
+Governance must be evaluated before retrieval and before information is assembled into an answer or other context.
+
+A memory's existence in storage does not imply permission to use it.
+
+12.2 Required principles
+
+- Missing permission is not permission.
+- Unknown scope is not unrestricted scope.
+- Unknown audience does not permit disclosure.
+- Explicit denial overrides an allow.
+- Restrictions from multiple sources must be combined conservatively.
+- Derived memories must not receive broader permissions than their source evidence permits.
+- Revoked or deleted evidence must not remain usable through a derived memory.
+- Restriction provenance must be retained sufficiently to explain why a use was denied.
+- If a policy cannot be evaluated safely, exclude the information from that use.
+- Restrictions must not be bypassed through summaries, caches, indexes, exports or alternate retrieval paths.
+
+12.3 Proposed restriction vocabulary
+
+The existing proposed vocabulary includes:
+
+- "context_only"
+- "no_proactive_use"
+- "no_cross_context_reuse"
+- "no_inference"
+- "no_export"
+- "explicit_denial"
+- "other"
+- "unknown"
+
+A restriction may include a reason, source reference and creation timestamp. The exact field structure and validation rules must be finalised before implementation.
+
+12.4 Governance decisions still open
+
+The precise policy-combination algorithm is not settled.
+
+A worked decision table is required for:
+
+- Multiple sources with different permissions.
+- One source revoked while other sources remain.
+- Conflicting allow and deny rules.
+- User-confirmed interpretations.
+- Context-only information.
+- Cross-context retrieval.
+- Export and backup.
+- Summaries and derived memories.
+- Unknown or incomplete governance metadata.
+
+No implementation may treat a permissive default as a substitute for this decision.
+
+---
+
+13. Identity and attribution boundaries
+
+13.1 Initial identity model
 
 The initial implementation uses conversation-local participants only.
 
@@ -1368,43 +927,170 @@ Global identity resolution is deferred.
 
 Until a separately approved global identity model exists:
 
-- Participant "identityKey" must be null.
-- Subject "identityKey" must be null.
+- Participant "identityKey" remains "null".
+- Subject "identityKey" remains "null".
 - No cross-conversation identity matching is permitted.
 - No automatic identity merging is permitted.
 - A display name is not proof of identity.
-- Corrections must remain conversation-local and reversible.
-- Identity corrections must trigger reassessment of dependent memories and relationships.
+- Corrections remain conversation-local and reversible.
+- Identity corrections trigger reassessment of dependent memories and relationships.
 
-The initial implementation may distinguish unresolved, ambiguous and unknown identities. It must not use a "resolved" state to imply a global identity record that does not exist.
+13.2 Attribution rules
 
-24.8 Canonical lifecycle and evidence states
+The system must distinguish:
 
-Lifecycle states:
+- Who authored the original message.
+- Who is quoted within the message.
+- Who or what the memory concerns.
+- Where the message originated.
+- Which source evidence supports the memory.
 
-- "candidate"
-- "active"
-- "historical"
-- "uncertain"
-- "dismissed"
+These concepts must not be collapsed into one author or identity field.
 
-Evidence states:
+13.3 Correction history
 
-- "supported"
-- "partially_supported"
-- "unsupported"
-- "disputed"
-- "unverified"
+Identity corrections are embedded in the relevant participant's "identityHistory".
 
-These are independent dimensions.
+A correction must preserve enough information to identify the previous interpretation, the corrected interpretation, the reason, the supporting source references and the time of correction.
 
-Deletion is an operation, not a lifecycle state.
+The exact correction record structure and its retention policy require final review.
 
-An active memory is not automatically eligible for retrieval. Evidence, attribution, temporal validity and governance must also permit the requested use.
+A correction must not silently overwrite original message attribution or automatically merge all records sharing a name.
 
-A dismissed memory must not silently return through ordinary extraction or re-import.
+13.4 Deferred identity cases
 
-24.9 Canonical dependency and deletion rules
+The following require explicit evaluation and decision:
+
+- Nested quotations.
+- Compound claims involving multiple people.
+- Conflicting attribution.
+- Ambiguous pronouns.
+- Similar names.
+- A participant whose identity changes or is corrected.
+- A person mentioned in one conversation and appearing as a participant in another.
+
+Until resolved, uncertainty must remain explicit.
+
+---
+
+14. Candidate formation and memory governance lifecycle
+
+14.1 Separation of stages
+
+The system must distinguish:
+
+1. Original message preservation.
+2. Candidate formation.
+3. Candidate assessment.
+4. Acceptance or dismissal.
+5. Stored memory maintenance.
+6. Retrieval eligibility.
+
+These stages must not be collapsed into one automatic extraction-and-save operation.
+
+14.2 Candidate formation principles
+
+Candidate extraction should be conservative and evidence-grounded.
+
+The following must not silently become established personal facts:
+
+- Assistant suggestions.
+- Assistant-generated summaries.
+- Hypothetical statements.
+- Fictional statements.
+- Role-play content.
+- Questions that do not assert a fact.
+- Unclear quotations.
+- Statements whose speaker or subject is ambiguous.
+- Repetition without independent evidence.
+- Unsupported interpretations.
+
+A user confirmation may become a new source of evidence. It must not be misrepresented as though the original message had contained that confirmation.
+
+14.3 Candidate assessment
+
+Assessment must consider:
+
+- Message author.
+- Quoted speaker.
+- Memory subject.
+- Claim boundaries.
+- Supporting and refuting evidence.
+- Temporal information.
+- Scope and audience.
+- Permission and restrictions.
+- Existing memories and contradictions.
+- Whether the statement is hypothetical, fictional or uncertain.
+
+14.4 Acceptance and dismissal
+
+A candidate is not an accepted memory.
+
+The exact acceptance criteria, mandatory confirmation categories, user review workflow and permitted automatic-promotion rules remain open decisions.
+
+Dismissal must be respected by future ordinary extraction. The mechanism for reliably preserving that decision across re-import remains unresolved.
+
+14.5 Lifecycle and evidence independence
+
+A lifecycle transition does not automatically change the evidence state, and an evidence-state change does not automatically determine lifecycle.
+
+For example, a memory may become historical while remaining supported by its original evidence.
+
+The exact transition table and audit-history representation must be settled before implementation.
+
+---
+
+15. Retrieval eligibility and answer restrictions
+
+15.1 Retrieval gate
+
+A memory may be retrieved for a particular use only after evaluating:
+
+1. Lifecycle state.
+2. Evidence state.
+3. Source validity and provenance.
+4. Author and subject attribution.
+5. Temporal validity.
+6. Scope and audience.
+7. Permissions and restrictions.
+8. Revocation and deletion status.
+9. Derivation dependencies.
+10. Whether the claim is supported for the requested use.
+
+An "active" state alone is insufficient.
+
+15.2 Evidence-grounded use
+
+- Retrieved memories must remain traceable to source evidence.
+- Unsupported claims must not be presented as established facts.
+- Partially supported claims must not be expanded beyond the supported portion.
+- Disputed claims must not be silently resolved.
+- Historical information must not be presented as current without temporal support.
+- Assistant-generated content must not be represented as user-authored evidence.
+- A memory with invalid or missing critical references must be excluded.
+- Uncertain attribution must not be converted into certainty during answer generation.
+
+15.3 Fail-closed behaviour
+
+If provenance, identity, governance, temporal validity or dependency integrity cannot be evaluated safely, the affected memory must be excluded from the relevant retrieval.
+
+Restrictions must be checked before context assembly, not merely after an answer has been generated.
+
+Summaries, caches, indexes and alternate retrieval paths must obey the same restrictions.
+
+15.4 Ask boundary
+
+The existing deterministic Ask system remains in place.
+
+The proposed memory model may eventually provide additional evidence to Ask, but it does not authorise replacing Ask with an LLM or hosted inference service.
+
+Any future Ask expansion requires its own implementation stage, regression coverage and approval.
+
+---
+
+16. Deletion, revocation and dependency handling
+
+16.1 Dependency traversal
 
 Deletion and revocation must traverse both:
 
@@ -1413,13 +1099,16 @@ Deletion and revocation must traverse both:
 
 Semantic relationships in "memoryRelations" must also be reassessed when their endpoints or supporting provenance are affected.
 
+16.2 Required reassessment
+
 After source deletion or revocation:
 
 - Identify all direct dependencies.
 - Traverse all indirect derivation dependencies.
-- Recalculate remaining evidence.
+- Recalculate remaining valid evidence.
 - Recalculate applicable permissions and restrictions.
 - Reassess lifecycle and evidence states.
+- Reassess affected semantic relationships.
 - Invalidate affected retrieval representations.
 - Remove dependent information that cannot remain valid.
 - Retain a memory only when remaining permitted evidence independently supports its complete claim.
@@ -1428,110 +1117,458 @@ A memory must not be silently rewritten to survive deletion.
 
 A narrower replacement claim requires an explicit, evidence-grounded correction.
 
+16.3 Operation-specific requirements
+
+Deleting a memory
+
+- Remove the memory from the active dataset.
+- Remove its provenance links.
+- Remove its semantic relationships.
+- Remove affected derived index material.
+- Apply the approved re-import policy where the deletion represents a deliberate user decision.
+- Do not delete original messages merely because one derived memory is deleted.
+
+Deleting a message
+
+- Remove the original message from the active dataset.
+- Remove provenance links that reference it.
+- Reassess all dependent memories.
+- Reassess semantic relationships that depend on affected provenance.
+- Invalidate affected retrieval representations.
+- Do not claim dependent memories remain supported without checking their remaining evidence.
+
+Deleting a conversation
+
+- Identify affected messages and participants.
+- Traverse direct and indirect memory dependencies.
+- Reassess memories with independent supporting sources.
+- Reassess affected relationships.
+- Explain material consequences to the user before a destructive operation where the impact is not obvious.
+
+Revocation
+
+- Treat revocation as a permission change, not merely a status label.
+- Prevent prohibited uses even if the original source remains stored.
+- Propagate restrictions through derived memories.
+- Invalidate affected summaries, caches and indexes.
+- Reassess future imports and retrieval.
+
+16.4 Failure conditions
+
 If dependency traversal encounters a cycle, missing reference, malformed record or uncertain permission, affected retrieval must fail closed.
 
-Deleting a memory does not automatically delete its original messages.
+A destructive operation must not report success until its required postconditions have been verified.
 
-Deleting a message or conversation requires reassessment of all dependent memories.
+16.5 Deletion and recovery limitations
 
-Revocation blocks the uses that have been withdrawn, even if the original source remains stored.
+Deleting a live record does not automatically erase previously exported backups or files outside the application's control.
 
-24.10 Re-import and deletion suppression boundary
+The application must not claim to have erased external copies it cannot access.
 
-No sixth collection or import ledger is approved.
+Recovery copies may contain information that has since been deleted or revoked. Their retention, replacement, sanitisation and restoration policy remains a blocking decision.
 
-Where stable source identifiers exist, they should be used to identify previously processed material.
+---
 
-Where reliable source identity is unavailable:
+17. Re-import and deletion suppression
 
-- Text similarity alone must not establish identity.
-- Mopapa must not claim reliable deletion suppression.
-- Ambiguous re-import must require an explicit review process.
-- Ordinary import must not silently reverse a known deletion, dismissal or revocation.
-- Raw deleted message text must not be retained solely to identify a future import.
+17.1 Required behaviour
 
-The initial implementation must not claim complete re-import suppression until a privacy-reviewed mechanism has been approved and tested.
+Ordinary re-import or extraction must not silently reverse a deliberate deletion, dismissal or revocation decision.
 
-24.11 Canonical backup and migration rules
+The initial model contains five proposed personal-memory collections. No sixth collection or persistent import ledger is approved.
 
-Application schema version and backup format version are separate.
+17.2 Source identity
 
-The proposed schema version 2 remains inactive until explicitly approved.
+- Prefer stable source identifiers supplied by the original source.
+- Keep source identifiers separate from Mopapa-generated IDs.
+- Text similarity alone must not establish source identity.
+- Do not claim reliable duplicate detection when source identity is unavailable.
+- Do not retain raw deleted message text solely to recognise a future import.
+
+17.3 Ambiguous re-import
+
+Where the system cannot establish whether an import would reverse a prior deletion or revocation:
+
+- Do not silently recreate the affected information.
+- Do not claim that suppression is reliable.
+- Block the affected operation or require a separately designed explicit review process.
+- Do not treat similar wording as proof that two records are the same source.
+
+17.4 Dismissal and explicit reintroduction
+
+A dismissed candidate must not silently return as an accepted memory.
+
+A deliberate user instruction to reintroduce previously deleted information must be distinguishable from ordinary repeated import.
+
+The confirmation, retention and audit behaviour for explicit reintroduction remain unresolved.
+
+17.5 Suppression decision
+
+The minimum metadata, storage location, retention period, deletion behaviour, backup inclusion and restore behaviour remain unresolved.
+
+No import ledger, fingerprint scheme, sixth collection or alternative persistent suppression mechanism is approved.
+
+Raw deleted content must not be retained merely to make suppression easier.
+
+---
+
+18. Backup, restore and migration
+
+18.1 Version boundaries
+
+The live application remains on schema version 1 and uses the existing "mopapa.v1" storage key.
+
+The proposed schema version 2 is inactive.
+
+Application schema version and backup format version are separate concepts. A future backup envelope must identify them separately.
+
+18.2 Backup requirements
+
+A future complete backup must:
+
+- Include every required data domain, including empty collections.
+- Identify the application schema version.
+- Identify the backup format version.
+- Record export time.
+- Record app version where available.
+- Distinguish complete and scoped exports.
+- Identify excluded data where applicable.
+- Avoid unnecessary device, account or personal identifiers.
+- Validate its structure before restore.
+
+An integrity digest or checksum must not be described as encryption or proof of authenticity unless it actually provides those properties.
+
+The exact backup envelope and integrity mechanism remain unresolved.
+
+18.3 Restore requirements
+
+The default restore is complete, not silently partial.
+
+Before replacing active data:
+
+- Validate the backup envelope.
+- Validate supported schema and format versions.
+- Validate every required collection.
+- Validate every record.
+- Validate all cross-collection references.
+- Validate provenance, derivation and semantic relationships.
+- Validate governance and deletion-related constraints.
+- Check size and storage feasibility.
+- Secure and verify the required recovery copy.
+
+Malformed records or broken references must not be silently discarded while reporting a complete successful restore.
+
+An older application must refuse to write a newer unsupported schema as though it were compatible.
+
+18.4 Migration preflight
 
 A future migration must:
 
-1. Inventory the complete current dataset.
-2. Validate the existing schema.
-3. Preserve all existing manual entries and learning data.
-4. Construct the proposed replacement without modifying the active dataset.
-5. Validate every collection and cross-collection reference.
-6. Validate provenance, derivation, semantic relationships and governance.
-7. Create and verify a protected recovery copy.
-8. Commit the replacement using the approved storage transaction.
-9. Read back and validate the committed dataset.
-10. Confirm success only after verification.
-11. Provide a tested recovery path for failure.
+1. Inventory the complete source dataset.
+2. Validate the existing schema and all existing domains.
+3. Preserve "entries", "learned", "customRooms" and "ask".
+4. Check storage capacity and relevant conflicts.
+5. Check that the application can create and verify a recovery copy.
+6. Establish that the source dataset has not changed during preparation.
+7. Refuse to proceed if required preconditions cannot be secured.
 
-An older application must not open and save a newer unsupported schema as though it were compatible.
+18.5 Candidate construction and commit
 
-A malformed record or broken reference must not be silently discarded during a complete restore.
+A future migration must:
 
-Deletion and revocation decisions must not be undone by restoring an older backup.
+1. Construct the candidate dataset without modifying the active dataset.
+2. Initialise all five proposed collections.
+3. Validate all records and cross-collection references.
+4. Validate provenance, derivation, relationships and governance.
+5. Preserve every existing manual entry and learning domain.
+6. Check the candidate's serialised size and storage feasibility.
+7. Create and verify a distinct recovery copy.
+8. Commit only if the source remains unchanged and storage is writable.
+9. Read back the committed dataset.
+10. Parse and validate the read-back dataset.
+11. Update in-memory state only after verified success.
 
-The final backup envelope, format version, deletion-aware recovery-copy policy and migration transaction remain explicit pre-implementation decisions.
+18.6 Failure and rollback
 
-24.12 Storage and performance boundary
+If a write or read-back fails:
 
-The current application continues to use localStorage and schema version 1.
+- Inspect the actual stored state.
+- Do not assume rollback succeeded.
+- Do not report success.
+- Do not continue writes if the active state is uncertain.
+- Preserve the recovery copy.
+- Restore or recover only through a verified procedure.
+- Ensure interrupted operations cannot leave a mixed or partially migrated dataset reported as valid.
 
-No live schema change is implied by this specification.
+The current storage layer's best-effort rollback must not be described as an absolute database transaction.
+
+18.7 Post-migration verification
+
+A future migration must verify:
+
+- All five new collections.
+- All cross-collection references.
+- Existing manual entries.
+- Existing learned data.
+- Custom rooms.
+- Ask state and regression behaviour.
+- Backup export.
+- Restore validation.
+- Persistence after application reload.
+- Recovery behaviour.
+
+18.8 Deletion-aware backup policy
+
+Restoring an older backup must not silently undo a later deletion, dismissal or revocation.
+
+The reconciliation mechanism, recovery-copy sanitisation and failure policy remain unresolved. If reliable reconciliation cannot be provided, the restore must be refused or restricted under an explicitly approved policy.
+
+---
+
+19. Whole-dataset validation and failure handling
+
+19.1 Identifier integrity
+
+A valid dataset requires:
+
+- Every record ID to be non-empty.
+- IDs to be unique within the relevant collection or embedded parent.
+- Every reference to resolve to the correct record type.
+- Participant references to resolve within their parent conversation.
+- Message sequence numbers to be unique within their conversation.
+- No reference to depend on array position.
+
+19.2 Conversation and message integrity
+
+- Every message references exactly one existing conversation.
+- Participant references resolve within that conversation.
+- Quoted-speaker references resolve within that conversation and exact message.
+- Original message text remains unchanged by extraction.
+- Message ordering is deterministic.
+- Source identifiers remain distinct from Mopapa identifiers.
+
+19.3 Memory and provenance integrity
+
+- Every provenance record references an existing memory and message.
+- Every evidence reference is explicit and valid.
+- Every supported memory has sufficient valid evidence for its complete claim.
+- Unsupported memories cannot be treated as established facts.
+- Provenance attribution is consistent with source attribution.
+- Evidence spans are within the original message text under the UTF-16 convention.
+- No memory may claim support from deleted or revoked evidence.
+- Every memory has valid derivation metadata.
+- Every derivation dependency resolves.
+- Derivation cycles are rejected.
+
+19.4 Relationship integrity
+
+- Every semantic relationship references two distinct existing memories.
+- Every evidence reference resolves to a provenance record.
+- Duplicate relationships are rejected.
+- Supersession cycles are rejected.
+- Contradictory memories remain distinguishable.
+- Relationship validity is reassessed when endpoints or evidence change.
+
+19.5 Governance integrity
+
+- Missing permission does not grant permission.
+- Explicit denial overrides allow.
+- Unknown scope is not unrestricted scope.
+- Unknown audience does not permit disclosure.
+- Derived memories cannot broaden source permissions.
+- Governance is checked before retrieval and context assembly.
+- Deleted and revoked evidence is excluded from prohibited use.
+
+19.6 Temporal integrity
+
+- Known timestamps are valid.
+- Unknown timestamps remain null.
+- Temporal endpoint requirements match "timeStatus".
+- Comparable endpoints are correctly ordered.
+- Original time and import time remain distinct.
+- Historical facts are not automatically treated as current.
+- Date precision is not silently increased.
+
+19.7 Connected-dataset validation
+
+The five new collections must be validated as a connected dataset.
+
+The existing application's recovery-oriented handling of malformed legacy entries must not automatically be applied to new records where doing so could leave broken provenance, dependencies or governance.
+
+A malformed relationship or provenance record can change the meaning or safety of an otherwise valid memory.
+
+A complete restore must reject invalid connected data rather than silently dropping individual records.
+
+19.8 Error reporting
+
+An error should identify, where safe:
+
+- The affected collection.
+- The record identifier.
+- The failed validation rule.
+- Whether the operation was rejected.
+- Whether the previous data remains unchanged or its state is uncertain.
+
+Error messages must not expose unnecessary personal message content.
+
+---
+
+20. Storage and performance requirements
+
+20.1 Current storage boundary
+
+The live application currently uses localStorage and schema version 1.
+
+The current storage key is "mopapa.v1".
+
+No schema change is implied by this specification.
 
 IndexedDB remains a candidate, not an approved migration.
 
-Before archive-scale implementation is considered complete, performance testing must include:
-
-- Realistic conversation counts.
-- Realistic message counts.
-- Long messages.
-- Multiple provenance records per memory.
-- Memory derivation chains.
-- Search and retrieval workloads.
-- Backup and restore workloads.
-- Deletion and revocation workloads.
-- Storage quota and interrupted-write behaviour.
-- Actual Android browser performance.
+20.2 Measured performance
 
 Existing small-dataset benchmarks do not establish performance for a substantial conversation archive.
 
-24.13 Implementation approval boundary
+Before archive-scale implementation is considered complete, measure:
 
-The following remain outside approval until explicitly authorised:
+- Realistic conversation counts.
+- Realistic message counts.
+- Long message bodies.
+- Multiple provenance records per memory.
+- Memory derivation chains.
+- Relationship-heavy datasets.
+- Search and retrieval workloads.
+- Backup and restore workloads.
+- Deletion and revocation workloads.
+- Serialisation and parsing time.
+- Storage quota behaviour.
+- Interrupted-write behaviour.
+- Recovery-copy overhead.
+- Actual Android browser performance.
+
+20.3 Limits
+
+Do not invent maximum limits solely for convenience.
+
+The following require representative measurements:
+
+- Maximum conversation count.
+- Maximum messages per conversation.
+- Maximum message text length.
+- Maximum memory count.
+- Maximum subjects per memory.
+- Maximum provenance links per memory.
+- Maximum evidence spans per provenance record.
+- Maximum relationship count.
+- Maximum serialised dataset size.
+- Maximum backup size.
+
+The existing 5 MiB import limit must not be increased without measurements of archive size, serialisation, parsing, validation, storage quota, recovery-copy overhead and Android performance.
+
+20.4 Storage decision
+
+LocalStorage remains the current implementation decision.
+
+A future move to IndexedDB requires measured evidence that the existing storage approach is insufficient, a migration design, recovery safeguards, performance tests and explicit approval.
+
+---
+
+21. Evaluation requirements and unresolved decisions
+
+21.1 Required evaluation coverage
+
+The implementation must be independently evaluated for:
+
+- Message author attribution.
+- Subject attribution.
+- Quoted-speaker attribution.
+- Original message preservation.
+- Candidate extraction quality.
+- Evidence completeness.
+- Provenance integrity.
+- Derivation integrity.
+- Lifecycle transitions.
+- Independent evidence-state transitions.
+- Temporal precision and uncertainty.
+- Supersession.
+- Contradiction handling.
+- Scope and audience enforcement.
+- Restriction inheritance.
+- Identity correction.
+- Revocation.
+- Direct and indirect deletion.
+- Re-import behaviour.
+- Duplicate import and retry behaviour.
+- Backup and restore integrity.
+- Migration failure and recovery.
+- Retrieval eligibility.
+- Answer support and appropriate abstention.
+- Cache and index invalidation.
+
+Critical privacy, attribution, provenance, governance, deletion and restore failures are release blockers. They must not be averaged away by a high overall score.
+
+The evaluation document defines the test corpus and reporting method. This specification defines the technical properties that the evaluation must verify.
+
+21.2 Unresolved implementation-readiness decisions
+
+The following remain open and must not be represented as settled:
+
+1. Exact candidate acceptance and rejection criteria for each memory type.
+2. Mandatory user-confirmation categories.
+3. The exact user review, correction and dismissal workflow.
+4. Whether any candidate type may be automatically promoted to active.
+5. Working-memory expiry and retention.
+6. Historical memory retention policy.
+7. Dismissal suppression metadata and retention.
+8. Deletion suppression mechanism and its privacy implications.
+9. How recovery copies are sanitised or invalidated after deletion and revocation.
+10. How deletion decisions are reconciled with older backups and restores.
+11. Exact lifecycle transition history representation.
+12. Exact policy-combination algorithm for memories with multiple sources.
+13. Treatment of a memory when one source is revoked but other sources remain.
+14. Permitted uses of user-confirmed interpretations.
+15. Sensitive-information classification and handling.
+16. Retrieval policy for partially supported memories.
+17. Reliable invalidation of indexes, caches and summaries.
+18. Exact derivation dependency representation beyond the canonical embedded "sourceMemoryIds".
+19. Exact message role, author-kind and attribution validation combinations.
+20. Nested quotations, compound claims and attribution conflicts.
+21. Exact backup envelope and integrity requirements.
+22. Exact migration defaults for every new field.
+23. Strict restore validation and compatibility rules.
+24. Recovery-copy sanitisation and retention.
+25. Archive-size limits and Android device acceptance thresholds.
+26. Evaluation thresholds and release criteria.
+27. Any future global identity-resolution model.
+
+Each decision must be recorded in the appropriate master document, with its rationale, alternatives considered, consequences, tests and approval status.
+
+21.3 Approval gates
+
+The following require explicit approval before the corresponding work begins:
 
 - Production schema version 2.
 - A storage-key change.
 - IndexedDB migration.
 - Global identity resolution.
+- Any additional persistent collection.
 - External AI or hosted inference.
-- Paid services.
+- Paid services or recurring dependencies.
 - Cloud synchronisation.
 - Automatic access to other applications.
 - Replacement of deterministic Ask.
 - A wholesale application rewrite.
 
-The initial implementation must preserve the existing application and introduce the new capabilities in independently testable phases.
-
-24.14 Authority and conflict rule
-
-This document is the sole technical authority for proposed personal-memory record structures and validation rules.
-
-The product and architecture blueprint defines product intent and system boundaries.
-
-The build roadmap defines implementation order and acceptance criteria.
-
-Supporting research and historical specifications provide rationale, examples and traceability only. They must not introduce competing field definitions or implementation requirements.
-
-Where a supporting document conflicts with this specification, this specification takes precedence until the supporting document is reconciled or marked reference-only.
-
-No unresolved technical issue may be treated as approved merely because an example or earlier draft contains it.
+A documented proposal is not an implementation approval.
 
 ---
+
+Document maintenance rule
+
+This document should change only when a technical decision is resolved, a genuine inconsistency is discovered, a validation requirement changes, or verified implementation evidence requires an update.
+
+Do not recreate supporting specifications that repeat these definitions.
+
+Research rationale belongs in "personal-memory-research-review.md". Product direction belongs in "personal-memory-architecture.md". Implementation sequencing and verified progress belong in "personal-memory-build-plan.md". Evaluation fixtures and results belong in "personal-memory-evaluation.md".
+
+Current position: The five-collection personal-memory model is a proposed target. The live application remains on its existing schema and storage implementation. The record model is not permission to begin production changes. Implementation readiness must be established through the remaining decisions and approval gates in this specification and the build plan.
