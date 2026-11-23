@@ -31,7 +31,7 @@ This is a design specification. It does not establish that the proposed model is
 
 1.1 Authority hierarchy
 
-The six-document documentation structure has distinct responsibilities:
+The intended six-document target structure has distinct responsibilities:
 
 1. "docs/README.md" explains the documentation structure and current project position.
 2. "docs/personal-memory-architecture.md" defines product intent, principles, capabilities and system boundaries.
