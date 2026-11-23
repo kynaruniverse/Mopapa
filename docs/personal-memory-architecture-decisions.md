@@ -794,7 +794,11 @@ They do not approve:
 - Paid services or AI APIs.
 - Replacement of deterministic Ask.
 
-The exact record fields, validation rules, lifecycle transitions, enforcement implementation, migration behaviour and evaluation acceptance criteria remain to be completed and approved separately.
+The implementation-level record fields, identity and attribution rules, temporal semantics, lifecycle and evidence states, governance requirements, deletion operations and backup compatibility have now been drafted in dedicated specifications.
+
+These specifications remain subject to final cross-document review and explicit implementation-level approval. Their existence does not authorise production changes.
+
+The remaining unresolved decisions include deletion suppression, recovery-copy sanitisation, backup-format versioning, migration defaults and rollback acceptance, representative archive measurements, and complete evaluation fixtures and thresholds.
 
 ---
 
@@ -808,8 +812,8 @@ The approved direction is a local-first, evidence-preserving personal memory sys
 - Episodic, semantic and relational memory.
 - Explicit attribution, subject and provenance.
 - Temporal updates and contradiction handling.
-- Memory lifecycle and evidence states.
-- Scope and enforceable use restrictions.
+- Independent memory lifecycle and evidence states.
+- Scope, audience visibility and enforceable use restrictions.
 - Deterministic, evidence-grounded retrieval and answering.
 - User inspection, correction, restriction and deletion.
 
@@ -826,11 +830,19 @@ The approval does not authorise:
 - Automatic access to other applications.
 - Replacement of deterministic Ask.
 
-The current localStorage implementation remains in place while storage requirements are evaluated. A separate storage decision is required before any migration.
+The current localStorage implementation remains in place. The separate storage decision continues to favour localStorage until measured evidence justifies reconsideration.
 
-The phased build plan and permanent build log have now been reconciled with the approved logical data-model direction.
+The implementation-level specifications have been drafted and the documentation reconciliation programme is nearing completion. They remain subject to final review and explicit approval.
 
-The next task is to complete the remaining implementation-level design requirements before any production implementation is proposed.
+The remaining design-readiness work includes:
+
+1. Final cross-document record and schema review.
+2. Deletion suppression and recovery-copy sanitisation.
+3. Backup envelope and backup-format version decisions.
+4. Migration validation, defaults and rollback acceptance.
+5. Representative conversation-archive measurements.
+6. Evaluation fixtures and measurable acceptance thresholds.
+7. Definition and explicit approval of the first production implementation phase.
 
 Production implementation remains unauthorised.
 

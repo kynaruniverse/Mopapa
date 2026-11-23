@@ -688,3 +688,34 @@ Until the decision changes:
 - Do not present provisional performance targets as proven guarantees.
 
 **Final outcome: retain `localStorage` for the current development phase. Reconsider only when measured evidence or a genuine product requirement justifies the additional complexity of IndexedDB.**
+
+---
+
+## Personal-memory archive follow-up
+
+**Review date:** 23 November 2026
+
+The proposed personal-memory architecture introduces conversation, message, memory, memory-source and memory-relationship collections.
+
+These proposed collections increase the importance of measuring realistic archive workloads before making a storage decision.
+
+The existing benchmarks cover manual-entry datasets. They do not establish the performance or reliability of a large conversation archive with message provenance, relationships, governance metadata and recovery requirements.
+
+The following measurements remain outstanding:
+
+- Representative conversation and message counts.
+- Typical and upper-bound message sizes.
+- Provenance and relationship growth.
+- Serialisation and complete save time.
+- Initial load and validation time.
+- Search and retrieval latency.
+- Backup export and restore time.
+- Recovery-copy growth.
+- Quota and interrupted-write behaviour.
+- Real-device measurements on supported Android browsers.
+
+The current localStorage decision remains unchanged.
+
+IndexedDB remains a candidate for investigation, not an approved migration.
+
+No schema version 2 activation, storage-key change or second authoritative store is authorised by this follow-up.

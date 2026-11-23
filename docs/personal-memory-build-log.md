@@ -132,20 +132,21 @@ Main research conclusions
 Approved documentation programme
 
 Item| Status
-Extended research review| Completed, including 19 November verification addendum
-Permanent build log|Created and reconciled with the current design and build-plan direction
+Extended research review| Completed
+Permanent build log| Maintained; latest reconciliation entry pending
 Target architecture revision| Approved and documented
 Logical data-model revision| Approved and documented
-Participant identity and attribution direction| Documented in logical data model
-Scope, audience and use-policy direction| Documented in logical data model
-Module map alignment| Completed
-Phased build plan|Created and reconciled with latest data-model decisions
-Implementation-level schema| Outstanding; required before implementation
-Deletion, revocation and provenance specification| Outstanding at implementation level
-Storage workload and migration decision| Outstanding; requires measured workload review
-Backup, restore and rollback specification| Outstanding at implementation level
-Evaluation fixtures and acceptance thresholds| Defined in the build plan; require completion and review
-Architecture and plan consistency review|Completed; implementation-level design remains outstanding
+Participant identity and attribution specification| Drafted; cross-document review required
+Record and validation specification| Drafted; final approval outstanding
+Governance and lifecycle specification| Drafted; final approval outstanding
+Deletion, revocation and recovery specification| Drafted; suppression and sanitisation decisions outstanding
+Backup, restore and compatibility specification| Drafted; envelope and migration decisions outstanding
+Schema consistency review| Reconciled against subsequent specifications
+Implementation audit| Completed; existing production limitations documented
+Module map| Reconciled with current design sequence
+Phased build plan| Created; acceptance and approval gates retained
+Storage architecture| localStorage retained; representative archive measurements outstanding
+Evaluation fixtures and thresholds| Requirements defined; fixtures and thresholds still require completion
 Production implementation| Not authorised
 
 Current approved implementation boundary
@@ -601,50 +602,78 @@ Do not silently rewrite history.
 
 Current position
 
-The research review is complete.
+The target architecture direction and logical data-model direction were approved on 19 November 2026.
 
-The target architecture direction and logical data-model direction are approved.
+The implementation-level design programme has now produced dedicated specifications for:
 
-The phased engineering build plan has been created.
+- The proposed record model.
+- Identity, evidence attribution, provenance and temporal semantics.
+- Governance, lifecycle, retrieval eligibility and abstention.
+- Deletion, revocation, recovery and re-import protection.
+- Backup, restore and schema compatibility.
 
-The following documents form the current personal-memory design and planning set:
+The cross-document reconciliation has also updated the architecture, data model, architecture decisions, schema review, build plan, module map and implementation audit.
 
-- `docs/personal-memory-research-review.md`
-- `docs/personal-memory-architecture-decisions.md`
-- `docs/personal-memory-architecture.md`
-- `docs/personal-memory-data-model.md`
-- `docs/personal-memory-module-map.md`
-- `docs/storage-architecture.md`
-- `docs/personal-memory-build-log.md`
-- `docs/personal-memory-build-plan.md`
+The proposed logical data model contains five collections:
 
-The logical model now distinguishes original evidence, candidate extraction, stored memories, provenance, attribution, participant identity, memory subjects, temporal validity, scope, audience visibility, use permissions and retrieval governance.
+- conversations
+- messages
+- memories
+- memorySources
+- memoryRelations
 
-The architecture, data model, build plan and permanent build log have been reconciled to reflect the approved logical direction.
+No sixth top-level collection is approved. importLedger remains excluded pending a separate privacy and retention decision.
 
-The implementation-level schema, validation, lifecycle, deletion and revocation, storage, migration, backup and restore, governance enforcement and evaluation details remain outstanding.
+The proposed lifecycle states are candidate, active, historical, uncertain and dismissed.
 
-The next work is to complete the implementation-level design.
+The proposed evidence states are supported, partially_supported, unsupported, disputed and unverified.
 
-Outstanding design work includes:
+Deletion is an operation, not a lifecycle state.
 
-1. Exact record fields and validation rules.
-2. Participant identity and identity-correction behaviour.
-3. Candidate acceptance and lifecycle transitions.
-4. Evidence-span and provenance integrity.
-5. Temporal validity and contradiction rules.
-6. Deletion, revocation and restriction inheritance.
-7. Scope references and applicability.
-8. Audience visibility and permission evaluation.
-9. Governance enforcement before retrieval and context assembly.
-10. Backup, restore, migration and rollback compatibility.
-11. Measured storage workload and storage decision criteria.
-12. Complete evaluation fixtures and critical acceptance thresholds.
+These specifications remain proposed implementation-level designs. They do not authorise production implementation.
+
+Recent documentation reconciliation commits
+
+Commit: 55b2140cea2e59f223de7bafbf437f44b542d0a1
+
+Four documentation files changed. Core record, data-model, architecture and architecture-decision definitions were reconciled. Vercel succeeded. No GitHub Actions workflow run was returned.
+
+Commit: c9629706e3e433bd966dd9571685259f6a16d008
+
+Two documentation files changed. Corrected the proposed JSON example and aligned evidence terminology. Vercel succeeded. No GitHub Actions workflow run was returned.
+
+Commit: 6352685fd40e431bd77f31a03529bfe8877642d1
+
+Four documentation files changed. Reconciled governance, deletion, backup/restore and identity specifications. Vercel succeeded. No GitHub Actions workflow run was returned.
+
+Commit: 38bf22484baa666074842027b1f8a99a5356e67c
+
+Four documentation files changed. Updated the schema consistency review, build plan, module map and implementation audit. Vercel succeeded. No GitHub Actions workflow run was returned.
+
+These commits changed documentation only. They did not change production JavaScript, tests or the live storage schema.
+
+Remaining blockers
+
+1. Complete the final cross-document review of every proposed record field, enum, relationship and validation rule.
+2. Decide how deletion suppression can work without unnecessarily retaining prohibited personal information.
+3. Finalise recovery-copy sanitisation and retention behaviour.
+4. Decide the backup envelope and separate backup-format version.
+5. Finalise migration defaults, strict validation and rollback acceptance.
+6. Measure representative conversation archives, including save, load, search, backup and restore.
+7. Complete evaluation fixtures, expected outcomes and critical acceptance thresholds.
+8. Define the exact first production phase, affected files, tests, failure handling and rollback plan.
+9. Obtain explicit approval before production implementation.
 
 No production memory-ingestion module has been approved.
 
-No production schema change, IndexedDB migration, local model, external AI integration, paid service, cloud synchronisation, external sharing or third-party processing has been authorised.
+No production schema change, schema version 2 activation, IndexedDB migration, local model, external AI integration, paid service, cloud synchronisation, external sharing or third-party processing has been authorised.
 
-The existing application remains unchanged while this work is completed.
+The existing application remains the working baseline.
 
-The next milestone is completion and review of the implementation-level design, not production coding.
+Next milestone
+
+Complete the final implementation-readiness review and resolve the outstanding design decisions.
+
+The next milestone is an explicitly reviewed and approved first production phase, not automatic coding.
+
+The build log must continue to distinguish proposed, approved, implemented and verified work.

@@ -812,39 +812,49 @@ The original six requirements are insufficient. The target architecture should a
 
 The following concepts must not be collapsed into one status field.
 
-Historical
+Memory lifecycle
 
-A fact was true or reported at an earlier time but is no longer current.
+The proposed memory lifecycle contains five states:
 
-Superseded
+- Candidate: a proposed memory awaiting assessment.
+- Active: a memory eligible for use when its evidence and governance permit.
+- Historical: a memory that applies to an earlier period or has been superseded for a particular purpose.
+- Uncertain: a memory whose interpretation or evidential status requires caution.
+- Dismissed: a proposed memory rejected by the user.
 
-A later fact replaces an earlier fact for a particular purpose or period.
+Evidence state
 
-Disputed
+Evidence assessment is independent from lifecycle state.
 
-Available evidence conflicts or the user challenges the information.
+The proposed evidence states are:
 
-Unsupported
+- Supported.
+- Partially supported.
+- Unsupported.
+- Disputed.
+- Unverified.
 
-The available evidence does not establish the claim.
+Temporal validity
 
-Dismissed
+A fact may have been true at an earlier time but no longer be current.
 
-The user rejects a proposed extraction or memory.
+A later fact may supersede an earlier fact for a particular purpose or period. The original evidence and historical validity must not be silently overwritten.
 
-Revoked
+Governance and operations
 
-The user withdraws permission for the memory to be used.
+The following are not ordinary memory lifecycle states:
 
-Deleted
+- Revoked: permission to use information has been withdrawn.
+- Deleted: a deletion operation has removed information under the applicable deletion policy.
+- Restricted: information is subject to a limitation on permitted use or context.
 
-The user requests removal under the defined deletion policy.
+Deletion is an operation, not a lifecycle state.
 
-Restricted
+Revocation changes permitted use. It must not be confused with deletion.
 
-The information may only be used within a defined scope.
+Restriction is a governance rule, not evidence that a memory is false or inactive.
 
-These states have different implications for retrieval, retention, export and future ingestion.
+These distinctions have different implications for retrieval, retention, export, recovery and future ingestion. The detailed proposed rules are defined in the personal-memory governance and deletion specifications.
 
 12. Proposed evaluation framework
 
