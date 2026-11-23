@@ -384,9 +384,9 @@ Evaluation:
 
 The target architecture and logical data-model direction are approved. The initial implementation audit, detailed record specification, identity/evidence/temporal specification, governance specification, deletion/revocation specification and backup/restore compatibility matrix have been drafted.
 
-Documentation reconciliation is in progress. Production implementation remains unauthorised.
+The planned cross-document reconciliation batch was completed on 23 November 2026. The detailed implementation-readiness review remains outstanding. Production implementation remains unauthorised.
 
-Step 1: Complete cross-document reconciliation.
+Step 1: Cross-document reconciliation (completed 23 November 2026).
 
 Ensure the architecture, logical data model, record specification, identity specification, governance specification, deletion specification, backup matrix, build plan, module map, research review, storage decision and permanent build log describe the same current position.
 
@@ -445,6 +445,6 @@ It does not yet provide a persistent conversation archive, a general extracted-m
 
 The correct engineering approach is incremental extension, not a premature rewrite.
 
-The approved architecture and logical data-model direction are documented, and the phased build plan and implementation-level specifications have been drafted. The current task is to complete cross-document reconciliation and resolve the remaining implementation-readiness decisions before any production phase is proposed.
+The approved architecture and logical data-model direction are documented, and the phased build plan and implementation-level specifications have been drafted. The planned cross-document reconciliation has been completed. The current task is to conduct the detailed implementation-readiness review and resolve the remaining design decisions before any production phase is proposed.
 
 This module map describes the inspected implementation and proposed future ownership. It does not claim that future capabilities have been built.

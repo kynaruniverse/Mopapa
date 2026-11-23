@@ -832,7 +832,7 @@ The approval does not authorise:
 
 The current localStorage implementation remains in place. The separate storage decision continues to favour localStorage until measured evidence justifies reconsideration.
 
-The implementation-level specifications have been drafted and the documentation reconciliation programme is nearing completion. They remain subject to final review and explicit approval.
+The implementation-level specifications have been drafted and the planned documentation reconciliation programme has been completed. The specifications remain subject to detailed implementation-readiness review and explicit approval.
 
 The remaining design-readiness work includes:
 

@@ -133,7 +133,7 @@ Approved documentation programme
 
 Item| Status
 Extended research review| Completed
-Permanent build log| Maintained; latest reconciliation entry pending
+Permanent build log| Maintained; latest reconciliation recorded through 23 November 2026
 Target architecture revision| Approved and documented
 Logical data-model revision| Approved and documented
 Participant identity and attribution specification| Drafted; cross-document review required
@@ -652,9 +652,13 @@ Four documentation files changed. Updated the schema consistency review, build p
 
 These commits changed documentation only. They did not change production JavaScript, tests or the live storage schema.
 
+Commit: 35ab0719daabeee3b8d125d11867703480a93d49
+
+Four documentation files changed. Reconciled architecture decisions, research lifecycle terminology, the current build-log position and the storage architecture's personal-memory archive requirements. Vercel succeeded. No GitHub Actions workflow run was returned.
+
 Remaining blockers
 
-1. Complete the final cross-document review of every proposed record field, enum, relationship and validation rule.
+1. Complete the detailed field-by-field implementation-readiness review of every proposed record field, enum, relationship and validation rule.
 2. Decide how deletion suppression can work without unnecessarily retaining prohibited personal information.
 3. Finalise recovery-copy sanitisation and retention behaviour.
 4. Decide the backup envelope and separate backup-format version.
