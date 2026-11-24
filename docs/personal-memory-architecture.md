@@ -360,17 +360,22 @@ These boundaries may be reconsidered through documented decisions and the approv
 
 15. Document authority
 
-Mopapa's authoritative documentation is organised around three master documents.
+Mopapa's authoritative documentation is organised around six master documents.
 
-- "personal-memory-architecture.md" defines the product direction and architectural principles.
-- "personal-memory-record-specification.md" defines the canonical technical data and lifecycle requirements.
-- "personal-memory-build-plan.md" defines implementation stages, priorities, acceptance criteria and verification.
+- "README.md" provides the documentation entry point, reading order and current project position.
+- "personal-memory-architecture.md" defines product purpose, architectural principles, capabilities and boundaries.
+- "personal-memory-record-specification.md" defines the canonical technical record model, relationships, governance and validation requirements.
+- "personal-memory-build-plan.md" defines implementation stages, acceptance criteria, approval gates and verified progress.
+- "personal-memory-research-review.md" records supporting research, benchmark findings and architectural rationale.
+- "personal-memory-evaluation.md" defines evaluation requirements and preserves the existing Ask regression and diagnostic evaluation material.
 
-Supporting research and evaluation documents provide evidence and reference material. They do not independently authorise implementation or override the master documents.
+Supporting and historical documents are reference material. They must not create competing implementation authorities or override the six master documents.
 
-Where a technical requirement is involved, the record specification takes precedence over this architecture overview.
+Where a technical record requirement is involved, the record specification takes precedence over this architecture overview.
 
-Where implementation order or approval is involved, the build plan takes precedence.
+Where implementation order, acceptance or approval is involved, the build plan takes precedence.
+
+The research review explains the evidence behind the architectural direction. The evaluation document defines how existing and future capabilities are tested. Neither independently authorises implementation.
 
 16. Final architectural position
 

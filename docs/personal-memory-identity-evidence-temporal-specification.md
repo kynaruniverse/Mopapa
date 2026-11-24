@@ -115,7 +115,7 @@ Field| Type| Required| Rules
 "sourceParticipantId"| String or null| Yes| Original source identifier, if supplied.
 "kind"| Enum| Yes| "user", "assistant", "third_party", "system", "unknown".
 "displayName"| String or null| Yes| Display label only, maximum 200 characters.
-"identityStatus"| Enum| Yes| "unresolved", "identified", "ambiguous", "unknown".
+"identityStatus"| Enum| Yes| Initial model: "unresolved", "ambiguous" or "unknown". "identified" is reserved for a separately approved identity-resolution model.
 "identityKey"| String or null| Yes| Must remain null until a global identity model is approved.
 "identityHistory"| Array| Yes| Traceable correction history; initially empty.
 
@@ -134,9 +134,14 @@ Participant rules:
 
 Status| Meaning
 "unresolved"| A participant exists, but their real-world identity has not been established.
-"identified"| An explicit, reviewed identity resolution exists. Not permitted for global identity references until the identity model is approved.
 "ambiguous"| More than one plausible identity exists and the correct one is unresolved.
 "unknown"| The available source does not establish a usable identity.
+
+"identified" is not an allowed initial-model status. It is reserved for a future, separately approved identity-resolution model.
+
+"unresolved" and "unknown" are not interchangeable.
+
+A participant may be known to exist while their real-world identity remains unresolved.
 
 "unresolved" and "unknown" are not interchangeable.
 

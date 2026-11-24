@@ -370,6 +370,12 @@ An unknown author may use:
   "attribution": "unknown"
 }
 
+The proposed author kinds are:
+
+- "participant"
+- "system"
+- "unknown"
+
 The attribution classes are:
 
 - "user"
@@ -377,9 +383,34 @@ The attribution classes are:
 - "third_party"
 - "unknown"
 
+A system author may use:
+
+{
+  "kind": "system",
+  "participantId": null,
+  "attribution": "assistant"
+}
+
+An unknown author must use:
+
+{
+  "kind": "unknown",
+  "participantId": null,
+  "attribution": "unknown"
+}
+
+Author validation requirements:
+
+- A "participant" author must reference an existing participant in the same conversation.
+- A "system" author must have a null participant reference and "assistant" attribution.
+- An "unknown" author must have a null participant reference and "unknown" attribution.
+- Unsupported author kinds must be rejected.
+- A participant reference belonging to another conversation must be rejected.
+- A role and author combination that contradicts the original source must be rejected or retained as unresolved rather than silently rewritten.
+
 Import origin must never be used as an authorship value. An imported message may still have been written by the user.
 
-The valid combinations of message "role", "author.kind" and "author.attribution" require an explicit validation decision table before implementation. Invalid combinations must be rejected rather than guessed.
+The complete validation decision table for message "role", "author.kind" and "author.attribution" remains a pre-implementation requirement. These structural rules do not authorise an assumed mapping between source roles and authorship.
 
 6.3 Message invariants
 
@@ -394,7 +425,7 @@ The valid combinations of message "role", "author.kind" and "author.attribution"
 
 6.4 Quoted-speaker annotations
 
-Quoted-speaker annotations are embedded in the message.
+Quoted-speaker annotations are embedded in the message. They represent attribution within a message and must remain separate from message authorship and memory subjects.
 
 Illustrative structure:
 
@@ -405,21 +436,46 @@ Illustrative structure:
   "attribution": "third_party",
   "textStart": 0,
   "textEnd": 32,
-  "status": "unresolved"
+  "status": "unresolved",
+  "quotationType": "reported_speech"
 }
+
+Required fields:
+
+- "id": Unique within its message.
+- "participantId": Existing participant reference or null.
+- "speakerLabel": Descriptive source label or null, maximum 200 characters.
+- "attribution": "user", "assistant", "third_party" or "unknown".
+- "textStart": Inclusive UTF-16 start offset or null.
+- "textEnd": Exclusive UTF-16 end offset or null.
+- "status": "resolved", "unresolved", "ambiguous" or "unknown".
+- "quotationType": "direct_quote", "reported_speech", "paraphrase" or "uncertain".
+
+Quotation types:
+
+- "direct_quote": The original message explicitly quotes the represented speaker's words.
+- "reported_speech": The author reports what another person said without necessarily quoting exact words.
+- "paraphrase": The author restates another person's position in their own wording.
+- "uncertain": The source does not establish whether the statement is a quotation, report or paraphrase.
 
 Rules:
 
 - A quoted speaker is not automatically the author of the message.
-- A quoted-speaker participant reference, when present, must resolve within the exact source message's conversation.
+- A quoted speaker is not automatically a conversation participant.
 - A speaker label does not establish identity.
+- A quoted-speaker participant reference, when present, must resolve within the exact source message's conversation.
 - Unresolved or ambiguous speakers must not be assigned by guesswork.
-- Quoted text must be located in the original, unchanged message text.
+- A direct quotation is evidence that the original message contains the quotation, not independent proof that the quoted person made the statement.
+- Reported speech and paraphrases must not be represented as exact quotations.
+- Quoted text must be located in the original, unchanged message text where a reliable span exists.
 - Any explicit source-text correction requires affected offsets to be revalidated.
+- A quoted speaker's statement must not be treated as direct communication with Mopapa.
 
-The canonical offset convention is defined in Section 8.
+The canonical offset convention is defined in Section 8. Where a reliable span is unavailable, use the explicit whole-message evidence representation rather than inventing offsets.
 
-Nested quotations, compound claims and conflicting attribution require dedicated evaluation fixtures. Their complete interpretation rules are not yet settled.
+Nested quotations must not flatten multiple speakers into one attribution. If the attribution chain cannot be represented reliably, retain the report with unresolved attribution.
+
+Nested quotations, compound claims and conflicting attribution require dedicated evaluation fixtures before implementation.
 
 ---
 
