@@ -1441,6 +1441,83 @@ Restoring an older backup must not silently undo a later deletion, dismissal or 
 
 The reconciliation mechanism, recovery-copy sanitisation and failure policy remain unresolved. If reliable reconciliation cannot be provided, the restore must be refused or restricted under an explicitly approved policy.
 
+18.9 Schema compatibility requirements
+
+Schema compatibility describes whether an application can safely understand and process a dataset.
+
+The schema version does not establish that the dataset is valid. Every supported dataset must still pass complete structural, record, reference, provenance, temporal, governance and deletion-related validation.
+
+The current and proposed schema generations are:
+
+Schema version| Meaning| Current production support
+Unversioned / version 0| Supported legacy form of the existing application data| Accepted and normalised to version 1
+Version 1| Existing four-domain application schema| Supported
+Version 2| Proposed schema containing the five personal-memory collections| Not supported by current production code
+Version 3 or later| Future schema not yet defined| Unsupported until separately designed and implemented
+
+The intended application-to-backup schema compatibility is:
+
+Application schema| Backup schema 0| Backup schema 1| Backup schema 2| Backup schema 3+
+Version 1| Accept and normalise| Accept| Reject safely| Reject safely
+Version 2| Accept only through an explicitly implemented and tested migration| Accept only through an explicitly implemented and tested migration| Accept if fully supported| Reject safely
+Version 3| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only if fully supported
+
+This matrix records intended compatibility, not current implementation capability or authorisation.
+
+Version 1 to version 2 migration remains proposed and unauthorised.
+
+No future application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
+
+Schema version and backup format version must remain separate:
+
+- Schema version identifies the structure of application data.
+- Backup format version identifies the outer backup representation, envelope and integrity metadata.
+- A backup format version must not be substituted for the application schema version.
+- No final backup envelope or backup format version has been approved.
+- Backup-format compatibility requires a separate explicit design before implementation.
+
+18.10 Protection against older applications and unsupported data
+
+An application encountering a primary dataset with a schema version it does not support must:
+
+1. Refuse to reconstruct the dataset as an older schema.
+2. Refuse ordinary editing and saving against the unsupported dataset.
+3. Preserve the original stored data without modifying or discarding unknown collections.
+4. Explain that a compatible newer application version is required.
+5. Avoid automatic downgrade or conversion by dropping unsupported fields.
+6. Offer a recovery route only where it can be performed without modifying or endangering the unsupported primary data.
+
+An older application must never overwrite a newer primary dataset simply because its loader cannot understand that dataset.
+
+The same protection applies when importing a backup:
+
+- A newer unsupported schema must be rejected before the active dataset is modified.
+- Unknown collections must not be silently discarded.
+- Unsupported fields must not be silently removed during normalisation.
+- A failed compatibility check must not change the active dataset.
+- The user must receive an accurate explanation that the backup requires a compatible application version.
+
+A version number alone is not proof of compatibility or validity.
+
+Validation must also cover:
+
+- Required top-level fields and collections.
+- Record shapes and field types.
+- Identifier uniqueness.
+- Reference integrity.
+- Collection and size limits.
+- Lifecycle and evidence-state values.
+- Temporal values and precision.
+- Governance and use restrictions.
+- Deletion, dismissal and revocation constraints.
+- Any additional invariants required by the declared schema.
+
+A backup declaring schema version 2 but containing incomplete, malformed or internally inconsistent data must be rejected as an invalid backup.
+
+No automatic downgrade is permitted.
+
+Any future downgrade proposal would require a separate specification identifying every field and capability that would be lost, a tested conversion strategy, recovery safeguards and explicit informed user approval. It must not be introduced as an ordinary restore or migration option.
+
 ---
 
 19. Whole-dataset validation and failure handling
