@@ -1,14 +1,15 @@
-Mopapa Evaluation Specification
+# Mopapa Evaluation Specification
 
 Purpose: Define how Mopapa's existing deterministic Ask system and future Personal Memory Companion capabilities are evaluated.
 
 Status: Consolidated evaluation specification. Existing Ask regression coverage and the 50-question diagnostic corpus are documented separately. Future personal-memory evaluation remains to be implemented.
 
-1. Evaluation boundaries
+## 1. Evaluation boundaries
 
 Mopapa has several distinct evaluation responsibilities. They must not be combined into one misleading score.
 
-Evaluation area| What it checks
+| Evaluation area | What it checks |
+|---|---|
 Application regression| Existing application functionality continues to work.
 Ask regression| Existing deterministic retrieval, answer selection, clarification, abstention and source grounding remain correct.
 Ask diagnostic benchmark| Performance on a controlled 50-question dataset.
@@ -21,9 +22,9 @@ Critical privacy, attribution, provenance, permission, deletion and data-integri
 
 ---
 
-2. Existing deterministic Ask regression suite
+## 2. Existing deterministic Ask regression suite
 
-2.1 Purpose and principles
+### 2.1 Purpose and principles
 
 The existing Ask system is deterministic and source-backed. Its regression suite protects established behaviour.
 
@@ -39,7 +40,7 @@ Ask must:
 
 A correct-looking answer with an unrelated supporting source is a failure.
 
-2.2 Documented baseline
+### 2.2 Documented baseline
 
 The existing evaluation document records:
 
@@ -51,11 +52,11 @@ The existing evaluation document records:
 
 These figures describe the documented historical evaluation baseline. They must not be presented as a freshly verified current result without checking the relevant repository commit and CI run.
 
-2.3 Existing named regression tests
+### 2.3 Existing named regression tests
 
 The following catalogue records the existing 33 named tests. Do not recreate equivalent tests under different names.
 
-Grounding, abstention and typo handling
+### Grounding, abstention and typo handling
 
 1. "ask evaluation: realistic answers are grounded in their supporting memories"
    
@@ -72,7 +73,7 @@ Grounding, abstention and typo handling
    - Checks a misspelled query.
    - Requires the relevant suggested memory among the sources.
 
-Conflicts and ambiguity
+### Conflicts and ambiguity
 
 4. "ask evaluation: conflicting dates, recipients and costs require clarification"
    
@@ -103,7 +104,7 @@ Conflicts and ambiguity
     
     - Checks that an unspecified cost question clarifies when multiple saved amounts exist.
 
-Appointment history and date selection
+### Appointment history and date selection
 
 11. "ask evaluation: completed appointments do not override an upcoming appointment"
 12. "ask evaluation: a specific next recurring service selects the earliest upcoming occurrence"
@@ -118,7 +119,7 @@ Appointment history and date selection
 
 These cases cover upcoming versus completed appointments, recurring occurrences, rescheduling, historical questions and revision chronology.
 
-Money and cost history
+### Money and cost history
 
 21. "ask evaluation: direct cost questions exclude quotes, estimates, refunds and money received"
 22. "ask evaluation: latest, previous and original costs ignore quotes and estimates"
@@ -130,14 +131,14 @@ Money and cost history
 
 These cases cover confirmed costs, excluded financial statements, ambiguity and historical amounts.
 
-Location history
+### Location history
 
 28. "ask evaluation: newest location is determined by saved timestamp, not storage order"
 29. "ask evaluation: a newer location replaces the old location for the same item"
 30. "ask evaluation: explicit previous-location questions retrieve the older location"
 31. "ask evaluation: previous location selects the second-newest saved version"
 
-Incomplete and negated questions
+### Incomplete and negated questions
 
 32. "ask evaluation: punctuation and casing preserve equivalent grounded answers"
     
@@ -155,13 +156,14 @@ A separate regression test checks the intent classifier, including positive loca
 
 Neither direct test is included in the count of 33 tests explicitly labelled "ask evaluation:".
 
-2.4 Structured scenario format
+### 2.4 Structured scenario format
 
 New structured evaluation scenarios use "runAskEvaluationCase()" in "tests/run.js".
 
 Each case contains:
 
-Field| Purpose
+| Field | Purpose |
+|---|---|
 "id"| Stable scenario identifier
 "entries"| Saved memories supplied to Ask
 "question"| Exact user question
@@ -181,7 +183,7 @@ The shared runner checks the answer, expected behaviour category, source expecta
 
 The documented initial adoption covers grouped grounded-answer, clarification, abstention and typo-suggestion scenarios. Other specialist regression tests retain their existing direct answer and source-ID assertions. The source-support audit supplements rather than replaces those tests.
 
-2.5 What the existing suite demonstrates
+### 2.5 What the existing suite demonstrates
 
 The existing tests provide curated regression evidence for:
 
@@ -196,7 +198,7 @@ The existing tests provide curated regression evidence for:
 
 They do not establish a general percentage accuracy for real-world user questions.
 
-2.6 Existing measurement limitations
+### 2.6 Existing measurement limitations
 
 The documented evaluation reports 15 structured scenarios within five named tests:
 
@@ -221,9 +223,10 @@ Important limitations:
 
 Do not describe the existing results as general Ask accuracy.
 
-2.7 Regression evaluation metrics
+### 2.7 Regression evaluation metrics
 
-Metric| Current interpretation
+| Metric | Current interpretation |
+|---|---|
 Answer correctness| Expected-answer pattern checks are counted; this is not global semantic accuracy.
 False-positive rate| Not measured globally.
 Abstention rate| Not measured as a product rate.
@@ -236,9 +239,9 @@ Do not optimise answer rate at the expense of unsupported answers. A justified a
 
 ---
 
-3. Separate 50-note / 50-question Ask diagnostic benchmark
+## 3. Separate 50-note / 50-question Ask diagnostic benchmark
 
-3.1 Purpose and status
+### 3.1 Purpose and status
 
 This is a controlled diagnostic set for retrieval, answer extraction, source grounding, date handling, ambiguity and appropriate abstention.
 
@@ -250,7 +253,7 @@ This benchmark is separate from the existing 33-test Ask regression suite.
 
 It is not statistically representative of all user behaviour. Results must be reported as performance on this particular 50-question set, not as universal Ask accuracy.
 
-3.2 Benchmark pass rules
+### 3.2 Benchmark pass rules
 
 A question passes only when:
 
@@ -264,11 +267,12 @@ A question passes only when:
 
 A correct answer with an incorrect source is a failure.
 
-3.3 The 50 fictional saved memories
+### 3.3 The 50 fictional saved memories
 
 All timestamps are ISO 8601. "created" is the saved-memory timestamp. "when" is the scheduled date where applicable.
 
-ID| Room| Created| When| Saved memory
+| ID | Room | Created | When | Saved memory |
+|---|---|---|---|---|
 M01| notes| 2026-11-10| —| Mum said she loves the lemon drizzle cake from the Italian bakery on Station Road
 M02| wishlist| 2026-11-11| —| Buy Mum a green wool scarf for Christmas
 M03| ideas| 2026-11-16| —| Garden idea: build raised wooden beds along the back fence and add a small herb section
@@ -320,11 +324,12 @@ M48| wishlist| 2026-11-12| —| Need new walking shoes, size 9
 M49| notes| 2026-11-15| —| The hallway light bulb needs replacing
 M50| notes| 2026-11-16| —| Read about how lighthouse lenses work; this is unrelated to the saved lighthouse game idea
 
-3.4 The 50 evaluation questions
+### 3.4 The 50 evaluation questions
 
 "Answer" means a supported answer is expected. "Clarify" means the available information is genuinely ambiguous. "Abstain" means the dataset does not contain the answer.
 
-#| Question| Expected behaviour| Expected source
+| # | Question | Expected behaviour | Expected source |
+|---|---|---|---|
 1| What cake does Mum like?| Answer| M01
 2| What was that Italian bakery Mum mentioned?| Answer| M01
 3| What ideas have I saved for improving the garden?| Answer| M03, M34, M42
@@ -376,35 +381,35 @@ M50| notes| 2026-11-16| —| Read about how lighthouse lenses work; this is unre
 49| What household job did I save about the hallway?| Answer| M49
 50| What is my neighbour's dog's name?| Abstain| None
 
-3.5 Important benchmark distinctions
+### 3.5 Important benchmark distinctions
 
-Location recall
+### Location recall
 
 Question 26 must return the last recorded location, not claim to know where the card is now.
 
-Date and appointment recall
+### Date and appointment recall
 
 Questions 11, 19, 27, 30, 37 and 42 test different date behaviours. A previous appointment must not override a future one. Rescheduled dates must not be confused with original dates.
 
-Multi-source answers
+### Multi-source answers
 
 Questions 3 and 30 require more than one source. Returning only one relevant entry is incomplete.
 
-Answer extraction
+### Answer extraction
 
 Questions 7, 8, 9, 13, 28, 29, 31, 35 and 41 require extracting a particular value or relationship from a saved note.
 
-Abstention
+### Abstention
 
 Questions 20–25 and 50 have no supporting answer.
 
 Question 20 is particularly important: related proposals exist, but no saved memory establishes a final garden decision. Claiming that one proposal was chosen is a failure.
 
-Distractors
+### Distractors
 
 M35, M36, M43 and M50 are deliberate distractors. They contain related names or vocabulary but must not be returned as supporting evidence for unrelated questions.
 
-3.6 Benchmark readiness checklist
+### 3.6 Benchmark readiness checklist
 
 The original benchmark specification sets out these requirements:
 
@@ -423,13 +428,13 @@ These are benchmark requirements, not a claim that every item has been independe
 
 ---
 
-4. Future Personal Memory Companion evaluation
+## 4. Future Personal Memory Companion evaluation
 
 The 50-question Ask benchmark does not evaluate the proposed conversation and personal-memory architecture.
 
 The future system requires a separate evaluation programme. It must test the complete lifecycle, not merely whether a memory can be retrieved.
 
-4.1 Source ingestion and preservation
+### 4.1 Source ingestion and preservation
 
 Evaluate:
 
@@ -443,7 +448,7 @@ Evaluate:
 - Safe handling of repeated imports and retries.
 - No silent creation of duplicate source records.
 
-4.2 Candidate extraction
+### 4.2 Candidate extraction
 
 Evaluate:
 
@@ -459,7 +464,7 @@ Evaluate:
 
 A candidate must not be treated as an accepted memory merely because extraction produced it.
 
-4.3 Evidence and provenance
+### 4.3 Evidence and provenance
 
 Evaluate:
 
@@ -475,7 +480,7 @@ Evaluate:
 - Broken references and malformed provenance.
 - Whether the complete memory claim is supported, rather than only part of it.
 
-4.4 Temporal reasoning
+### 4.4 Temporal reasoning
 
 Evaluate:
 
@@ -491,7 +496,7 @@ Evaluate:
 - Prevention of invented date precision.
 - Correct handling of future, past and ongoing validity.
 
-4.5 Identity and attribution
+### 4.5 Identity and attribution
 
 Evaluate:
 
@@ -506,7 +511,7 @@ Evaluate:
 
 Global identity resolution is not approved. Evaluation must not assume that similar names or references establish a shared identity.
 
-4.6 Governance and permissions
+### 4.6 Governance and permissions
 
 Evaluate:
 
@@ -524,7 +529,7 @@ Evaluate:
 
 Unknown or disputed permission must not grant access.
 
-4.7 Lifecycle and memory quality
+### 4.7 Lifecycle and memory quality
 
 Evaluate:
 
@@ -543,7 +548,7 @@ Evaluate:
 
 Lifecycle state and evidence state must be evaluated independently.
 
-4.8 Deletion, revocation and re-import
+### 4.8 Deletion, revocation and re-import
 
 Evaluate:
 
@@ -574,7 +579,7 @@ Critical failure examples include:
 
 The application must not claim to erase external backup files it cannot access.
 
-4.9 Backup, restore and migration
+### 4.9 Backup, restore and migration
 
 Evaluate:
 
@@ -601,7 +606,7 @@ A restore must not silently discard malformed connected data and report complete
 
 A failed write must not be reported as a successful operation. If the actual stored state is uncertain, further writes must be blocked until it is verified.
 
-4.10 Retrieval and answering
+### 4.10 Retrieval and answering
 
 Evaluate:
 
@@ -623,9 +628,9 @@ The existing deterministic Ask baseline remains protected. A future expansion mu
 
 ---
 
-5. Evaluation fixture and test design
+## 5. Evaluation fixture and test design
 
-5.1 Fixture requirements
+### 5.1 Fixture requirements
 
 Future personal-memory fixtures should be:
 
@@ -640,7 +645,7 @@ Future personal-memory fixtures should be:
 
 Fixtures should include realistic combinations of records, not just isolated happy-path examples.
 
-5.2 Negative and adversarial cases
+### 5.2 Negative and adversarial cases
 
 Include cases involving:
 
@@ -668,7 +673,7 @@ Include cases involving:
 - Corrupt restore data.
 - Older application versions encountering newer schemas.
 
-5.3 Test placement and duplication control
+### 5.3 Test placement and duplication control
 
 Before adding any evaluation test:
 
@@ -684,9 +689,9 @@ The evaluation specification does not authorise changes to production code or te
 
 ---
 
-6. Reporting and release gates
+## 6. Reporting and release gates
 
-6.1 Report separate results
+### 6.1 Report separate results
 
 Reports must distinguish:
 
@@ -703,7 +708,7 @@ Reports must distinguish:
 
 Do not combine these into one headline percentage.
 
-6.2 Report failure categories
+### 6.2 Report failure categories
 
 At minimum, report:
 
@@ -723,7 +728,7 @@ At minimum, report:
 
 Where a result cannot be measured reliably, label it unmeasured rather than estimating it.
 
-6.3 Critical release blockers
+### 6.3 Critical release blockers
 
 The following are critical failures:
 
@@ -742,7 +747,7 @@ The following are critical failures:
 
 A high aggregate benchmark score cannot compensate for these failures.
 
-6.4 Thresholds remain unresolved
+### 6.4 Thresholds remain unresolved
 
 No final numerical accuracy threshold, minimum benchmark score, acceptable false-positive rate, or Android performance acceptance threshold is approved by this document.
 
@@ -750,9 +755,9 @@ Those thresholds require explicit decisions recorded in the build plan, supporte
 
 ---
 
-7. Evaluation maintenance and next work
+## 7. Evaluation maintenance and next work
 
-Existing Ask regression
+### Existing Ask regression
 
 - [x] Existing named regression suite catalogued.
 - [x] Structured scenario format documented.
@@ -771,7 +776,7 @@ The historical completion marks above describe the existing documented work. The
 - [ ] Confirm deterministic repeatability using the fixed reference clock.
 - [ ] Record the first complete benchmark result without changing existing regression expectations.
 
-Personal-memory evaluation
+### Personal-memory evaluation
 
 - [ ] Define the first end-to-end fictional conversation fixtures.
 - [ ] Define candidate extraction evaluation cases.
@@ -788,7 +793,7 @@ These are future evaluation tasks, not claims that the proposed personal-memory 
 
 ---
 
-8. Document authority and maintenance
+## 8. Document authority and maintenance
 
 This document defines evaluation methods, fixtures and reporting requirements.
 
