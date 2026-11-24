@@ -19,20 +19,29 @@ It defines:
 - The remaining decisions that genuinely block implementation.
 - The rules for recording completed work.
 
-The three master documents have distinct responsibilities:
+The six master documents have distinct responsibilities:
 
-1. "docs/personal-memory-architecture.md"
+1. "docs/README.md"
+   Documentation entry point, current project position and reading order.
+
+2. "docs/personal-memory-architecture.md"
    Product purpose, intended capabilities, architecture and non-negotiable boundaries.
 
-2. "docs/personal-memory-record-specification.md"
-   Canonical technical specification for records, fields, relationships, validation and data integrity.
+3. "docs/personal-memory-record-specification.md"
+   Canonical technical specification for records, fields, relationships, governance, validation and data integrity.
 
-3. "docs/personal-memory-build-plan.md"
-   Implementation order, acceptance criteria, approval gates and engineering history.
+4. "docs/personal-memory-build-plan.md"
+   Implementation order, acceptance criteria, approval gates and verified engineering history.
 
-The architecture document defines what Mopapa is intended to become. The record specification defines how its proposed information is represented. This roadmap defines how it will be built and verified.
+5. "docs/personal-memory-research-review.md"
+   Supporting research, benchmark findings, limitations and architectural rationale.
 
-Supporting research and historical specifications provide rationale and traceability. They are not competing implementation authorities.
+6. "docs/personal-memory-evaluation.md"
+   Existing Ask regression coverage, the separate 50-question diagnostic corpus and future personal-memory evaluation requirements.
+
+The README provides navigation. The architecture defines what Mopapa is intended to become. The record specification defines how its proposed information is represented. The build plan governs implementation and verification. The research review explains the evidence behind the direction. The evaluation document defines how quality and safety are measured.
+
+Supporting specifications and historical documents are reference material, not competing implementation authorities. Their unique useful requirements must be transferred and checked before they are retired.
 
 Where a conflict is discovered, record it as a specific issue and resolve it in the appropriate master document. Do not create another parallel specification.
 
@@ -174,9 +183,18 @@ These are proposed implementation rules, not claims about existing production be
 
 6. Remaining implementation-readiness decisions
 
-The documentation reconciliation programme was completed on 23 November 2026.
+The main cross-document technical reconciliation was completed on 23 November 2026.
 
-The remaining work is a finite implementation-readiness review, not another general documentation-discovery cycle.
+The wider documentation consolidation is still in progress. The six master documents are being established as the clear authoritative structure, and older supporting specifications must not be retired until their unique requirements have been transferred and checked.
+
+This is not a reason to restart completed research or reopen settled architectural decisions.
+
+The remaining work is a finite combination of:
+
+- Completing unique requirement transfers from the older specifications.
+- Aligning the master documents and removing contradictory status statements.
+- Completing the implementation-readiness decisions.
+- Verifying the evaluation and acceptance requirements.
 
 The following issues must be resolved or given an explicitly bounded implementation decision.
 
@@ -594,12 +612,18 @@ Verification:
 
 The target architecture direction and logical data-model direction are approved.
 
-The documentation reconciliation programme is complete.
+The main technical reconciliation work has been completed.
 
-The canonical technical specification has been consolidated and corrected.
+The six master documents are the intended authoritative documentation structure. Consolidation is still in progress because unique requirements from older supporting specifications must be transferred, checked and reconciled before those documents can be retired.
 
-The current task is to consolidate this roadmap and complete the finite implementation-readiness review.
+The canonical record specification now contains the expanded requirements for deletion transactions, recovery-copy safety and schema compatibility. Governance, candidate formation, evaluation traceability and remaining supporting specifications are being consolidated into the same authoritative structure.
 
-The next production milestone is not a wholesale rewrite. It is the smallest safe, independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
+The research direction remains based on the findings and limitations recorded in the research review. LoCoMo, LongMemEval, TimlMemBench and the other reviewed benchmarks inform the architecture, implementation stages and separate evaluation requirements. They do not independently authorise features or dependencies.
+
+The immediate next milestone is to finish the remaining documentation transfers and perform a final cross-document consistency audit.
+
+After documentation closure, complete the finite implementation-readiness review and establish the verified production baseline.
+
+The first production milestone remains the smallest safe, independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 
 No production implementation, schema version 2 activation, IndexedDB migration, external AI, paid services or cloud synchronisation is authorised until the relevant phase has been explicitly approved.

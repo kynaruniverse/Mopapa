@@ -895,23 +895,145 @@ The existing proposed vocabulary includes:
 
 A restriction may include a reason, source reference and creation timestamp. The exact field structure and validation rules must be finalised before implementation.
 
-12.4 Governance decisions still open
+12.4 Permission-combination requirements
 
-The precise policy-combination algorithm is not settled.
+Governance must be evaluated separately for every requested use.
 
-A worked decision table is required for:
+The proposed use permissions are:
 
-- Multiple sources with different permissions.
-- One source revoked while other sources remain.
-- Conflicting allow and deny rules.
-- User-confirmed interpretations.
-- Context-only information.
-- Cross-context retrieval.
-- Export and backup.
-- Summaries and derived memories.
-- Unknown or incomplete governance metadata.
+- "directAnswer"
+- "contextualAnswer"
+- "proactiveSurfacing"
+- "crossContextReuse"
+- "inference"
+- "export"
 
-No implementation may treat a permissive default as a substitute for this decision.
+Each permission has one of three values:
+
+- "allow"
+- "deny"
+- "unknown"
+
+Missing, invalid or unknown permission must be treated as denied for the disputed use.
+
+12.5 Scope and audience
+
+The proposed scope types are:
+
+- "personal"
+- "conversation"
+- "project"
+- "topic"
+- "event"
+- "relationship"
+- "other"
+- "unknown"
+
+Scope describes where information applies. It does not independently grant permission.
+
+The proposed audience types are:
+
+- "owner_only"
+- "named_audience"
+- "restricted_context"
+- "unknown"
+
+The initial default audience is "owner_only".
+
+Unknown scope must not be treated as unrestricted scope. Unknown audience must not permit disclosure.
+
+External sharing is not authorised.
+
+12.6 Conservative policy-combination algorithm
+
+For each requested use, a future implementation must apply the following sequence.
+
+1. Identify the requested use.
+2. Confirm that the memory exists and has valid references.
+3. Identify every materially supporting source.
+4. Collect applicable conversation-level, message-level and memory-level governance.
+5. Collect applicable restrictions, scope, audience and relevant user instructions.
+6. Evaluate the requested permission at every applicable level.
+7. Check source validity, deletion and revocation status.
+8. Check restrictions inherited through derived memories and relationships.
+9. Return either an explicit allow or deny decision.
+
+The combination rules are:
+
+- Any applicable explicit denial means deny.
+- Any unknown permission means deny.
+- Any missing or invalid permission means deny.
+- Any applicable restriction that prohibits the use means deny.
+- Scope and audience must satisfy every applicable constraint.
+- Every materially supporting source must be considered.
+- An unrestricted source must not cancel a restriction on another materially supporting source.
+- A memory-level permission must not broaden the permission of its supporting sources.
+- A derived memory must not gain permissions that its source evidence does not have.
+
+Only explicit permission at every applicable level can allow the requested use.
+
+If governance cannot be evaluated safely, the result must be deny.
+
+12.7 Policy-combination examples
+
+Source A|Source B|Memory policy|Result
+allow|allow|allow|Allow, if all other checks pass
+allow|deny|allow|Deny
+allow|unknown|allow|Deny
+deny|allow|allow|Deny
+allow|allow|deny|Deny
+allow|allow|unknown|Deny
+allow|missing|allow|Deny
+
+The most permissive source must never determine the result.
+
+12.8 Use-specific permission
+
+Permission for a direct answer does not imply permission for:
+
+- Proactive resurfacing.
+- Cross-context reuse.
+- Additional inference.
+- Export.
+
+Each requested use must be evaluated independently.
+
+12.9 Restriction changes and governance failure
+
+When a restriction is added or changed, a future implementation must:
+
+1. Identify affected memories.
+2. Identify dependent memories and relationships.
+3. Recalculate permitted uses.
+4. Invalidate prohibited derived indexes and cached context.
+5. Prevent future retrieval for denied uses.
+6. Preserve the permitted governance change history.
+7. Ensure future imports do not silently remove the restriction.
+
+If governance cannot be evaluated:
+
+- Exclude the memory from the requested use.
+- Do not pass it into answer context.
+- Do not use it as an unstated premise.
+- Do not expose it through a summary or alternate retrieval path.
+- Do not silently weaken the restriction.
+
+The user may be told that relevant information was excluded because its permission or scope could not be established, without unnecessarily disclosing the restricted content.
+
+12.10 Governance decisions still requiring approval
+
+The following implementation details remain unresolved:
+
+- Exact stored representation of permissions at each level.
+- Exact scope and audience reference rules.
+- Representation and retention of governance change history.
+- Treatment of user-confirmed interpretations.
+- Treatment of partially revoked memories with other valid sources.
+- Sensitive-information classification and handling.
+- Exact interaction between restrictions and backup or export.
+- Reliable invalidation of every derived index, cache and summary.
+
+The requirements above establish conservative behaviour. They do not approve a final storage representation or implementation algorithm.
 
 ---
 
@@ -990,45 +1112,141 @@ These stages must not be collapsed into one automatic extraction-and-save operat
 
 14.2 Candidate formation principles
 
-Candidate extraction should be conservative and evidence-grounded.
+Candidate extraction must be selective and evidence-grounded.
 
-The following must not silently become established personal facts:
+A candidate must preserve enough information to explain what was extracted and why.
 
-- Assistant suggestions.
-- Assistant-generated summaries.
+It must retain or reference:
+
+- Original conversation and message.
+- Message author.
+- Quoted or reported speaker where applicable.
+- Memory subject or subjects.
+- Exact supporting evidence span.
+- Proposed memory claim.
+- Proposed memory type and category.
+- Known temporal information and uncertainty.
+- Applicable scope, audience and restrictions.
+- Reason the information was considered potentially useful.
+- Extraction and assessment outcome.
+
+A candidate must remain distinguishable from an accepted memory.
+
+Original messages must remain unchanged by extraction.
+
+14.3 Candidate suitability and rejection
+
+Potentially suitable candidate information includes:
+
+- Stable personal preferences.
+- Confirmed recurring requirements.
+- Ongoing projects and commitments.
+- Meaningful personal events.
+- Clearly stated facts.
+- Explicit corrections.
+- Clearly identified relationships.
+- Tasks or plans with identifiable time or completion conditions.
+- Information the user explicitly asks Mopapa to remember.
+
+Potentially unsuitable information includes:
+
+- Greetings and ordinary conversational filler.
+- Incidental wording with no apparent future value.
+- One-off assistant suggestions.
+- Unconfirmed interpretations.
 - Hypothetical statements.
-- Fictional statements.
-- Role-play content.
-- Questions that do not assert a fact.
-- Unclear quotations.
-- Statements whose speaker or subject is ambiguous.
-- Repetition without independent evidence.
-- Unsupported interpretations.
+- Fictional or role-play information.
+- Temporary details with no apparent future relevance.
+- Ambiguous statements whose subject cannot be established.
+- Information prohibited from the intended use by governance.
 
-A user confirmation may become a new source of evidence. It must not be misrepresented as though the original message had contained that confirmation.
+A candidate must be rejected or withheld from promotion when:
 
-14.3 Candidate assessment
+1. Its source cannot be identified.
+2. Its evidence span is invalid.
+3. Its attribution contradicts the source.
+4. Its subject is incorrectly inferred.
+5. It is clearly hypothetical or fictional and not explicitly intended as a real memory.
+6. It is an assistant suggestion without user confirmation.
+7. Its meaning is too ambiguous to express without guessing.
+8. It has no valid supporting evidence.
+9. Its intended use is prohibited.
+10. It conflicts with an explicit dismissal or deletion decision.
+11. Its extraction would require inventing dates, identities or relationships.
+12. Its claim is broader than the original evidence supports.
 
-Assessment must consider:
+Rejection must not modify or destroy the original source.
+
+14.4 Candidate assessment
+
+Candidate assessment must consider:
 
 - Message author.
 - Quoted speaker.
 - Memory subject.
-- Claim boundaries.
-- Supporting and refuting evidence.
-- Temporal information.
+- Exact claim boundaries.
+- Supporting, refuting and qualifying evidence.
+- Temporal information and uncertainty.
 - Scope and audience.
-- Permission and restrictions.
-- Existing memories and contradictions.
-- Whether the statement is hypothetical, fictional or uncertain.
+- Permissions and restrictions.
+- Existing memories and possible contradictions.
+- Whether the statement is hypothetical, fictional, reported or uncertain.
+- Whether apparently independent evidence is genuinely independent.
+- Whether the claim can be expressed without adding unsupported information.
 
-14.4 Acceptance and dismissal
+A candidate may accurately represent what somebody said without establishing the truth of the statement itself.
 
-A candidate is not an accepted memory.
+For example, a user reporting that a colleague said an office would close establishes that the user reported the statement. It does not independently establish that the office will close.
 
-The exact acceptance criteria, mandatory confirmation categories, user review workflow and permitted automatic-promotion rules remain open decisions.
+A memory must preserve that distinction.
 
-Dismissal must be respected by future ordinary extraction. The mechanism for reliably preserving that decision across re-import remains unresolved.
+14.5 Automatic promotion boundaries
+
+The following table defines the proposed treatment. It does not authorise automatic promotion before the relevant implementation decisions and acceptance tests are approved.
+
+Candidate type|Proposed treatment
+Explicit request to remember a clear personal fact|Eligible for promotion after validation and governance checks
+Clear direct statement of a stable preference|Potentially eligible after attribution, duplication and governance checks
+Clear correction of an existing memory|Requires reconciliation with the existing memory
+Repeated consistent direct statements|Requires independent evidence assessment
+Single incidental personal statement|Candidate only unless a defined rule establishes sufficient value
+Assistant-generated suggestion|Not promotable without user confirmation
+Quoted third-party statement|Candidate only unless its intended meaning and permitted use are established
+Hypothetical or fictional statement|Not promotable as a real personal fact
+Ambiguous statement|Review or rejection
+Sensitive or restricted information|Subject to applicable governance and any mandatory review requirements
+
+Repetition alone does not establish truth or independent corroboration.
+
+The system must not introduce numerical confidence thresholds without a defined calibration method and evaluation evidence.
+
+Automatic promotion must never introduce additional facts that are not established by the source.
+
+14.6 User confirmation and dismissal
+
+User confirmation must be distinguishable from automatic extraction.
+
+Confirmation may establish that the user intends Mopapa to retain a particular interpretation.
+
+It does not necessarily establish the objective truth of every claim within that interpretation.
+
+A confirmation is a new source of evidence. It must not be represented as though the original message contained the confirmation.
+
+Dismissal must prevent ordinary extraction from silently recreating the rejected memory.
+
+The exact review interface, confirmation categories, suppression mechanism and retention policy remain unresolved.
+
+14.7 Lifecycle and evidence independence
+
+Lifecycle and evidence state remain independent.
+
+A lifecycle transition does not automatically change evidence state, and an evidence-state change does not automatically determine lifecycle.
+
+For example, a memory may become historical while remaining supported by its original evidence.
+
+A supported candidate is not automatically suitable for active retrieval.
+
+The final transition table, user review workflow and audit-history representation require explicit approval before implementation.
 
 14.5 Lifecycle and evidence independence
 
@@ -1085,6 +1303,51 @@ The existing deterministic Ask system remains in place.
 The proposed memory model may eventually provide additional evidence to Ask, but it does not authorise replacing Ask with an LLM or hosted inference service.
 
 Any future Ask expansion requires its own implementation stage, regression coverage and approval.
+
+15.5 Answer outcomes
+
+The answer layer must distinguish four possible outcomes:
+
+- Supported answer.
+- Qualified answer.
+- Clarification request.
+- Abstention.
+
+A supported answer must not exceed what the selected evidence establishes.
+
+A qualified answer must identify material uncertainty, historical context, reported information or incomplete support.
+
+A clarification request is appropriate when multiple materially different interpretations remain plausible and the user can resolve the ambiguity.
+
+Abstention is required when the available evidence cannot safely support the requested answer.
+
+15.6 Abstention conditions
+
+The system must abstain from presenting a claim as established when:
+
+- No valid supporting evidence exists.
+- The evidence does not support the requested specificity.
+- The memory is unsupported.
+- Material evidence remains disputed.
+- Attribution is materially uncertain.
+- Temporal validity cannot establish the requested current fact.
+- Governance denies the requested use.
+- Required permission is missing or unknown.
+- The relevant evidence has been deleted or revoked.
+- The answer requires an unsupported inference.
+- Critical provenance or dependency references cannot be validated.
+
+A high retrieval score or plausible answer must not override these conditions.
+
+15.7 Evidence explanation
+
+Where a memory-based answer is provided, the system should be able to identify the supporting source evidence.
+
+A source reference must genuinely support the associated claim.
+
+Citing a source that merely mentions the same subject is insufficient.
+
+The answer layer must not manufacture certainty, attribution or temporal precision that is absent from the evidence.
 
 ---
 

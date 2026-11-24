@@ -827,3 +827,101 @@ The technical specification defines what must be correct. This evaluation docume
 Do not duplicate the canonical data model or create a second implementation roadmap here.
 
 Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus are now documented together but remain separate evaluation assets. The future Personal Memory Companion requires its own end-to-end evaluation before implementation can be considered reliable. No production implementation or schema activation is authorised by this document.
+
+---
+
+## 9. External research benchmark crosswalk
+
+External benchmarks must inform Mopapa's evaluation design without being confused with existing Mopapa test results.
+
+They measure different capabilities and must remain separate evaluation tracks.
+
+| Research | Mopapa evaluation responsibility | Intended stage |
+|---|---|---|
+| LoCoMo | Single-hop, multi-hop, temporal, open-domain and adversarial long-term recall | Retrieval and answering |
+| LongMemEval Oracle | Evidence interpretation when relevant evidence is already supplied | Extraction and reasoning |
+| LongMemEval S | Retrieval across substantial histories containing relevant and irrelevant information | Retrieval |
+| LongMemEval M | Retrieval at larger history scale | Later scalability evaluation |
+| TimlMemBench | Write, revoke, supersede, preserve, scope, provenance, boundary, activation and proactive governance | Memory lifecycle and governance |
+| HaluMem | Extraction, updating and answering errors measured independently | Extraction, updating and answering |
+| HorizonBench | Preference evolution and belief updates across time | Temporal memory |
+| MemArena | On-device memory, multi-session recall and permission-aware use | Storage, retrieval and governance |
+| GroupMemBench | Speaker attribution, multi-party identity and knowledge updates | Evidence preservation and identity |
+| MemoryAgentBench | Incremental learning, long-range understanding and selective forgetting | Ingestion and lifecycle |
+| LoCoMo-Conv | Natural, implicit, composed and counterfactual conversational queries | Retrieval and conversational use |
+| LoCoMo-Plus | Retention and application of supported constraints, goals and values | Contextual retrieval |
+| BEAM | Very long-history retrieval and scalability | Later scalability evaluation |
+| MemoryArena agentic evaluation | Application of accumulated experience to later tasks | Later product evaluation |
+| DolphinBench | Capability, latency and resource-cost trade-offs | Later operational evaluation |
+
+### 9.1 LongMemEval separation
+
+The Oracle, S and M resources must not be treated as interchangeable.
+
+Oracle evaluation supplies the evidence so that interpretation and reasoning can be examined without retrieval being the primary variable.
+
+S and M evaluate retrieval over increasingly large histories.
+
+Mopapa must retain these as separate measurements.
+
+Do not combine Oracle, S and M into one score that hides whether a failure came from evidence interpretation or retrieval.
+
+### 9.2 Independent failure measurement
+
+Personal-memory evaluation must distinguish at least:
+
+1. Source capture failure.
+2. Original evidence preservation failure.
+3. Candidate extraction failure.
+4. Attribution or identity failure.
+5. Evidence and provenance failure.
+6. Memory update or supersession failure.
+7. Temporal reasoning failure.
+8. Governance or permission failure.
+9. Retrieval failure.
+10. Answer interpretation failure.
+11. Abstention failure.
+12. Deletion, revocation or re-import failure.
+13. Backup, restore or migration failure.
+14. Performance or resource failure.
+
+A correct final answer must not conceal an unsafe intermediate memory or governance failure.
+
+### 9.3 Evaluation sequence
+
+External benchmark work must follow implementation readiness.
+
+1. Preserve the existing deterministic Ask regression suite.
+2. Verify the existing 50-question diagnostic corpus separately.
+3. Create Mopapa-authored fictional fixtures for evidence preservation and attribution.
+4. Evaluate candidate extraction and rejection.
+5. Evaluate provenance, identity and temporal handling.
+6. Evaluate governance, restriction propagation and revocation.
+7. Evaluate deletion, re-import and recovery.
+8. Evaluate retrieval and answer grounding.
+9. Introduce relevant external benchmark subsets when the corresponding ingestion and evaluation interfaces exist.
+10. Evaluate large-history performance only after the underlying system can process representative archives.
+
+The LongMemEval Oracle subset must remain distinct from retrieval testing.
+
+LongMemEval S and M must not be claimed as completed until meaningful retrieval evaluation is possible.
+
+TimlMemBench governance cases must not be replaced by ordinary factual question answering.
+
+### 9.4 Benchmark limitations and permissions
+
+Before using an external dataset:
+
+- Inspect its licence.
+- Check redistribution and commercial-use conditions.
+- Check whether derivative fixtures are permitted.
+- Keep original benchmark material separate from Mopapa-authored tests.
+- Record dataset versions and source references.
+- Do not commit large datasets unnecessarily.
+- Never use real private conversation exports as public fixtures.
+
+Published benchmark scores are not direct proof of Mopapa performance.
+
+No numerical benchmark threshold, acceptable false-positive rate or Android performance threshold is approved by this section.
+
+Those thresholds require explicit decisions in the build plan and measured evidence.
