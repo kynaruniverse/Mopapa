@@ -1248,14 +1248,6 @@ A supported candidate is not automatically suitable for active retrieval.
 
 The final transition table, user review workflow and audit-history representation require explicit approval before implementation.
 
-14.5 Lifecycle and evidence independence
-
-A lifecycle transition does not automatically change the evidence state, and an evidence-state change does not automatically determine lifecycle.
-
-For example, a memory may become historical while remaining supported by its original evidence.
-
-The exact transition table and audit-history representation must be settled before implementation.
-
 ---
 
 15. Retrieval eligibility and answer restrictions

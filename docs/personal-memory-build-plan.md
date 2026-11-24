@@ -293,7 +293,7 @@ Purpose: Finish the finite readiness review and establish the verified productio
 
 Work:
 
-- Review the three master documents together.
+- Review the six master documents together.
 - Resolve the remaining decisions in Section 6.
 - Confirm supporting documents are reference-only.
 - Re-inspect the live repository and existing tests.
