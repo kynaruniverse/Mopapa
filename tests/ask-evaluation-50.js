@@ -4,7 +4,7 @@
 const fs = require('fs');
 
 module.exports = function loadAskEvaluationCorpus() {
-  const path = __dirname + '/../docs/ask-evaluation-corpus.md';
+  const path = __dirname + '/../docs/personal-memory-evaluation.md';
   const markdown = fs.readFileSync(path, 'utf8');
   const lines = markdown.split(/\r?\n/);
 
