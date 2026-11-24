@@ -50,6 +50,8 @@ The existing evaluation document records:
 - Ten negative location-question forms covered by a separate direct regression test.
 - A separate intent-classifier regression test covering location-question negation.
 
+Date-dependent Ask regression fixtures use a fixed, controlled test-harness clock. Clock control belongs in the test harness, not in the production Ask API.
+
 These figures describe the documented historical evaluation baseline. They must not be presented as a freshly verified current result without checking the relevant repository commit and CI run.
 
 ### 2.3 Existing named regression tests
@@ -227,13 +229,17 @@ Do not describe the existing results as general Ask accuracy.
 
 | Metric | Current interpretation |
 |---|---|
-Answer correctness| Expected-answer pattern checks are counted; this is not global semantic accuracy.
-False-positive rate| Not measured globally.
-Abstention rate| Not measured as a product rate.
-Appropriate abstention| Reports passing expected-abstention scenarios only.
-Source precision| Not measured globally.
-Clarification correctness| Reports passing expected-clarification scenarios only.
-Curated source support| Semantic source-support checks across the named regression tests.
+| Answer correctness | Expected-answer pattern checks are counted. This is not a global semantic accuracy measurement. |
+| False-positive rate | Not measured globally. The complete set does not classify every factual claim against ground truth. |
+| Abstention rate | Not measured as a product rate. The summary reports only the proportion of curated scenarios designed to abstain. |
+| Appropriate abstention | Reports passing expected-abstention scenarios. This is limited to the selected cases. |
+| Source precision | Not measured globally. Explicit semantic support checks cover the curated regression set, not a representative sample of real questions. |
+| Clarification correctness | Reports passing expected-clarification scenarios. This is limited to the selected cases. |
+| Curated source support | Reports semantic source-support checks across the named regression tests. The documented historical result was 64/64 returned sources across 33/33 named tests. |
+
+The test runner's evaluation summary reports structured scenarios passed and failed, expected behaviour coverage by category, expected-answer pattern assertions, expected source-ID assertions, selected clarification and abstention results, and semantic source-support checks.
+
+The 15 structured scenarios are not the complete 33-test evaluation set. Source-ID matching does not itself prove semantic support. Every structured scenario that returns sources has an explicit support predicate; the source-free question-without-subject case has no source to assess.
 
 Do not optimise answer rate at the expense of unsupported answers. A justified abstention is preferable to an invented fact.
 
@@ -677,7 +683,7 @@ Include cases involving:
 
 Before adding any evaluation test:
 
-1. Inspect "tests/run.js" and "tests/browser.js".
+1. Inspect `tests/run.js` and `tests/browser.js`.
 2. Search for equivalent existing coverage.
 3. Identify the precise uncovered behaviour.
 4. Add the smallest test that demonstrates the gap.
@@ -685,7 +691,19 @@ Before adding any evaluation test:
 6. Avoid duplicating an existing test under another name.
 7. Keep test-only controls out of production APIs wherever possible.
 
-The evaluation specification does not authorise changes to production code or test files.
+For new structured Ask scenarios:
+
+- Use `runAskEvaluationCase()` for answer, clarification, abstention and suggestion scenarios.
+- Include expected source IDs wherever an answer should be source-backed.
+- Use `exact`, `includes` or `none` source expectation modes according to the intended assertion.
+- Include competing or irrelevant memories where needed to test false positives.
+- Use the fixed evaluation clock for date-dependent cases.
+- Keep evaluation assertions independent of implementation details wherever possible.
+- Do not weaken an existing assertion merely to make a new case pass.
+
+Keep evaluation deterministic, local and dependency-free.
+
+The evaluation specification does not authorise changes to production code or test files. Do not replace the existing regression tests with a new framework or duplicate their scenarios.
 
 ---
 
