@@ -1167,6 +1167,124 @@ The application must not claim to have erased external copies it cannot access.
 
 Recovery copies may contain information that has since been deleted or revoked. Their retention, replacement, sanitisation and restoration policy remains a blocking decision.
 
+16.6 Deletion transaction requirements
+
+A future deletion or revocation operation must provide:
+
+- Atomic visibility of the primary dataset change.
+- Complete dependency assessment.
+- Consistent record references.
+- Safe retry behaviour.
+- Verified postconditions.
+- Recovery from interruption.
+- Fail-closed retrieval while the authoritative state is uncertain.
+
+Before changing the active dataset, the operation must:
+
+1. Validate the user's request.
+2. Resolve the target record.
+3. Identify the complete affected dependency set.
+4. Validate the references needed for the operation.
+5. Determine the expected changes.
+6. Identify affected indexes, summaries, caches and other derived representations.
+7. Identify relevant recovery copies.
+8. Check storage feasibility.
+9. Construct a proposed replacement dataset without modifying the active dataset.
+10. Validate the proposed dataset before committing it.
+
+The commit must:
+
+1. Apply the prepared changes to the primary dataset.
+2. Read back the stored result.
+3. Verify the required deletion or revocation postconditions.
+4. Verify that unrelated records remain intact.
+5. Validate the resulting dataset.
+6. Report completion only after the required checks pass.
+
+The transaction boundary must be explicit.
+
+Replacing the primary dataset does not automatically make previously exported files, recovery copies, browser backups or external copies part of the same transaction.
+
+16.7 Failure, retry and concurrent-operation handling
+
+If preparation fails:
+
+- The active dataset must remain unchanged.
+- The operation must not report success.
+- The user must receive an accurate failure explanation.
+
+If the primary commit fails:
+
+- The application must inspect the actual stored state.
+- A best-effort rollback must not be treated as proof of successful recovery.
+- If the authoritative state is uncertain, affected retrieval must remain blocked.
+- Ordinary operation must not resume until the state is safely established.
+
+If the primary dataset commits but secondary cleanup fails, the application must distinguish:
+
+- Primary dataset deletion.
+- Retrieval and cache invalidation.
+- Recovery-copy cleanup.
+- Other secondary cleanup.
+
+It must not claim that every copy has been removed while required cleanup remains incomplete.
+
+Repeated operations must be safe:
+
+- A completed deletion must not recreate the deleted record.
+- Retrying must not delete unrelated records.
+- Retrying must not create duplicate suppression metadata.
+- An already absent target must not automatically be treated as proof of successful deletion.
+- Repeated requests must not produce contradictory outcomes.
+
+The implementation must eventually distinguish a retry of an existing operation from a genuinely new operation. The exact stable operation identity and persistence mechanism remain unresolved.
+
+Concurrent operations must not overwrite one another's changes.
+
+The implementation must detect stale dataset versions and prevent an operation prepared against an older dataset from committing over a newer valid dataset.
+
+The exact transaction and concurrency mechanism must be selected against the existing storage architecture and measured device constraints.
+
+16.8 Recovery-copy inventory and sanitisation
+
+Deletion and revocation design must account for every location where affected information may remain.
+
+This includes:
+
+- The active dataset.
+- The most recent recovery copy.
+- Older retained recovery copies.
+- Temporary restore or migration data.
+- Exported backups created by Mopapa.
+- Future indexes, caches and summaries.
+- Future import staging areas.
+
+A recovery copy containing information that has subsequently been deleted or revoked must not be treated as an ordinary safe restore source.
+
+A future policy must explicitly select an appropriate treatment for each affected copy:
+
+- Sanitise the copy.
+- Replace it with a verified safe copy.
+- Remove it.
+- Retain it only under an explicitly justified and bounded policy.
+
+The following decisions remain unresolved:
+
+- Maximum number and age of retained recovery copies.
+- Whether deletion triggers immediate sanitisation.
+- Whether recovery copies are created before every write or selected operations.
+- How sanitisation failures are reported.
+- Whether minimal non-content deletion metadata may be retained.
+- How storage quota limitations affect deletion and cleanup.
+
+Any retained suppression metadata must avoid original message text, complete memory text, extracted summaries, sensitive quotations and unnecessary personal details.
+
+An opaque identifier must not automatically be considered anonymous because it may remain linkable to a person or source.
+
+Previously exported backups cannot be remotely erased by Mopapa. The application must explain that restoring an older external backup may reintroduce information unless a reliable deletion-aware reconciliation policy is available.
+
+If reliable reconciliation cannot be established, the affected restore must be refused rather than silently treated as safe.
+
 ---
 
 17. Re-import and deletion suppression
