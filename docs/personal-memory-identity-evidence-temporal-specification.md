@@ -143,10 +143,6 @@ Status| Meaning
 
 A participant may be known to exist while their real-world identity remains unresolved.
 
-"unresolved" and "unknown" are not interchangeable.
-
-A participant may be known to exist while their real-world identity remains unresolved.
-
 3.5 Future global identity requirements
 
 Before global identity references are enabled, a separate specification must define:
