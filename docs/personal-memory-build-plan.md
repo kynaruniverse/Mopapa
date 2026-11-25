@@ -612,18 +612,29 @@ Verification:
 
 The target architecture direction and logical data-model direction are approved.
 
-The main technical reconciliation work has been completed.
+The six master documents are established as the authoritative documentation structure:
 
-The six master documents are the intended authoritative documentation structure. Consolidation is still in progress because unique requirements from older supporting specifications must be transferred, checked and reconciled before those documents can be retired.
+1. README and navigation.
+2. Personal memory architecture.
+3. Canonical personal-memory record specification.
+4. Build plan and verified engineering record.
+5. Research review.
+6. Evaluation specification.
 
-The canonical record specification now contains the expanded requirements for deletion transactions, recovery-copy safety and schema compatibility. Governance, candidate formation, evaluation traceability and remaining supporting specifications are being consolidated into the same authoritative structure.
+The main technical requirements have been consolidated into the canonical record specification and evaluation document.
 
-The research direction remains based on the findings and limitations recorded in the research review. LoCoMo, LongMemEval, TimlMemBench and the other reviewed benchmarks inform the architecture, implementation stages and separate evaluation requirements. They do not independently authorise features or dependencies.
+The remaining older engineering documents are retained as historical or supporting references. Their existence does not create additional implementation authorities.
 
-The immediate next milestone is to finish the remaining documentation transfers and perform a final cross-document consistency audit.
+The final documentation task is to reconcile their unique historical information, correct outdated next-work instructions, and verify that references point to the appropriate master documents.
 
-After documentation closure, complete the finite implementation-readiness review and establish the verified production baseline.
+The historical storage architecture document records the current localStorage implementation and its measured limitations. Its localStorage decision applies to the existing production schema. It does not establish that localStorage will be sufficient for a future conversation archive.
 
-The first production milestone remains the smallest safe, independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
+The historical implementation audit and module map describe earlier inspected repository commits. They must not be treated as a current source-code inspection or current production baseline.
+
+The historical build log preserves earlier engineering decisions and activity. This build plan is the authoritative location for current verified progress and outstanding work.
+
+The next milestone after documentation closure is a finite implementation-readiness review. It must inspect the current repository, verify the complete proposed record model, resolve the remaining blockers, establish the production baseline and define the smallest safe first implementation phase.
+
+The first production milestone remains the smallest independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 
 No production implementation, schema version 2 activation, IndexedDB migration, external AI, paid services or cloud synchronisation is authorised until the relevant phase has been explicitly approved.

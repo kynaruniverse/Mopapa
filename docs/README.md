@@ -69,12 +69,21 @@ No production schema version 2, IndexedDB migration, external AI processing, pai
 
 ## Documentation maintenance
 
-These six documents are the intended master documentation structure.
+The six documents listed in the reading order above are the only master documents.
 
-Supporting specifications and historical documents should be retired from active use only after their unique useful content has been migrated into the appropriate master document and checked.
+The following retained documents are historical or supporting engineering references. They are not part of the primary reading path and must not create competing implementation instructions.
 
-Do not create new overlapping specifications, duplicate decision logs or parallel roadmaps. Update the relevant master document instead.
+- `personal-memory-architecture-decisions.md`: historical record of the 19 November architecture decision.
+- `personal-memory-implementation-audit.md`: historical inspection of the existing application at its recorded commit.
+- `personal-memory-module-map.md`: historical source-module and responsibility map. Its inspected commit is not the current repository baseline.
+- `storage-architecture.md`: supporting record of the existing localStorage implementation and its measured limitations.
+- `personal-memory-build-log.md`: historical engineering record. The current verified progress log is maintained in the build plan.
+- `personal-memory-schema-consistency-review.md`: completed historical reconciliation review.
 
-The build plan is the ongoing implementation and verification record. The research review is supporting evidence, not a second product roadmap.
+Other older specifications remain reference-only until their final unique-content and reference audit is complete.
 
-**Current status:** Documentation consolidation is in progress. Production implementation remains subject to the outstanding decisions and explicit approval gates in the build plan.
+The canonical technical authority is `personal-memory-record-specification.md`. The implementation sequence, current blockers, acceptance criteria and verified progress are governed by `personal-memory-build-plan.md`.
+
+Do not create new overlapping specifications, duplicate decision logs or parallel roadmaps. Transfer useful requirements into the appropriate master document and retire redundant references only after checking their unique content and links.
+
+**Current status:** The six-master-document structure is established. Final historical-document reconciliation and the implementation-readiness review remain outstanding. Production implementation remains subject to the explicit approval gates in the build plan.

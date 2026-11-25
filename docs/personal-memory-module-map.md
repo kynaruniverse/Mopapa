@@ -1,11 +1,19 @@
 Mopapa: Current Module and Architecture Mapping
 
-Status: Repository inspection completed
+Status: Historical repository inspection and module mapping.
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
 Inspected commit: "851008f01d3b61df9c94ef53771cb159606cecbe"
 Documentation alignment verified through commit: "85e67d64492159782f91dcf47c4ede6ece15c37d"
-Purpose: Map the existing implementation against "docs/personal-memory-architecture.md" before production changes.
+Purpose: Preserve the historical mapping of the existing implementation against "docs/personal-memory-architecture.md".
+Current authority: "docs/personal-memory-architecture.md", "docs/personal-memory-record-specification.md" and "docs/personal-memory-build-plan.md".
+Document role: Historical module map, not a current repository inspection or implementation instruction.
+
+The inspected commit is not the current repository baseline. The module descriptions and proposed ownership boundaries must be checked against the live repository before implementation.
+
+The implementation sequence and current readiness tasks are governed by the build plan. The canonical record specification governs technical data requirements.
+
+The step-by-step next-work sections in this historical map are retained as planning history. They are not the current task list and must not create a parallel roadmap.
 
 ---
 

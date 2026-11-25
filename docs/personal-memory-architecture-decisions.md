@@ -4,9 +4,11 @@ Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: main
 Decision record date: 19 November 2026
-Status: Approved target architecture direction; production implementation not authorised
+Status: Historical architecture decision record. The target architecture direction approved on 19 November 2026 remains the recorded decision.
 Decision date: 19 November 2026
 Implementation status: Documentation only. No production changes authorised.
+Current authority: "docs/personal-memory-architecture.md", "docs/personal-memory-record-specification.md" and "docs/personal-memory-build-plan.md".
+Document role: Historical decision rationale. Not a current implementation roadmap.
 
 ---
 
@@ -15,6 +17,12 @@ Implementation status: Documentation only. No production changes authorised.
 This document converts the findings in "docs/personal-memory-research-review.md" into proposed engineering decisions.
 
 It records the architectural direction derived from the research and approved on 19 November 2026. The detailed architecture and logical data-model specifications have subsequently been revised. This record does not authorise production implementation.
+
+The detailed technical definitions and later reconciliations are governed by the canonical record specification. Current implementation sequencing, unresolved decisions and approval requirements are governed by the build plan.
+
+Older recommendations and next-work sections in this decision record are historical. They must not override later reconciled decisions or be treated as current instructions.
+
+This file is retained to preserve the original decision rationale. Its useful decisions must not be discarded merely because the technical detail has since moved into the master documents.
 
 It must be read alongside:
 

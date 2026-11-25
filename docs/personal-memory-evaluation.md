@@ -553,7 +553,9 @@ Attributing an assistant or third-party statement to the user is a critical fail
 
 Global identity resolution remains unapproved.
 
-### 4.6 Evidence, provenance and temporal reasoning
+### 4.6 Cross-domain evidence and temporal integration fixtures
+
+This section tests combinations of evidence, provenance and temporal information across complete records. It complements the focused evidence and temporal checks in Sections 4.3 and 4.4 rather than creating a second independent list of basic field-validation tests.
 
 Evaluate:
 

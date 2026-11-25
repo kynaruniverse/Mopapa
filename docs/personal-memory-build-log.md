@@ -5,6 +5,15 @@ Repository: https://github.com/kynaruniverse/Mopapa
 Branch: main
 Log started: 19 November 2026
 
+Status: Historical engineering record retained for traceability.
+Current engineering record: "docs/personal-memory-build-plan.md"
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Document role: Preserve historical commits, decisions and verification evidence. Do not use historical next-work sections as the current task list.
+
+The build plan now contains the authoritative current position, outstanding blockers, implementation stages and verified progress.
+
+This file is retained to preserve its historical entries. Do not delete or rewrite past entries to make them appear consistent with later decisions. Where an old entry contains an outdated status or next step, the later build plan takes precedence.
+
 ---
 
 Purpose

@@ -1,9 +1,10 @@
 
 # Mopapa Storage Architecture Decision
 
-**Status:** Accepted  
+**Status:** Supporting storage decision for the existing production schema v1.  
 **Decision date:** 5 November 2026  
-**Scope:** Current personal-memory companion prototype
+**Scope:** Existing localStorage implementation and its measured behaviour  
+**Current authority:** `docs/personal-memory-architecture.md`, `docs/personal-memory-record-specification.md` and `docs/personal-memory-build-plan.md`
 
 ## Decision
 
@@ -12,6 +13,14 @@ Retain browser `localStorage` as Mopapa's primary persistence mechanism for the 
 Do not migrate to IndexedDB simply because it is a more capable browser database. Reconsider the decision when measured performance, reliability requirements, or product capabilities provide a concrete reason to do so.
 
 This is a deliberate decision to avoid introducing migration complexity without a demonstrated benefit.
+
+This decision remains applicable to the existing production application and its current storage key.
+
+It does not establish that localStorage is suitable for every future conversation-archive workload. The existing benchmarks measure the entry-based application model and must not be presented as proof of archive-scale capacity or real-device Android performance.
+
+The canonical record specification defines future storage, compatibility, recovery and validation requirements. The build plan defines when representative archive measurements and any storage reconsideration are required.
+
+This document preserves detailed evidence about the existing storage implementation. It is a supporting engineering reference, not a separate product roadmap or authority to introduce a new storage mechanism.
 
 ## Current implementation
 

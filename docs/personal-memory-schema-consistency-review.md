@@ -1,9 +1,11 @@
 Mopapa: Personal Memory Schema Consistency and Decision Review
 
 Date: 20 November 2026
-Status: Historical review completed; findings reconciled by subsequent specifications through 22 November 2026. See section 21 for the current position.
-Product: Personal Memory Companion
-Repository: https://github.com/kynaruniverse/Mopapa
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Current implementation and approval authority: "docs/personal-memory-build-plan.md"
+Document role: Completed historical reconciliation review. Not a separate specification or current roadmap.
+
+Section 21 records the reconciliation position at the time of its update. The canonical record specification and build plan take precedence wherever subsequent work has refined or changed those findings.
 
 1. Purpose
 
