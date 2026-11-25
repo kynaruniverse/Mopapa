@@ -1,9 +1,20 @@
 Mopapa: Memory Governance, Lifecycle and Evidence Decision Specification
 
-Status: Proposed foundational specification. Pending review and explicit approval.
+Status: Historical supporting specification retained during documentation consolidation.
 Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Canonical evaluation authority: "docs/personal-memory-evaluation.md"
 Implementation status: Design only. No production changes authorised.
+Document retirement: Pending final unique-content and reference audit.
+
+This document preserves the detailed candidate formation, evidence assessment, lifecycle, governance and retrieval design history.
+
+The canonical record specification takes precedence wherever technical definitions differ. The evaluation master contains the consolidated test and evaluation catalogue.
+
+The next-work sections in this historical document are not current implementation instructions. Current sequencing and outstanding work are maintained in "docs/personal-memory-build-plan.md".
+
+This document is retained until its remaining unique requirements and references have been audited. It does not independently authorise implementation.
 
 Prerequisites
 

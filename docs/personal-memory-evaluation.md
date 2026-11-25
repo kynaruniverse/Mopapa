@@ -502,7 +502,7 @@ Evaluate:
 - Prevention of invented date precision.
 - Correct handling of future, past and ongoing validity.
 
-### 4.5 Identity and attribution
+### 4.5 Identity, authorship and attribution
 
 Evaluate these dimensions independently:
 
@@ -511,9 +511,9 @@ Evaluate these dimensions independently:
 - Memory subject attribution.
 - Conversation-local participant identity.
 - Real-world identity uncertainty.
-- Identity correction and its dependent records.
+- Identity correction and dependent-record reassessment.
 
-Required fictional evaluation fixtures:
+Required fictional fixtures:
 
 - User speaking about themselves.
 - User speaking about a partner or family member.
@@ -525,23 +525,23 @@ Required fictional evaluation fixtures:
 - Reported speech without an exact quotation.
 - Paraphrased speech.
 - A quotation whose speaker is unknown.
-- Nested quotations involving more than one speaker.
-- An imported conversation containing multiple participants.
+- Nested quotations involving multiple speakers.
+- Multiple participants in an imported conversation.
 - Different participants sharing the same display name.
 - One participant using different labels within the same conversation.
 - Similar names appearing in separate conversations without established identity.
 - Missing author metadata.
-- Source role and structured author attribution that contradict each other.
+- Source role contradicting structured author attribution.
 - A participant reference belonging to another conversation.
 - Ambiguous pronouns and conflicting subject references.
 - Identity correction after dependent memories have been extracted.
 - Deletion or revocation of evidence supporting an identity decision.
 
-The evaluation must verify that:
+Verify that:
 
 - Message author and memory subject are never automatically treated as the same identity.
 - Quoted speakers are not automatically treated as message authors.
-- A reported statement is not treated as independent proof that the reported claim is true.
+- Reported statements are not independent proof that the reported claim is true.
 - Unknown attribution remains unknown.
 - Conversation-local participant identity does not imply global identity.
 - Identity corrections trigger reassessment of dependent memories and relationships.
@@ -551,122 +551,332 @@ A correct answer about the wrong person is a critical failure.
 
 Attributing an assistant or third-party statement to the user is a critical failure.
 
-Global identity resolution is not approved. Evaluation must not assume that similar names or references establish a shared identity.
+Global identity resolution remains unapproved.
 
-### 4.6 Governance and permissions
-
-Evaluate:
-
-- Missing permission.
-- Explicit denial overriding an allow.
-- Scope restrictions.
-- Audience restrictions.
-- Use restrictions.
-- Permission inheritance through derived memories.
-- Multiple sources with different permissions.
-- Revocation.
-- Restrictions applied before retrieval and context assembly.
-- Restrictions across summaries, caches and indexes.
-- Prevention of derived memories broadening source permissions.
-
-Unknown or disputed permission must not grant access.
-
-### 4.7 Lifecycle and memory quality
+### 4.6 Evidence, provenance and temporal reasoning
 
 Evaluate:
+
+- Direct supporting evidence.
+- Refuting evidence.
+- Qualifying evidence.
+- Context-only evidence.
+- Multiple independent sources.
+- Several memories supported by one message.
+- One memory supported by several messages.
+- Missing or invalid provenance references.
+- Duplicate provenance relationships.
+- Deleted or revoked evidence.
+- Evidence spans against unchanged original messages.
+- Compound claims with different evidence.
+- Contradictory claims.
+- Corrections to previously extracted information.
+
+Required temporal fixtures:
+
+- Exact UTC timestamp.
+- Timestamp with an explicit offset.
+- Date-only information.
+- Month-only information.
+- Year-only information.
+- Approximate dates and intervals.
+- Unknown time.
+- Known start with unknown end.
+- Known end with unknown start.
+- Invalid start and end ordering.
+- Relative dates with known source timestamps.
+- Relative dates with unknown source timestamps.
+- Historical information after supersession.
+- Timezone information supplied by the source.
+- Missing timezone information.
+
+Required Unicode evidence-span fixtures:
+
+- Basic ASCII.
+- Emoji represented by surrogate pairs.
+- Combining characters.
+- Accented characters.
+- Non-Latin scripts.
+- Mixed Unicode and punctuation.
+- Invalid negative and out-of-range offsets.
+- Empty spans.
+- Incorrect substring boundaries.
+
+Verify that:
+
+- UTF-16 offsets use inclusive starts and exclusive ends.
+- The same offset convention is used for extraction, validation and highlighting.
+- Import time is not substituted for event time.
+- Recording time is not substituted for validity time.
+- Approximate dates are never presented as exact.
+- Original timestamps and original message text are not rewritten.
+- Context-only and refuting sources never establish support.
+- Evidence-state assessments reflect all relevant remaining provenance.
+
+### 4.7 Candidate formation, lifecycle and memory quality
+
+Evaluate candidate suitability and rejection.
+
+Required fixtures:
+
+- Explicit request to remember a clear personal fact.
+- Stable personal preference.
+- Confirmed recurring requirement.
+- Ongoing project or commitment.
+- Meaningful personal event.
+- User-confirmed relationship.
+- Incidental conversational detail.
+- Ordinary conversational filler.
+- Assistant suggestion without user confirmation.
+- Hypothetical statement.
+- Fictional or role-play statement.
+- Ambiguous statement.
+- Incorrectly inferred subject.
+- Invalid evidence span.
+- Unsupported claim broader than the original evidence.
+- Candidate conflicting with an explicit dismissal or deletion decision.
+
+Evaluate lifecycle behaviour:
 
 - Candidate creation.
+- Candidate rejection.
 - User review.
 - Acceptance.
 - Dismissal.
 - Correction.
+- Genuine change in circumstances.
+- Temporary exception.
 - Supersession.
 - Contradiction.
-- Expiry and historical retention.
+- Historical retention.
 - Evidence-state changes.
 - Lifecycle-state changes.
-- Prevention of dismissed candidates silently returning.
-- Prevention of unsupported memories being presented as established facts.
-
-Lifecycle state and evidence state must be evaluated independently.
-
-### 4.8 Deletion, revocation and re-import
-
-Evaluate:
-
-- Direct memory deletion.
-- Message deletion.
-- Conversation deletion.
-- Direct provenance dependencies.
-- Indirect memory derivation dependencies.
-- Semantic relationship reassessment.
-- Revocation propagation.
-- Cache and index invalidation.
-- Retry and idempotency behaviour.
-- Interruption during deletion.
-- Re-import after deliberate deletion.
+- Invalid lifecycle transitions.
+- Supersession cycles.
+- Dependency cycles.
 - Re-import after dismissal.
-- Re-import after revocation.
+- Reassessment after loss of supporting evidence.
+
+Verify that:
+
+- Candidate status does not imply evidence support.
+- Evidence support does not automatically imply acceptance.
+- Repetition is not automatically treated as independent corroboration.
+- Assistant-generated suggestions do not become user facts.
+- Hypothetical and fictional information is not silently promoted.
+- A correction is distinguished from a genuine change in circumstances.
+- Historical information is not silently presented as current.
+- Dismissed information does not silently return as an accepted memory.
+- Lifecycle and evidence state remain independent.
+
+### 4.8 Governance, permissions and retrieval eligibility
+
+Evaluate:
+
+- Missing permission.
+- Unknown permission.
+- Explicit denial overriding an allow.
+- Scope restrictions.
+- Audience restrictions.
+- Use restrictions.
+- Conversation-level restrictions.
+- Message-level restrictions.
+- Memory-level restrictions.
+- Multiple sources with different permissions.
+- Permission inheritance through derived memories.
+- Revocation of one supporting source.
+- Revocation of the final supporting source.
+- User-confirmed restrictions.
+- Restricted information in summaries.
+- Restricted information in cached context.
+- Restricted information in search indexes.
+- Proactive-use restrictions.
+- Cross-context-use restrictions.
+
+Required adversarial fixtures:
+
+- One source allows a use while another denies it.
+- A derived memory attempts to broaden source permissions.
+- A summary contains information from a restricted source.
+- A source is revoked after a memory has been indexed.
+- A memory remains supported but is no longer permitted for the requested use.
+- Permission is unknown at one applicable governance level.
+- A previously permitted use is explicitly withdrawn.
+- A restricted memory is retrieved through an indirect relationship.
+
+Verify that:
+
+- Explicit denial takes precedence.
+- Unknown required permission denies the disputed use.
+- Every materially supporting source participates in permission evaluation.
+- Derived memories cannot gain broader permissions than their evidence.
+- Governance is evaluated before retrieval and answer-context assembly.
+- Restricted information cannot influence an answer indirectly through a summary, cache or index.
+- Revocation triggers reassessment of dependent records and derived representations.
+
+### 4.9 Deletion, revocation, re-import and recovery
+
+Evaluate the distinct operations:
+
+- Individual memory deletion.
+- Individual message deletion.
+- Entire conversation deletion.
+- Source revocation.
+- Memory dismissal.
+- Memory correction.
+- Memory restriction.
 - Explicit user reintroduction.
-- Recovery-copy limitations.
+- Backup restoration.
+- Re-import of previously processed information.
 
-Critical failure examples include:
+Required dependency fixtures:
 
-- Deleted information remains available to ordinary retrieval.
-- Revoked information is used in a prohibited context.
-- A derived memory survives without sufficient permitted evidence.
-- A dismissed candidate silently returns as an accepted memory.
-- A stale index or cache restores prohibited information.
-- A backup silently reverses a later deletion decision.
+- Memory with one supporting source.
+- Memory with multiple independent supporting sources.
+- Memory with a mixture of supporting and refuting evidence.
+- Memory with dependent memories.
+- Memory with semantic relationships.
+- Deleted source with remaining independent evidence.
+- Deleted final supporting source.
+- Revoked source with alternative permitted evidence.
+- Deleted source referenced by a derived summary.
+- Deletion affecting a cached or indexed representation.
 
-The application must not claim to erase external backup files it cannot access.
+Required transaction and failure fixtures:
 
-### 4.9 Backup, restore and migration
+- Invalid deletion request.
+- Missing target record.
+- Broken dependency reference.
+- Failure during preparation.
+- Failure before commit.
+- Failure during commit.
+- Failure during read-back verification.
+- Interrupted operation.
+- Retry of an already completed operation.
+- Repeated deletion request.
+- Concurrent dataset modification.
+- Storage quota exhaustion.
+- Recovery-copy creation failure.
+- Incomplete secondary cleanup.
+- Uncertain final storage state.
 
-Evaluate:
+Required re-import fixtures:
 
-- Complete backup contents.
-- Empty required collections.
-- Schema and backup-format version handling.
-- Invalid records.
-- Missing references.
+- Re-import using a reliable existing source identifier.
+- Re-import of a deleted source.
+- Re-import of a revoked source.
+- Re-import of a dismissed candidate.
+- Similar text with a different source identifier.
+- Source with no reliable identifier.
+- Explicitly authorised reintroduction.
+- Attempted restoration through an older backup.
+- Suppression metadata without original message content.
+
+Verify that:
+
+- Deletion propagates through direct and indirect dependencies.
+- Independently supported memories are reassessed rather than automatically discarded or retained.
+- Revoked information cannot enter prohibited retrieval or answer context.
+- Failed deletion is never reported as successful.
+- Uncertain cleanup blocks affected information from use.
+- Retries do not create inconsistent duplicate operations.
+- Unrelated records remain intact.
+- Stale indexes, summaries and caches cannot restore deleted information.
+- Dismissal and deletion remain distinct operations.
+- The application does not claim to erase external backup files it cannot access.
+
+A deletion or revocation failure that permits prohibited information to influence an answer is a critical failure.
+
+### 4.10 Backup, restore, migration and storage reliability
+
+Evaluate the complete proposed five-collection dataset alongside existing application data.
+
+Required compatibility fixtures:
+
+- Supported unversioned legacy data.
+- Valid schema version 1.
+- Proposed schema version 2.
+- Unsupported future schema version.
+- Invalid schema version.
+- Missing required collections.
+- Valid empty collections.
+- Null collections.
+- Malformed records.
 - Duplicate identifiers.
-- Invalid provenance and relationships.
-- Invalid governance data.
-- Newer unsupported schemas.
-- Older-version compatibility.
+- Missing references.
+- Cross-collection reference errors.
+- Invalid provenance.
+- Invalid relationships.
+- Invalid governance.
+- Invalid attribution.
+- Invalid temporal data.
+- Invalid derivation dependencies.
+
+Required migration and recovery fixtures:
+
+- Successful version 1 to version 2 migration.
+- Migration with existing manual entries.
+- Migration with existing learning data.
+- Migration with Ask aliases and boosts.
+- Failure during migration preparation.
+- Failure during migration commit.
+- Failed read-back verification.
+- Interrupted migration.
+- Rollback after failure.
 - Recovery-copy creation and verification.
-- Storage quota and size failures.
-- Interrupted writes.
-- Failed read-back.
-- Rollback uncertainty.
-- Preservation of existing manual entries and learning data.
-- Deletion-aware restore behaviour.
-- Persistence after reload.
+- Corrupt recovery copy.
+- Older application encountering newer data.
+- Attempted downgrade.
+- Restore of a backup predating a deletion.
+- Restore of a backup predating a revocation.
+- Restore with malformed connected data.
+- Restore with missing references.
+- Storage quota failure.
+- Persistence after application reload.
 
-A restore must not silently discard malformed connected data and report complete success.
+Required archive-performance measurements:
 
-A failed write must not be reported as a successful operation. If the actual stored state is uncertain, further writes must be blocked until it is verified.
+- Small archive.
+- Medium archive.
+- Large archive.
+- Many short messages.
+- Fewer long messages.
+- Many conversations.
+- Many provenance links.
+- Many relationships.
+- Full validation.
+- Backup export.
+- Backup import.
+- Restore.
+- Migration.
+- Recovery-copy creation.
 
-### 4.10 Retrieval and answering
+Measure:
 
-Evaluate:
+- Serialised size.
+- Save latency.
+- Load latency.
+- Export time.
+- Import time.
+- Validation time.
+- Migration time.
+- Recovery-copy overhead.
+- Peak memory use where measurable.
+- Failure behaviour near storage limits.
 
-- Relevant memory selection.
-- Source-backed answer correctness.
-- Complete source selection.
-- Contradictory evidence.
-- Historical versus current answers.
-- Permission enforcement.
-- Uncertainty communication.
-- Appropriate clarification.
-- Appropriate abstention.
-- No unsupported personal claims.
-- No leakage from unrelated or restricted memories.
-- Correct use of derived memories.
-- Correct behaviour when evidence is deleted or revoked.
+CI Chromium measurements must not be presented as proof of actual Android-device performance.
 
-The existing deterministic Ask baseline remains protected. A future expansion must be separately evaluated and approved; this document does not authorise replacing Ask with an LLM.
+Verify that:
+
+- Existing entries, learned data, custom rooms and Ask data remain intact.
+- No unsupported newer schema is silently loaded and overwritten.
+- Invalid connected data is not silently discarded during successful restore.
+- A failed write is not reported as successful.
+- Rollback limitations are reported accurately.
+- Deletion and revocation decisions are not silently reversed by older backups.
+- The existing 5 MiB import limit is not changed without measured evidence and explicit approval.
+- IndexedDB remains deferred unless representative workload measurements justify reconsideration.
+
 
 ---
 

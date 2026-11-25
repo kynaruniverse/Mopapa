@@ -1,8 +1,11 @@
 Mopapa: Identity, Evidence Attribution and Temporal Specification
 
-Status: Proposed foundational specification. Pending review and explicit approval.
+Status: Historical supporting specification retained during documentation consolidation
 Product: Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Canonical evaluation authority: "docs/personal-memory-evaluation.md"
+Document retirement: Pending final unique-content and reference audit.
 Prerequisites:
 
 - "docs/personal-memory-architecture.md"
@@ -12,6 +15,14 @@ Prerequisites:
 - "docs/personal-memory-schema-consistency-review.md"
 
 Implementation status: Design only. No production changes authorised.
+
+This document preserves the detailed identity, authorship, attribution, provenance and temporal design history.
+
+The canonical record specification takes precedence wherever technical definitions differ. The evaluation master contains the consolidated test and evaluation catalogue.
+
+Sections describing earlier next steps are historical planning notes, not current instructions. Current sequencing and outstanding work are maintained in "docs/personal-memory-build-plan.md".
+
+This document is retained until its remaining unique requirements and references have been audited. It does not independently authorise implementation.
 
 ---
 

@@ -2,8 +2,19 @@ Mopapa: Deletion, Revocation, Recovery and Re-import Transaction Specification
 
 Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
-Status: Proposed technical specification. Pending review and explicit approval.
+Status: Historical supporting specification retained during documentation consolidation.
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Canonical evaluation authority: "docs/personal-memory-evaluation.md"
 Implementation status: Design only. No production changes authorised.
+Document retirement: Pending final unique-content and reference audit.
+
+This document preserves the detailed deletion, revocation, dependency, transaction, recovery and re-import design history.
+
+The canonical record specification takes precedence wherever technical definitions differ. The evaluation master contains the consolidated failure and acceptance test catalogue.
+
+This document's unresolved decisions remain design blockers where they have not been explicitly resolved in the canonical specification or build plan. Its historical next-work sections are not current sequencing instructions.
+
+This document is retained until its remaining unique requirements and references have been audited. It does not independently authorise implementation.
 
 Prerequisites
 

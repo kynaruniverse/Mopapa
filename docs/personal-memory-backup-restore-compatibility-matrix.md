@@ -2,8 +2,19 @@ Mopapa: Personal Memory Backup, Restore and Schema Compatibility Specification
 
 Product: Mopapa Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
-Status: Proposed technical specification. Pending review and explicit approval.
+Status: Historical supporting specification retained during documentation consolidation.
+Canonical technical authority: "docs/personal-memory-record-specification.md"
+Canonical evaluation authority: "docs/personal-memory-evaluation.md"
 Implementation status: Design only. No production changes authorised.
+Document retirement: Pending final unique-content and reference audit.
+
+This document preserves the detailed backup, restore, compatibility, migration, rollback and storage-performance design history.
+
+The canonical record specification takes precedence wherever technical definitions differ. The evaluation master contains the consolidated compatibility and failure test catalogue.
+
+Unresolved backup-format, migration, recovery and performance decisions remain blockers unless explicitly resolved in the canonical specification or build plan.
+
+This document is retained until its remaining unique requirements and references have been audited. It does not independently authorise implementation.
 
 Prerequisite documents
 
