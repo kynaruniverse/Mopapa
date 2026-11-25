@@ -1,10 +1,11 @@
 Mopapa: Personal Memory Data Model Specification
 
-Status: Approved logical target direction; detailed schema and implementation remain subject to validation
+Status: Historical logical model retained temporarily for documentation reconciliation
 Product: Personal Memory Companion
 Repository: https://github.com/kynaruniverse/Mopapa
-Prerequisite: "docs/personal-memory-architecture.md" and "docs/personal-memory-module-map.md"
+Canonical technical authority: "docs/personal-memory-record-specification.md"
 Implementation status: Design only. No production changes authorised.
+Document retirement: Pending final transfer of unique requirements and reference audit.
 
 ---
 
@@ -23,6 +24,12 @@ The data model must:
 - Remain compatible with the existing vanilla JavaScript architecture.
 
 This specification defines the proposed logical model. It does not authorise immediate implementation.
+
+The canonical technical specification now takes precedence over this historical model wherever definitions differ.
+
+This document is retained temporarily to identify and transfer any unique requirements before it is retired. Earlier proposed field names, enum values and record structures must not be treated as current requirements unless they are also present in the canonical record specification.
+
+This document does not independently authorise production implementation.
 
 2. Core design decisions
 
@@ -701,88 +708,70 @@ These are separate concepts and must not be collapsed into one role, name or att
 
 19.3.1 Conversation participants
 
-Each conversation must be capable of preserving its own participant list.
+Participants are embedded in their parent conversation.
 
-A participant is a source-local identity used to distinguish speakers within that conversation.
+The current canonical participant structure is defined in "docs/personal-memory-record-specification.md", Section 5.2.
 
-Proposed logical participant record:
+The initial model distinguishes:
 
-{
-  "id": "participant_id",
-  "sourceLabel": "Mum",
-  "sourceRole": "participant",
-  "identityResolution": "source_only"
-}
+- A stable participant identifier within its conversation.
+- An optional source participant identifier.
+- Participant kind.
+- Display name.
+- Identity status.
+- A null global identity key.
+- Embedded identity correction history.
 
-Fields:
+Initial participant identity statuses are:
 
-- id: required stable identifier, unique within the conversation.
-- sourceLabel: original display name or speaker label, if supplied.
-- sourceRole: original role or participant type supplied by the source, if available.
-- identityResolution: the degree to which the participant's real-world identity has been established.
+- unresolved
+- ambiguous
+- unknown
 
-Initial identity resolution values:
+The initial identity key remains null.
 
-- source_only: the source identifies a speaker, but Mopapa has not established who that person is.
-- unresolved: the source provides insufficient or conflicting identity information.
-- confirmed_within_conversation: the participant has been explicitly identified within this conversation.
+Participants with identical display names must remain separate unless an explicit, separately supported identity decision establishes otherwise.
 
-The conversation record owns these participant records.
+A source-local participant can be used to distinguish speakers within its conversation without establishing their real-world identity.
 
-Participant identifiers must not be derived from array positions, display names or assumptions about identity.
+Cross-conversation identity matching, automatic identity merging and global identity resolution remain deferred.
 
-Two participants with the same display name must remain separate unless their identity has been explicitly resolved.
-
-A participant label such as "Mum", "Speaker 2" or "Alex" is not proof of a globally unique person.
-
-The initial model does not establish that a participant in one conversation is the same person as a participant in another conversation.
-
-Cross-conversation person resolution is deferred until a separate identity model and its correction, merging and deletion rules have been designed.
-
-The initial model does not require a separate global people collection.
+The earlier proposed values "source_only" and "confirmed_within_conversation" are not part of the current canonical identity-status vocabulary and must not be used as substitutes for it.
 
 19.3.2 Message author representation
 
-The message record must preserve the source's original role and provide a structured representation of authorship.
+The message record must preserve the source's original role separately from structured authorship.
 
-The existing role field remains available to preserve the original conversation structure.
+The current canonical author representation is defined in "docs/personal-memory-record-specification.md", Section 6.2.
 
-The proposed author object is:
+The permitted author kinds are:
 
-{
-  "kind": "third_party",
-  "participantId": "participant_id"
-}
+- participant
+- system
+- unknown
 
-Initial author kinds:
+The attribution classes are:
 
 - user
 - assistant
-- system
 - third_party
 - unknown
 
-Rules:
+A participant author must reference an existing participant belonging to the same conversation.
 
-- user identifies a message authored by the Mopapa user's own conversational identity.
-- assistant identifies a message produced by the assistant.
-- system identifies a system-generated message where the source distinguishes one.
-- third_party identifies another human participant.
-- unknown identifies authorship that cannot be established.
+A system author must have a null participant reference and assistant attribution.
 
-For third_party authors, participantId must refer to a participant belonging to the same conversation.
+An unknown author must have a null participant reference and unknown attribution.
 
-For user and assistant authors, a participantId is not required.
+The original source role remains a separate field. It must not be silently converted into an assumed author identity.
 
-Unknown authorship must not be converted into a user or third-party identity merely because the text uses first-person or conversational language.
+Import origin is not authorship.
 
-The original source role must be preserved separately where it differs from these logical author kinds.
+The complete validation decision table for source role, author kind and attribution remains a pre-implementation requirement.
 
-The origin field identifies the source or import mechanism. It does not identify the author.
+The earlier proposal in this document that treated "user", "assistant" and "third_party" as author kinds is superseded. Those values belong to the attribution field in the current canonical model.
 
-An imported user message remains user-authored. An imported assistant message remains assistant-authored.
-
-If an import source does not provide reliable authorship, use unknown rather than inventing a role.
+Unknown authorship must remain unknown rather than being inferred from first-person wording, display names or conversational context.
 
 19.3.3 Quoted and embedded speakers
 
@@ -1020,24 +1009,29 @@ If the identity cannot be resolved confidently, retain an unresolved or ambiguou
 
 19.4.4 Attribution and subject validation
 
-The combined validator must verify:
+The combined validator must follow the canonical record specification.
 
-- Every third-party message author references a participant in the same conversation.
-- Participant identifiers are unique within their conversation.
-- Participant references do not cross conversation boundaries.
-- Author kinds are supported.
-- Unknown authorship remains explicitly unknown.
-- Quoted-speaker references resolve to valid participants where supplied.
-- Evidence spans are valid against the unchanged original message text.
-- Subject kinds and resolution values are supported.
-- Participant-based subjects reference valid participants.
+At minimum, it must verify:
+
+- Participant identifiers are unique within their parent conversation.
+- Participant references belong to the correct conversation.
+- Every author with kind "participant" references an existing participant in the same conversation.
+- A "system" author has a null participant reference and "assistant" attribution.
+- An "unknown" author has a null participant reference and "unknown" attribution.
+- Unsupported author kinds and attribution values are rejected.
+- Original source roles remain separate from structured authorship.
+- Unknown authorship is not silently converted into a known identity.
+- Quoted-speaker references resolve within the exact source message's conversation when supplied.
+- Quoted-speaker evidence spans are valid against unchanged original message text.
+- Subject kinds and identity-status values are supported.
+- Participant-based subject references resolve to valid participants.
 - User subjects do not require an invented participant.
-- Unresolved subjects are not presented as confirmed identities.
+- Unresolved or ambiguous subjects are not presented as confirmed identities.
 - A memory's subject is not assumed to be its source author.
-- Identity corrections do not modify original messages.
-- No cross-conversation identity merge occurs without an explicit supported resolution.
+- Identity corrections do not rewrite original messages.
+- Cross-conversation identity merging does not occur without a separately approved identity model.
 
-Invalid participant or subject references must be rejected or safely quarantined according to the defined import and restore policy.
+Invalid participant, author or subject references must be rejected or safely quarantined under the defined validation policy.
 
 They must not be silently replaced with the user identity.
 

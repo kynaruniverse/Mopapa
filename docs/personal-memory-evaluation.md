@@ -504,16 +504,52 @@ Evaluate:
 
 ### 4.5 Identity and attribution
 
-Evaluate:
+Evaluate these dimensions independently:
 
-- Distinction between message author and memory subject.
+- Message author attribution.
 - Quoted-speaker attribution.
-- Conversation-local identity references.
-- Ambiguous names and pronouns.
-- Similar names that refer to different people.
-- Identity corrections.
-- Conflicting attribution.
-- Nested quotations and compound statements.
+- Memory subject attribution.
+- Conversation-local participant identity.
+- Real-world identity uncertainty.
+- Identity correction and its dependent records.
+
+Required fictional evaluation fixtures:
+
+- User speaking about themselves.
+- User speaking about a partner or family member.
+- A third party speaking about the user.
+- A third party speaking about another third party.
+- Assistant repeating a fact originally supplied by the user.
+- Assistant introducing a claim unsupported by the original conversation.
+- Direct quotation with an explicitly identified speaker.
+- Reported speech without an exact quotation.
+- Paraphrased speech.
+- A quotation whose speaker is unknown.
+- Nested quotations involving more than one speaker.
+- An imported conversation containing multiple participants.
+- Different participants sharing the same display name.
+- One participant using different labels within the same conversation.
+- Similar names appearing in separate conversations without established identity.
+- Missing author metadata.
+- Source role and structured author attribution that contradict each other.
+- A participant reference belonging to another conversation.
+- Ambiguous pronouns and conflicting subject references.
+- Identity correction after dependent memories have been extracted.
+- Deletion or revocation of evidence supporting an identity decision.
+
+The evaluation must verify that:
+
+- Message author and memory subject are never automatically treated as the same identity.
+- Quoted speakers are not automatically treated as message authors.
+- A reported statement is not treated as independent proof that the reported claim is true.
+- Unknown attribution remains unknown.
+- Conversation-local participant identity does not imply global identity.
+- Identity corrections trigger reassessment of dependent memories and relationships.
+- Original message authorship and source text remain unchanged.
+
+A correct answer about the wrong person is a critical failure.
+
+Attributing an assistant or third-party statement to the user is a critical failure.
 
 Global identity resolution is not approved. Evaluation must not assume that similar names or references establish a shared identity.
 
