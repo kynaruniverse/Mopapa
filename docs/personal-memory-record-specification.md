@@ -2053,51 +2053,91 @@ Critical privacy, attribution, provenance, governance, deletion and restore fail
 
 The evaluation document defines the test corpus and reporting method. This specification defines the technical properties that the evaluation must verify.
 
-21.2 Unresolved implementation-readiness decisions
 
-The following remain open and must not be represented as settled:
+### 21.2 Decision register and implementation gates
 
-1. Exact candidate acceptance and rejection criteria for each memory type.
-2. Mandatory user-confirmation categories.
-3. The exact user review, correction and dismissal workflow.
-4. Whether any candidate type may be automatically promoted to active.
-5. Working-memory expiry and retention.
-6. Historical memory retention policy.
-7. Dismissal suppression metadata and retention.
-8. Deletion suppression mechanism and its privacy implications.
-9. How recovery copies are sanitised or invalidated after deletion and revocation.
-10. How deletion decisions are reconciled with older backups and restores.
-11. Exact lifecycle transition history representation.
-12. Exact policy-combination algorithm for memories with multiple sources.
-13. Treatment of a memory when one source is revoked but other sources remain.
-14. Permitted uses of user-confirmed interpretations.
-15. Sensitive-information classification and handling.
-16. Retrieval policy for partially supported memories.
-17. Reliable invalidation of indexes, caches and summaries.
-18. Exact derivation dependency representation beyond the canonical embedded "sourceMemoryIds".
-19. Exact message role, author-kind and attribution validation combinations.
-20. Nested quotations, compound claims and attribution conflicts.
-21. Exact backup envelope and integrity requirements.
-22. Exact migration defaults for every new field.
-23. Strict restore validation and compatibility rules.
-24. Recovery-copy sanitisation and retention.
-25. Archive-size limits and Android device acceptance thresholds.
-26. Evaluation thresholds and release criteria.
-27. Any future global identity-resolution model.
-28. Whether original source timestamp strings must be retained alongside normalised temporal values, including how malformed or ambiguous source timestamps are preserved.
-29. Deterministic rules and limits for approximate temporal bounds, including how timezone uncertainty and partial dates affect comparisons.
-30. Whether nested quoted-speaker annotations require explicit parent-child relationships, and how attribution chains are validated without flattening multiple speakers.
-31. Whether compound claims require claim-level provenance or must instead be represented as separate independently assessable memory records.
-32. The complete reversible correction, merge and unmerge policy for conversation-local participants, including the consequences for dependent memories and relationships. No global identity merge is authorised by this requirement.
-33. The privacy and reference-handling policy for identity correction or deletion, including how affected memories and historical attribution are reassessed.
-34. The exact derived-index rebuild strategy, including staging, interruption, verification, replacement and recovery behaviour.
-35. The consistency mechanism that prevents stale, incomplete or partially rebuilt indexes from being treated as authoritative or available for unrestricted retrieval.
-36. The exact user action required to deliberately reintroduce previously deleted information, including how that action is distinguished from ordinary import, duplicate detection and automatic extraction.
-37. The retrieval policy during incomplete deletion or secondary cleanup, including whether unrelated, independently validated information may remain available while affected dependencies are blocked.
-38. The transaction strategy appropriate to the existing local-first storage architecture, including atomic visibility, interruption recovery, retry and rollback limitations.
-39. The relationship and deletion policy when an extracted memory overlaps with an existing manual entry. Manual entries and extracted memories must remain separate unless an explicitly approved relationship is introduced.
+The following decisions close the initial design-readiness review. A decision marked "resolve before Stage 1" is part of the storage and schema foundation. A decision assigned to a later stage is deliberately deferred and must be resolved before that stage begins. Deferral is not implementation approval.
 
-Each decision must be recorded in the appropriate master document, with its rationale, alternatives considered, consequences, tests and approval status.
+#### A. Candidate formation and memory lifecycle
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 1 | Candidate acceptance and rejection criteria | Defer to Stage 3. Initial extraction must be conservative, deterministic and evidence-linked. No candidate may become an accepted memory merely because it was extracted. |
+| 2 | Mandatory user-confirmation categories | Defer to Stage 3 and Stage 4. Until approved, no automatic promotion is permitted. |
+| 3 | Review, correction and dismissal workflow | Defer to Stage 4. Candidate inspection and user control must exist before stored memories are treated as usable personal knowledge. |
+| 4 | Automatic promotion to active | Not approved for the initial implementation. Stage 3 and Stage 4 must use candidates requiring explicit acceptance unless a later, separately approved policy defines narrowly bounded exceptions. |
+| 5 | Working-memory expiry and retention | Defer to Stage 4. Do not create working memories until expiry, retention and retrieval rules are defined. |
+| 6 | Historical memory retention | Defer to Stage 4. No automatic age-based deletion of accepted memories is authorised. |
+| 7 | Dismissal suppression | Defer to Stage 4. Dismissal must remain distinct from deletion. Repeated extraction must not silently recreate a dismissed candidate. |
+| 8 | Deletion suppression | Defer to Stage 4. Do not add a sixth collection or retain raw deleted text as a suppression mechanism. Stable source identifiers may be used where available. Similarity alone is insufficient proof of identity. |
+| 9 | Recovery-copy handling after deletion or revocation | Defer to Stage 4. Application-controlled recovery copies must be sanitised, invalidated or otherwise prevented from silently restoring prohibited information. Failure must block a claim of complete deletion. |
+| 10 | Older backups and restores after deletion | Defer to Stage 4. An older backup must not silently reverse a deletion or revocation. The application must distinguish its own recovery copies from external files it cannot erase. |
+| 11 | Lifecycle transition history | Defer to Stage 4. The initial schema foundation must not invent lifecycle history or imply that a transition audit trail already exists. |
+| 12 | Policy combination for multiple sources | Defer to Stage 4. Until the combination algorithm is approved, derived information must not receive broader permissions than any contributing source. Unknown permission remains non-permission. |
+| 13 | Revoking one source where other sources remain | Defer to Stage 4. Reassess the memory against its remaining independent evidence. Do not automatically retain or delete it without checking support and restrictions. |
+| 14 | Permitted uses of user-confirmed interpretations | Defer to Stage 4. Confirmation may establish that the user accepts an interpretation; it does not rewrite original evidence or prove that a third party made a reported statement. |
+| 15 | Sensitive-information classification and handling | Defer to Stage 3 and Stage 4. No sensitive-information auto-extraction or automatic promotion is authorised. Classification, confirmation, access and deletion rules must be approved before handling such memories. |
+| 16 | Retrieval of partially supported memories | Defer to Stage 6. Unsupported portions must not be presented as established facts. Retrieval must expose uncertainty or abstain where evidence is insufficient. |
+
+#### B. Derived information and dependencies
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 17 | Index, cache and summary invalidation | No persistent derived index, summary store or cache is required for Stage 1 or Stage 2. Reconsider in Stage 6 only if measured retrieval needs justify it. |
+| 18 | Derivation dependency representation | Defer to Stage 4. Retain the specified embedded `sourceMemoryIds` as the proposed initial representation. Do not introduce a separate dependency collection. Validate references and reject cycles before derived-memory use is enabled. |
+
+#### C. Message evidence and attribution
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 19 | Message role, author kind and attribution combinations | Resolve before Stage 2. Define and test the complete allowed-combination table against actual import formats. Unknown or contradictory attribution must remain unresolved or be rejected, never guessed. |
+| 20 | Nested quotations, compound claims and attribution conflicts | Resolve before Stage 2 for message preservation and before Stage 3 for extraction. Preserve the original message unchanged. Keep nested speaker attribution explicit. Do not treat quoted or reported speech as direct evidence from the quoted person. Compound claims must be split into independently assessable claims where safe; otherwise retain them as one uncertain candidate with evidence limitations. |
+
+#### D. Backup, migration and storage
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 21 | Backup envelope and format version | Resolve before Stage 1. Retain the current plain JSON data-object backup format. The existing `schemaVersion` identifies the data schema. Do not add a wrapper or independent backup-format version in this stage. A future incompatible backup format requires a separate decision and compatibility plan. |
+| 22 | Migration defaults for new fields | Resolve before Stage 1. New collections are created as empty arrays. Existing `entries`, `learned`, `customRooms` and `ask` values are preserved through explicit validation and migration. Unknown information remains unknown; no inferred authors, dates, permissions, identities or memory states are supplied. |
+| 23 | Strict restore validation and compatibility | Resolve before Stage 1. Validate the complete proposed dataset before replacing current data. Support the explicitly approved legacy and schema-v1 inputs. Reject unsupported future versions, malformed records, duplicate IDs, broken references and invalid cross-collection relationships. Never silently discard malformed connected records and report the restore as successful. |
+| 24 | Recovery-copy sanitisation and retention | Resolve the Stage 1 baseline now; complete deletion-aware sanitisation before Stage 4. Do not weaken or silently replace the existing recovery protections during Stage 1. Retain existing count and byte protections. Do not introduce age-based expiry that could remove the only recoverable copy. Before Stage 4 deletion is enabled, define how affected copies are sanitised or invalidated and how failure is reported. |
+| 25 | Archive limits and Android acceptance thresholds | Defer to Stage 7, with representative measurements beginning as soon as a usable archive exists. Do not invent maximum archive limits or treat CI Chromium timings as proof of Android performance. Keep the existing 5 MiB import limit unchanged unless measurements and explicit approval justify a change. |
+| 26 | Evaluation thresholds and release criteria | Resolve the release-blocker policy now; defer numerical thresholds until representative fixtures and results exist. Privacy, attribution, provenance, permission, deletion, restore and data-loss failures are critical blockers and cannot be averaged away. Unmeasured results must be reported as unmeasured. |
+
+#### E. Identity, time and evidence structure
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 27 | Global identity resolution | Excluded from the initial model. Identity remains conversation-local. No global identity collection, automatic cross-conversation matching or global merge is authorised. Reconsider only through a separate proposal and approval. |
+| 28 | Original timestamp preservation | Resolve before Stage 2. Preserve the original supplied timestamp representation separately from any normalised value. Do not overwrite malformed or ambiguous source values with a guessed date. |
+| 29 | Approximate dates, partial dates and timezone uncertainty | Resolve before Stage 5. Preserve date precision as supplied. Comparisons must not invent missing days, times or timezones. Ambiguous temporal ordering must remain uncertain. |
+| 30 | Nested quoted-speaker structure | Resolve before Stage 2. Preserve parent-child quotation relationships where the source supports them. Do not flatten nested speakers. If a reliable attribution chain cannot be represented, retain unresolved attribution. |
+| 31 | Compound-claim provenance | Resolve before Stage 3. Prefer separate independently assessable memory records when a compound statement can be safely divided without changing its meaning. If it cannot, retain the compound candidate with provenance to the complete supporting message and mark unsupported components as uncertain. |
+| 32 | Reversible participant correction, merge and unmerge | Defer to Stage 5. Corrections must be explicit, reversible and conversation-local. No global identity merge is implied. Dependent memories and relationships must be reassessed after a correction. |
+| 33 | Identity correction or deletion and dependent references | Defer to Stage 5. Define reference handling, historical attribution and dependent-record reassessment before identity deletion or merge functionality is implemented. |
+
+#### F. Indexing and deletion behaviour
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 34 | Derived-index rebuild strategy | Defer to Stage 6. No persistent index is part of the initial storage foundation. If an index is later justified, it must be rebuildable from authoritative records and verified before use. |
+| 35 | Stale or incomplete index protection | Defer to Stage 6. Incomplete, stale or unverified derived data must never be presented as complete or authoritative. If safe retrieval cannot be established, retrieval must fail closed. |
+| 36 | Deliberate reintroduction after deletion | Defer to Stage 4. Reintroduction must require a deliberate, informed user action distinct from ordinary import, duplicate detection and automatic extraction. It must not silently reactivate a deleted memory. |
+| 37 | Retrieval during incomplete deletion cleanup | Defer to Stage 4. Block the affected record and all dependent retrieval while required cleanup is unresolved. Unrelated records may remain available only when their independence and safety are established. Never report complete deletion while required cleanup remains incomplete. |
+
+#### G. Transaction and manual-entry boundaries
+
+| No. | Decision | Disposition |
+|---:|---|---|
+| 38 | Storage transaction strategy | Resolve before Stage 1. Keep the current single-key `mopapa.v1` localStorage architecture for this stage. Prepare and validate the complete next dataset before writing it. Use verified read-back and the existing best-effort restoration approach. Preserve a recoverable pre-migration copy. Do not claim database-grade atomic transactions or guaranteed rollback. If verification or restoration fails, report failure clearly and preserve recovery evidence where possible. |
+| 39 | Manual-entry and extracted-memory overlap | Defer to Stage 4. Manual entries and extracted memories remain separate records. Similar wording does not prove identity or justify merging. Creating, correcting or deleting one must not silently replace or delete the other. Any explicit relationship requires a separately validated model. |
+
+#### Readiness result
+
+The decisions above establish the boundaries for the first storage and schema foundation. They do not authorise conversation import, candidate extraction, active memory creation, governance interfaces, deletion-aware memory operations, advanced retrieval or any new AI processing.
+
+A later stage may begin only after its deferred decisions have been resolved in the appropriate master document, its evaluation fixtures have been specified, and that stage has received explicit approval.
+
 
 21.3 Approval gates
 

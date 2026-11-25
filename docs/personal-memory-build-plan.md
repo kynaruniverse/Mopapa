@@ -181,244 +181,208 @@ The following direction has been established in the master technical specificati
 
 These are proposed implementation rules, not claims about existing production behaviour.
 
-6. Remaining implementation-readiness decisions
 
-The main cross-document technical reconciliation and historical-document audit are complete.
+## 6. Implementation-readiness decisions
 
-The six-master-document structure is established. Unique technical requirements have been reconciled into the canonical specification, build plan and evaluation document. Historical design and engineering documents have been retired from the active documentation set.
+The initial design-readiness review is complete.
 
-"docs/storage-architecture.md" remains as the sole supporting engineering reference for the existing localStorage implementation.
+The canonical decision register is Section 21.2 of `personal-memory-record-specification.md`. It assigns every previously open decision to one of three outcomes:
 
-This is not a reason to restart completed research or reopen settled architectural decisions.
+- Resolve before Stage 1.
+- Defer to a named later stage, with implementation prohibited until resolved.
+- Exclude from the initial model unless separately proposed and approved.
 
-The remaining work is a finite combination of:
+No decision may be silently resolved during implementation.
 
-- Completing the implementation-readiness decisions below.
-- Verifying the evaluation and acceptance requirements.
-- Establishing a fresh production baseline from the live repository.
-- Defining and obtaining explicit approval for the first production implementation phase.
+### 6.1 Decisions resolved for Stage 1
 
-The following issues must be resolved or given an explicitly bounded implementation decision.
+The following boundaries govern the storage and schema foundation:
 
-A. Deletion suppression and re-import
+1. Keep the existing `mopapa.v1` localStorage key and single JSON data object.
+2. Add exactly the five proposed collections: `conversations`, `messages`, `memories`, `memorySources` and `memoryRelations`.
+3. Initialise all five collections as empty arrays.
+4. Preserve existing `entries`, `learned`, `customRooms` and `ask` data.
+5. Keep the existing plain JSON backup representation. `schemaVersion` remains the data-schema version. Do not add a backup wrapper or independent backup-format version in this stage.
+6. Validate the complete proposed dataset before replacing current data.
+7. Reject unsupported schema versions, malformed records, duplicate identifiers and invalid cross-collection references.
+8. Preserve unknown values as unknown. Do not invent dates, authors, identities, permissions or memory states.
+9. Prepare the next dataset before writing. Verify the stored value by reading it back.
+10. Preserve the existing best-effort rollback and recovery approach. Do not describe it as an atomic database transaction or guarantee rollback where the browser cannot guarantee it.
+11. Preserve existing recovery protections and the current 5 MiB import limit. Do not weaken recovery handling or change limits without measured evidence and explicit approval.
+12. Keep the existing deterministic Ask and manual-entry behaviour unchanged.
 
-Decide how deliberate deletion, dismissal and revocation can be respected when previously processed material is imported again.
+These decisions authorise design and implementation planning for the Stage 1 storage foundation only. They do not authorise production changes by themselves.
 
-Requirements:
+### 6.2 Deferred decisions and stage gates
 
-- No sixth collection or import ledger without a new approval.
-- No retention of raw deleted text solely to identify future imports.
-- Stable source identifiers should be used where available.
-- Text similarity alone must not establish identity.
-- Ambiguous re-import must not silently restore deleted information.
-- Define the explicit user action required to deliberately reintroduce previously deleted information.
-- Distinguish deliberate reintroduction from ordinary import, duplicate detection, repeated extraction and paraphrased content.
-- Define how dismissal suppression differs from deletion suppression.
-- Define when suppression metadata may be removed without allowing accidental restoration.
+| Area | Required decision work | Must be closed before |
+|---|---|---|
+| Message authorship and quotation structure | Role/author validation, original timestamp preservation, nested quotation handling and attribution conflicts | Stage 2 |
+| Candidate formation | Acceptance/rejection criteria, confirmation requirements, conservative extraction and compound-claim handling | Stage 3 |
+| Memory lifecycle and governance | Review, correction, dismissal, sensitive information, lifecycle history, source permissions, revocation and deletion policies | Stage 4 |
+| Re-import and recovery after deletion | Suppression, deliberate reintroduction, older-backup protection, recovery-copy sanitisation and incomplete-cleanup behaviour | Stage 4 |
+| Derivation and relationships | Dependency validation, source reassessment and safe relationship handling | Stage 4 |
+| Identity and temporal reasoning | Partial dates, timezone uncertainty, reversible conversation-local corrections and dependent-record reassessment | Stage 5 |
+| Derived indexes and retrieval | Index creation, rebuild, invalidation, source eligibility, stale-data protection and retrieval abstention | Stage 6 |
+| Evaluation thresholds and scale | Numerical thresholds, archive limits and representative Android performance | Before the relevant release decision in Stage 7 |
 
-If complete suppression cannot be implemented safely, the limitation must be explicit. Do not claim complete suppression.
+A deferred decision is not a minor documentation task. The corresponding feature must remain unimplemented until its policy, tests and acceptance criteria are approved.
 
-B. Recovery-copy sanitisation
+### 6.3 Explicit exclusions
 
-Define how recovery copies are handled after deletion or revocation.
+The initial model does not include:
 
-The policy must establish:
+- Global identity resolution or cross-conversation identity merging.
+- A sixth persistent collection.
+- An import ledger retaining deleted personal content.
+- A persistent search-index or summary collection.
+- Automatic promotion of extracted candidates to accepted memories.
+- Automatic access to other applications.
+- External AI processing or hosted inference.
+- Paid APIs, subscriptions or recurring dependencies.
+- Cloud synchronisation or mandatory accounts.
+- Replacement of deterministic Ask.
+- A wholesale application rewrite.
+- An automatic migration to IndexedDB.
 
-- Which recovery copies can contain affected information.
-- When they are invalidated, replaced or retained.
-- How retention is bounded.
-- How recovery is prevented from silently undoing deletion.
-- What happens if sanitisation fails.
-- The permitted number and maximum age of retained recovery copies.
-- How exported backups are distinguished from application-controlled recovery copies.
-- How the application explains that external backup files cannot be remotely erased.
-- How restore behaves when deletion history or required suppression information is unavailable.
+Any proposed change to these exclusions requires a separate evidence-based proposal and explicit approval.
 
-C. Backup format and migration transaction
+### 6.4 Storage and recovery constraints
 
-Finalise:
+The current application stores its main state as one JSON value under `mopapa.v1`. Its write process verifies the stored value after writing and attempts best-effort restoration if verification fails.
 
-- Backup envelope.
-- Independent backup-format version.
-- Compatibility behaviour.
-- Validation before restore.
-- Recovery-copy creation and verification.
-- Replacement and read-back behaviour.
-- Rollback after interrupted or failed migration.
-- The transaction strategy must be justified against the existing localStorage architecture and measured device constraints.
-- Partial cleanup must block affected information and its dependent retrieval.
-- Unrelated, independently validated information may remain available only where its safety can be established.
-- The application must not report complete deletion while required secondary cleanup remains unresolved.
-- Protection against older backups undoing deletion or revocation.
+This is not an atomic database transaction. A failed restoration may leave the previous value unrecovered. Implementation and user-facing status must preserve this limitation accurately.
 
-A restore must not silently discard malformed records or broken references.
+Stage 1 must:
 
-D. Migration defaults and validation
+- Validate the complete next dataset before the primary write.
+- Preserve a recoverable pre-migration copy.
+- Verify the primary value after writing.
+- Avoid reporting success before read-back verification.
+- Report failure if verification or restoration fails.
+- Preserve recovery evidence where possible.
+- Leave the existing storage key and storage technology unchanged.
 
-Define the exact defaults for every new field and collection.
+Deletion-aware recovery sanitisation is a Stage 4 requirement. Stage 1 must not introduce personal-memory deletion behaviour before that policy exists.
 
-Unknown information must remain unknown rather than receiving invented values.
+### 6.5 Evaluation and release policy
 
-Migration must preserve all existing entries, learning data, rooms and Ask state.
+The evaluation document remains the authority for fixtures and reporting methods.
 
-E. Representative archive performance
+The following are release-blocking failures for the capabilities concerned:
 
-Existing small-dataset benchmarks are not proof of archive-scale performance.
+- Original evidence unexpectedly altered or lost.
+- Incorrect author, speaker or subject attribution.
+- Invalid provenance accepted as valid.
+- Restricted information used outside its permitted scope.
+- Deleted or revoked information returned to prohibited retrieval.
+- Unsupported personal information presented as established fact.
+- Failed writes or restores reported as successful.
+- Migration or restore silently losing existing user data.
+- Incomplete or stale derived information presented as authoritative.
 
-Measure:
+Numerical accuracy thresholds, false-positive limits, archive-size limits and Android performance thresholds remain unapproved until representative fixtures and measurements exist. Report unmeasured results as unmeasured.
 
-- Realistic conversation and message counts.
-- Long messages.
-- Provenance and derivation chains.
-- Search and retrieval.
-- Backup and restore.
-- Deletion and revocation.
-- Quota and interrupted-write behaviour.
-- Actual Android browser performance.
+### 6.6 Stage 0 exit
 
-Use measured evidence to decide whether localStorage remains sufficient or a separate storage migration is justified.
+Stage 0 design closure is complete when:
 
-F. Evaluation fixtures and thresholds
+- All 39 decisions have an explicit disposition in the canonical specification.
+- The six master documents and supporting storage reference have consistent authority.
+- Stage 1 storage and migration requirements are sufficiently defined.
+- Deferred decisions have named implementation gates.
+- The current production baseline has been verified.
+- The exact first implementation files, test additions and recovery procedure have been identified.
 
-Create a fixed, repeatable evaluation set covering:
+Exit from Stage 0 does not authorise Stage 1 production changes. The user must explicitly approve the Stage 1 implementation proposal after reviewing its exact file scope and verification plan.
 
-- Attribution and subject identification.
-- Quoted speakers.
-- Candidate extraction.
-- Evidence completeness.
-- Temporal reasoning.
-- Contradictions and supersession.
-- Scope and restrictions.
-- Identity correction.
-- Deletion and revocation.
-- Re-import behaviour.
-- Backup and restore.
-- Retrieval and answer abstention.
-
-Critical privacy, attribution, provenance and deletion failures must be release blockers. They must not be averaged away by a high overall score.
-
-G. Identity, attribution and temporal edge cases
-
-Complete the remaining design decisions inherited from the historical identity and evidence specification.
-
-The review must explicitly cover:
-
-- Preservation of original timestamp information alongside normalised values.
-- Deterministic treatment of approximate dates, partial dates and timezone uncertainty.
-- Whole-message evidence versus located UTF-16 evidence spans.
-- Nested quotation structure and attribution-chain validation.
-- Compound claims and independently assessable provenance.
-- Reversible participant correction, merge and unmerge behaviour.
-- Identity deletion and reassessment of dependent records.
-
-Acceptance requirements:
-
-- Unknown identity and temporal information must remain explicitly unknown.
-- Original source text and source evidence must not be silently rewritten.
-- No global identity matching or merging is introduced without separate approval.
-- Ambiguous attribution must remain unresolved or be rejected safely.
-- Every resolved rule must have corresponding evaluation fixtures.
-- Any decision that remains open must be recorded as a blocker rather than guessed during implementation.
-
-H. Derived indexes and rebuild reliability
-
-Define how future search indexes, retrieval indexes, summaries and cached context are created, validated, invalidated and rebuilt.
-
-The review must explicitly cover:
-
-- Rebuilding exclusively from authoritative source records.
-- Preservation of the previous valid index during a failed rebuild.
-- Safe behaviour after interruption or application reload.
-- Verification before a rebuilt index becomes available.
-- Detection of stale or incomplete index generations.
-- Removal of deleted and revoked information from derived representations.
-- Enforcement of attribution, scope, permissions and temporal eligibility.
-- Source-reference integrity in search results and assembled answer context.
-- Storage and performance costs on representative Android devices.
-
-Acceptance requirements:
-
-- No derived index becomes an authoritative source of personal information.
-- A failed or interrupted rebuild cannot corrupt original messages or memories.
-- Incomplete indexes cannot be presented as complete search results.
-- Stale indexes cannot bypass deletion, revocation or governance restrictions.
-- Rebuild completion is verified before the new index is used.
-- Failure leaves the application in a safe, clearly reported state.
-- Every resolved behaviour has corresponding evaluation fixtures.
-- The chosen strategy is justified by measured performance rather than assumed necessity.
-
-I. Manual-entry and extracted-memory boundaries
-
-Define how future extracted memories coexist with existing manual entries when they concern the same information.
-
-The review must cover:
-
-- Detection of overlapping information without assuming the records are identical.
-- Preservation of manual-entry content and existing user organisation.
-- Whether an explicit relationship between a manual entry and an extracted memory is justified.
-- Independent correction, retention and deletion behaviour.
-- Prevention of accidental replacement, merging or deletion.
-
-Acceptance requirements:
-
-- Manual entries and extracted memories remain separate records.
-- Similar wording does not establish identity or a valid relationship.
-- Extracted-memory creation cannot silently replace a manual entry.
-- Deleting one record cannot silently delete the other.
-- Any future relationship requires an explicitly approved model and validation rules.
-- Evaluation fixtures cover overlapping, conflicting and independently deleted records.
 
 7. Consolidated implementation sequence
 
 The build is divided into eight stages. Completing one stage does not automatically authorise the next.
 
+
 Stage 0: Design closure and baseline
 
-Purpose: Finish the finite readiness review and establish the verified production baseline.
+Purpose: Complete the finite readiness review and establish the verified production baseline.
 
 Work:
 
-- Review the six master documents together.
-- Resolve the remaining decisions in Section 6.
-- Confirm supporting documents are reference-only.
-- Re-inspect the live repository and existing tests.
-- Record the current commit and verification baseline.
-- Identify the exact first implementation files and dependencies.
+- Reconcile the six master documents and the supporting storage reference.
+- Give every unresolved technical decision an explicit disposition in the canonical specification.
+- Confirm the implementation gates for all deferred decisions.
+- Re-inspect the live repository, existing tests and current storage behaviour.
+- Record the verified production commit and test baseline.
+- Identify the exact Stage 1 implementation files and their dependencies.
+- Prepare the Stage 1 migration, backup, restore, rollback and verification plan.
 
 Acceptance:
 
+- All 39 previously unresolved decisions have explicit dispositions.
 - No contradictory implementation instructions remain.
-- The canonical record model is internally consistent.
-- Critical deletion and recovery behaviour has a defined policy.
-- Backup and migration behaviour is sufficiently specified for the first storage change.
+- The five-collection target structure is internally consistent.
+- Stage 1 migration and backup compatibility requirements are defined.
+- Existing data preservation and best-effort recovery limitations are explicit.
+- Deferred features cannot be mistaken for approved Stage 1 work.
 - The first implementation phase has measurable tests and a recovery plan.
 
-Exit: Explicit approval of the first production implementation phase.
+Exit: Explicit user approval of the exact Stage 1 production implementation proposal.
 
 Stage 1: Storage and schema foundation
 
-Purpose: Introduce a safe foundation for the personal-memory data without damaging the existing application.
+Purpose: Introduce the five-collection storage foundation without changing existing product behaviour or damaging existing user data.
 
-Work:
+Scope:
 
-- Implement the approved schema extension.
-- Validate all five new collections.
-- Preserve existing data domains.
-- Implement cross-collection reference validation.
-- Implement safe migration and rollback.
-- Extend backup, restore and recovery.
+- Extend the existing schema with exactly five empty collections:
+  - `conversations`
+  - `messages`
+  - `memories`
+  - `memorySources`
+  - `memoryRelations`
+- Preserve the existing `entries`, `learned`, `customRooms` and `ask` domains.
+- Keep the `mopapa.v1` storage key and current localStorage architecture.
+- Keep the existing plain JSON backup representation and schema-version compatibility model.
+- Validate collection types, record structures, identifiers and cross-collection references.
+- Implement the approved schema-v1 to schema-v2 migration.
+- Preserve a recoverable pre-migration copy.
+- Extend backup, restore and recovery validation for the complete schema.
 - Verify persistence after reload.
+- Preserve existing manual Keep, Search and deterministic Ask behaviour.
+
+Explicitly excluded:
+
+- Conversation import or message capture interfaces.
+- Automatic candidate extraction.
+- Creation or activation of accepted memories.
+- Memory review, correction or dismissal interfaces.
+- Memory lifecycle, permission and deletion operations.
+- Global identity resolution.
+- Persistent search indexes or advanced retrieval.
+- New AI processing or external services.
+- IndexedDB migration.
+- Any change to the existing manual-entry model.
 
 Acceptance:
 
-- Existing data is preserved.
-- Invalid references are rejected.
-- Unsupported schema versions fail safely.
-- Failed migration leaves the original data usable.
-- Backup and restore preserve all supported domains.
-- Recovery behaviour is verified.
-- Existing tests remain passing.
-- No feature is reported as saved before persistence is verified.
+- A valid schema-v1 dataset migrates without losing existing data.
+- All five new collections are present and correctly initialised as empty arrays.
+- Existing entries, learning data, custom rooms and Ask state remain intact.
+- Valid empty collections are accepted.
+- Malformed records, duplicate identifiers and invalid references are rejected.
+- Unsupported future schema versions fail safely.
+- Invalid connected data is not silently discarded during a successful restore.
+- A failed migration does not get reported as successful.
+- Read-back verification is performed before success is reported.
+- Best-effort rollback limitations are accurately handled and reported.
+- Recovery evidence is preserved where possible after a failed migration.
+- Backup export and restore preserve all supported data domains.
+- Persistence is verified after application reload.
+- Existing unit and browser tests remain passing.
+- New tests cover only genuinely missing behaviours after checking `tests/run.js` and `tests/browser.js` for duplication.
+- No deferred Stage 2 to Stage 7 feature is accidentally introduced.
+
+Exit: Verified Stage 1 implementation, passing automated tests, successful deployment and explicit user approval before Stage 2.
 
 Stage 2: Conversation and message preservation
 
