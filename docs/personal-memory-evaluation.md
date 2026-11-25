@@ -787,6 +787,22 @@ Verify that:
 - Dismissal and deletion remain distinct operations.
 - The application does not claim to erase external backup files it cannot access.
 
+Additional unresolved-policy fixtures:
+
+- Ordinary re-import cannot deliberately bypass deletion suppression.
+- Explicit user-authorised reintroduction follows the approved policy.
+- Repeated extraction cannot silently restore deleted or dismissed information.
+- Missing suppression information cannot be treated as proof that re-import is safe.
+- Incomplete secondary cleanup blocks affected records and dependent retrieval.
+- Unrelated, independently validated records remain available only where the approved partial-cleanup policy permits.
+- The application does not report complete deletion while required cleanup remains unresolved.
+- Interrupted deletion can be retried without creating inconsistent duplicate operations.
+- Manual entries and extracted memories containing similar information remain separate.
+- Creating an extracted memory cannot overwrite an existing manual entry.
+- Deleting a manual entry does not silently delete an overlapping extracted memory.
+- Deleting an extracted memory does not silently delete an overlapping manual entry.
+- Conflicting manual and extracted information is not silently merged into one established fact.
+
 A deletion or revocation failure that permits prohibited information to influence an answer is a critical failure.
 
 ### 4.10 Backup, restore, migration and storage reliability

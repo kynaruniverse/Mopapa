@@ -209,6 +209,10 @@ Requirements:
 - Stable source identifiers should be used where available.
 - Text similarity alone must not establish identity.
 - Ambiguous re-import must not silently restore deleted information.
+- Define the explicit user action required to deliberately reintroduce previously deleted information.
+- Distinguish deliberate reintroduction from ordinary import, duplicate detection, repeated extraction and paraphrased content.
+- Define how dismissal suppression differs from deletion suppression.
+- Define when suppression metadata may be removed without allowing accidental restoration.
 
 If complete suppression cannot be implemented safely, the limitation must be explicit. Do not claim complete suppression.
 
@@ -223,6 +227,10 @@ The policy must establish:
 - How retention is bounded.
 - How recovery is prevented from silently undoing deletion.
 - What happens if sanitisation fails.
+- The permitted number and maximum age of retained recovery copies.
+- How exported backups are distinguished from application-controlled recovery copies.
+- How the application explains that external backup files cannot be remotely erased.
+- How restore behaves when deletion history or required suppression information is unavailable.
 
 C. Backup format and migration transaction
 
@@ -235,6 +243,10 @@ Finalise:
 - Recovery-copy creation and verification.
 - Replacement and read-back behaviour.
 - Rollback after interrupted or failed migration.
+- The transaction strategy must be justified against the existing localStorage architecture and measured device constraints.
+- Partial cleanup must block affected information and its dependent retrieval.
+- Unrelated, independently validated information may remain available only where its safety can be established.
+- The application must not report complete deletion while required secondary cleanup remains unresolved.
 - Protection against older backups undoing deletion or revocation.
 
 A restore must not silently discard malformed records or broken references.
@@ -332,6 +344,27 @@ Acceptance requirements:
 - Failure leaves the application in a safe, clearly reported state.
 - Every resolved behaviour has corresponding evaluation fixtures.
 - The chosen strategy is justified by measured performance rather than assumed necessity.
+
+I. Manual-entry and extracted-memory boundaries
+
+Define how future extracted memories coexist with existing manual entries when they concern the same information.
+
+The review must cover:
+
+- Detection of overlapping information without assuming the records are identical.
+- Preservation of manual-entry content and existing user organisation.
+- Whether an explicit relationship between a manual entry and an extracted memory is justified.
+- Independent correction, retention and deletion behaviour.
+- Prevention of accidental replacement, merging or deletion.
+
+Acceptance requirements:
+
+- Manual entries and extracted memories remain separate records.
+- Similar wording does not establish identity or a valid relationship.
+- Extracted-memory creation cannot silently replace a manual entry.
+- Deleting one record cannot silently delete the other.
+- Any future relationship requires an explicitly approved model and validation rules.
+- Evaluation fixtures cover overlapping, conflicting and independently deleted records.
 
 7. Consolidated implementation sequence
 

@@ -2092,6 +2092,10 @@ The following remain open and must not be represented as settled:
 33. The privacy and reference-handling policy for identity correction or deletion, including how affected memories and historical attribution are reassessed.
 34. The exact derived-index rebuild strategy, including staging, interruption, verification, replacement and recovery behaviour.
 35. The consistency mechanism that prevents stale, incomplete or partially rebuilt indexes from being treated as authoritative or available for unrestricted retrieval.
+36. The exact user action required to deliberately reintroduce previously deleted information, including how that action is distinguished from ordinary import, duplicate detection and automatic extraction.
+37. The retrieval policy during incomplete deletion or secondary cleanup, including whether unrelated, independently validated information may remain available while affected dependencies are blocked.
+38. The transaction strategy appropriate to the existing local-first storage architecture, including atomic visibility, interruption recovery, retry and rollback limitations.
+39. The relationship and deletion policy when an extracted memory overlaps with an existing manual entry. Manual entries and extracted memories must remain separate unless an explicitly approved relationship is introduced.
 
 Each decision must be recorded in the appropriate master document, with its rationale, alternatives considered, consequences, tests and approval status.
 
