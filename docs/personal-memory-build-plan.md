@@ -41,7 +41,7 @@ The six master documents have distinct responsibilities:
 
 The README provides navigation. The architecture defines what Mopapa is intended to become. The record specification defines how its proposed information is represented. The build plan governs implementation and verification. The research review explains the evidence behind the direction. The evaluation document defines how quality and safety are measured.
 
-Supporting specifications and historical documents are reference material, not competing implementation authorities. Their unique useful requirements must be transferred and checked before they are retired.
+The historical design and engineering documents have been reconciled into the six master documents and retired from the active documentation set. The only retained supporting engineering reference is "docs/storage-architecture.md". It records the existing storage implementation and does not create a competing implementation authority.
 
 Where a conflict is discovered, record it as a specific issue and resolve it in the appropriate master document. Do not create another parallel specification.
 
@@ -183,18 +183,20 @@ These are proposed implementation rules, not claims about existing production be
 
 6. Remaining implementation-readiness decisions
 
-The main cross-document technical reconciliation was completed on 23 November 2026.
+The main cross-document technical reconciliation and historical-document audit are complete.
 
-The six-master-document structure is established. Historical specification reconciliation remains in progress. Older supporting specifications must not be retired until their unique requirements have been transferred and their references checked.
+The six-master-document structure is established. Unique technical requirements have been reconciled into the canonical specification, build plan and evaluation document. Historical design and engineering documents have been retired from the active documentation set.
+
+"docs/storage-architecture.md" remains as the sole supporting engineering reference for the existing localStorage implementation.
 
 This is not a reason to restart completed research or reopen settled architectural decisions.
 
 The remaining work is a finite combination of:
 
-- Completing unique requirement transfers from the older specifications.
-- Aligning the master documents and removing contradictory status statements.
-- Completing the implementation-readiness decisions.
+- Completing the implementation-readiness decisions below.
 - Verifying the evaluation and acceptance requirements.
+- Establishing a fresh production baseline from the live repository.
+- Defining and obtaining explicit approval for the first production implementation phase.
 
 The following issues must be resolved or given an explicitly bounded implementation decision.
 
@@ -704,17 +706,13 @@ The six master documents are established as the authoritative documentation stru
 5. Research review.
 6. Evaluation specification.
 
-The main technical requirements have been consolidated into the canonical record specification and evaluation document.
+The technical requirements have been consolidated into the canonical record specification, build plan and evaluation document.
 
-The remaining older engineering documents are retained as historical or supporting references. Their existence does not create additional implementation authorities.
+The historical-document reconciliation and reference audit are complete. The redundant historical specifications and engineering records have been retired from the active documentation set. Their historical commits remain available in Git history.
 
-The final documentation task is to reconcile their unique historical information, correct outdated next-work instructions, and verify that references point to the appropriate master documents.
+"docs/storage-architecture.md" is the only retained supporting engineering reference. It records the existing localStorage implementation and its measured limitations. Those measurements do not establish that localStorage will be sufficient for a future conversation archive.
 
-The historical storage architecture document records the current localStorage implementation and its measured limitations. Its localStorage decision applies to the existing production schema. It does not establish that localStorage will be sufficient for a future conversation archive.
-
-The historical implementation audit and module map describe earlier inspected repository commits. They must not be treated as a current source-code inspection or current production baseline.
-
-The historical build log preserves earlier engineering decisions and activity. This build plan is the authoritative location for current verified progress and outstanding work.
+This build plan is the authoritative location for current implementation sequencing, outstanding decisions and verified engineering progress.
 
 The next milestone after documentation closure is a finite implementation-readiness review. It must inspect the current repository, verify the complete proposed record model, resolve the remaining blockers, establish the production baseline and define the smallest safe first implementation phase.
 

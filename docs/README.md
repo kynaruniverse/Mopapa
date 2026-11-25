@@ -69,21 +69,37 @@ No production schema version 2, IndexedDB migration, external AI processing, pai
 
 ## Documentation maintenance
 
-These six documents are the only master documents: this README and the five documents listed in the reading order above.
+Mopapa has six authoritative master documents:
 
-The following retained documents are historical or supporting engineering references. They are not part of the primary reading path and must not create competing implementation instructions.
+1. This README, for navigation and current project status.
+2. `personal-memory-architecture.md`, for product direction and architectural principles.
+3. `personal-memory-record-specification.md`, for canonical technical requirements.
+4. `personal-memory-build-plan.md`, for implementation sequencing, acceptance criteria and verified progress.
+5. `personal-memory-research-review.md`, for supporting research and design rationale.
+6. `personal-memory-evaluation.md`, for evaluation fixtures, methods and results.
 
-- `personal-memory-architecture-decisions.md`: historical record of the 19 November architecture decision.
-- `personal-memory-implementation-audit.md`: historical inspection of the existing application at its recorded commit.
-- `personal-memory-module-map.md`: historical source-module and responsibility map. Its inspected commit is not the current repository baseline.
-- `storage-architecture.md`: supporting record of the existing localStorage implementation and its measured limitations.
-- `personal-memory-build-log.md`: historical engineering record. The current verified progress log is maintained in the build plan.
-- `personal-memory-schema-consistency-review.md`: completed historical reconciliation review.
+These documents are the complete primary documentation set. Do not create additional specifications, competing roadmaps or duplicate decision registers.
 
-Other older specifications remain reference-only until their final unique-content and reference audit is complete.
+### Supporting engineering reference
 
-The canonical technical authority is `personal-memory-record-specification.md`. The implementation sequence, current blockers, acceptance criteria and verified progress are governed by `personal-memory-build-plan.md`.
+`storage-architecture.md` is retained as a supporting engineering reference.
 
-Do not create new overlapping specifications, duplicate decision logs or parallel roadmaps. Transfer useful requirements into the appropriate master document and retire redundant references only after checking their unique content and links.
+It records the existing localStorage implementation, measured performance, limitations and the conditions under which a future storage review may be justified.
 
-**Current status:** The six-master-document structure is established. Final historical-document reconciliation and the implementation-readiness review remain outstanding. Production implementation remains subject to the explicit approval gates in the build plan.
+It is not a separate product roadmap and does not approve a storage migration. Its existing measurements must not be treated as proof of performance for a future large conversation archive.
+
+### Historical documentation
+
+The older architecture decisions, data model, identity, governance, deletion, backup, implementation audit, module map, build log and schema reconciliation documents have been retired from the active documentation set.
+
+Their useful technical requirements have been reconciled into the six master documents. Their historical commits remain available in Git history.
+
+Do not recreate these retired documents or use historical next-work instructions as current implementation guidance.
+
+### Current status
+
+The six-master-document structure is complete. The historical-document reconciliation is complete.
+
+The remaining work is the finite implementation-readiness review described in `personal-memory-build-plan.md`.
+
+Production implementation remains subject to its explicit approval gates.
