@@ -853,6 +853,26 @@ Rules:
 
 A semantic relationship is not a derivation dependency. The two must remain separate.
 
+10.3 Derived indexes and retrieval representations
+
+Search indexes, retrieval indexes, summaries, cached context and other derived representations are not authoritative records.
+
+Requirements:
+
+- They must be rebuildable from the authoritative original messages, memories, provenance and applicable relationship records.
+- Rebuilding must never modify or replace original messages or authoritative memory records.
+- A rebuild must not make partially constructed or inconsistent index data available as a complete result.
+- An interrupted or failed rebuild must leave authoritative data intact and preserve either the previous valid index or a safely unavailable index state.
+- A completed rebuild must verify that every indexed record retains valid references to its authoritative sources.
+- Indexes must not retain deleted or revoked information in a form that remains available to ordinary retrieval.
+- Scope, audience, permissions, restrictions, attribution and temporal eligibility must be enforced when building and using derived representations.
+- Search results and answers must retain traceable references to their supporting authoritative records.
+- A stale or invalid index must not be treated as proof that a record remains valid or eligible for retrieval.
+
+The initial model does not require a separate persistent index collection.
+
+The exact rebuild strategy, including whether an index is held in memory or persisted, remains subject to measured performance and storage constraints.
+
 ---
 
 11. Lifecycle and evidence states
@@ -1464,6 +1484,24 @@ Revocation
 - Invalidate affected summaries, caches and indexes.
 - Reassess future imports and retrieval.
 
+Dependent-memory reassessment
+
+After a source is deleted or revoked, reassess every directly and indirectly dependent memory.
+
+Remaining evidence | Required treatment
+
+No remaining valid evidence | Remove the memory through the deletion process.
+Remaining evidence independently supports the complete claim | It may remain eligible after full validation and governance checks.
+Remaining evidence supports only part of the claim | Narrow or reformulate only through an explicit, evidence-grounded correction process.
+Remaining evidence conflicts with the claim | Reassess its evidence state and retrieval eligibility.
+Remaining evidence has unknown permission | Exclude the memory from the affected use.
+Remaining evidence is invalid or missing | Do not rely on it.
+Dependency cannot be established safely | Block affected retrieval and report the unresolved state.
+
+A previously accepted memory does not retain its status as an established fact merely because it was accepted before its supporting evidence changed.
+
+A deleted source must not be replaced by another source merely because the wording is similar. Alternative evidence must independently support the relevant claim.
+
 16.4 Failure conditions
 
 If dependency traversal encounters a cycle, missing reference, malformed record or uncertain permission, affected retrieval must fail closed.
@@ -2052,6 +2090,8 @@ The following remain open and must not be represented as settled:
 31. Whether compound claims require claim-level provenance or must instead be represented as separate independently assessable memory records.
 32. The complete reversible correction, merge and unmerge policy for conversation-local participants, including the consequences for dependent memories and relationships. No global identity merge is authorised by this requirement.
 33. The privacy and reference-handling policy for identity correction or deletion, including how affected memories and historical attribution are reassessed.
+34. The exact derived-index rebuild strategy, including staging, interruption, verification, replacement and recovery behaviour.
+35. The consistency mechanism that prevents stale, incomplete or partially rebuilt indexes from being treated as authoritative or available for unrestricted retrieval.
 
 Each decision must be recorded in the appropriate master document, with its rationale, alternatives considered, consequences, tests and approval status.
 

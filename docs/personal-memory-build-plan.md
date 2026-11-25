@@ -185,7 +185,7 @@ These are proposed implementation rules, not claims about existing production be
 
 The main cross-document technical reconciliation was completed on 23 November 2026.
 
-The wider documentation consolidation is still in progress. The six master documents are being established as the clear authoritative structure, and older supporting specifications must not be retired until their unique requirements have been transferred and checked.
+The six-master-document structure is established. Historical specification reconciliation remains in progress. Older supporting specifications must not be retired until their unique requirements have been transferred and their references checked.
 
 This is not a reason to restart completed research or reopen settled architectural decisions.
 
@@ -305,6 +305,33 @@ Acceptance requirements:
 - Ambiguous attribution must remain unresolved or be rejected safely.
 - Every resolved rule must have corresponding evaluation fixtures.
 - Any decision that remains open must be recorded as a blocker rather than guessed during implementation.
+
+H. Derived indexes and rebuild reliability
+
+Define how future search indexes, retrieval indexes, summaries and cached context are created, validated, invalidated and rebuilt.
+
+The review must explicitly cover:
+
+- Rebuilding exclusively from authoritative source records.
+- Preservation of the previous valid index during a failed rebuild.
+- Safe behaviour after interruption or application reload.
+- Verification before a rebuilt index becomes available.
+- Detection of stale or incomplete index generations.
+- Removal of deleted and revoked information from derived representations.
+- Enforcement of attribution, scope, permissions and temporal eligibility.
+- Source-reference integrity in search results and assembled answer context.
+- Storage and performance costs on representative Android devices.
+
+Acceptance requirements:
+
+- No derived index becomes an authoritative source of personal information.
+- A failed or interrupted rebuild cannot corrupt original messages or memories.
+- Incomplete indexes cannot be presented as complete search results.
+- Stale indexes cannot bypass deletion, revocation or governance restrictions.
+- Rebuild completion is verified before the new index is used.
+- Failure leaves the application in a safe, clearly reported state.
+- Every resolved behaviour has corresponding evaluation fixtures.
+- The chosen strategy is justified by measured performance rather than assumed necessity.
 
 7. Consolidated implementation sequence
 
