@@ -878,6 +878,30 @@ Verify that:
 - IndexedDB remains deferred unless representative workload measurements justify reconsideration.
 
 
+### 4.11 Retrieval and answering
+
+Evaluate:
+
+- Relevant memory selection.
+- Source-backed answer correctness.
+- Complete source selection.
+- Contradictory evidence.
+- Historical versus current answers.
+- Permission enforcement during retrieval.
+- Uncertainty communication.
+- Appropriate clarification.
+- Appropriate abstention.
+- No unsupported personal claims.
+- No leakage from unrelated or restricted memories.
+- Correct use of derived memories.
+- Correct behaviour when evidence is deleted or revoked.
+
+A correct answer about the wrong person is a critical failure.
+
+An answer that presents unsupported information as an established personal fact is a critical failure.
+
+The existing deterministic Ask baseline remains protected. Future memory retrieval may supply evidence to Ask, but this document does not authorise replacing Ask with an LLM. Any expansion must preserve source grounding, uncertainty and appropriate abstention, and must be separately evaluated and approved.
+
 ---
 
 ## 5. Evaluation fixture and test design
