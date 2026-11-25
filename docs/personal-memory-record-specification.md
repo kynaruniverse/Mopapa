@@ -1488,15 +1488,15 @@ Dependent-memory reassessment
 
 After a source is deleted or revoked, reassess every directly and indirectly dependent memory.
 
-Remaining evidence | Required treatment
-
-No remaining valid evidence | Remove the memory through the deletion process.
-Remaining evidence independently supports the complete claim | It may remain eligible after full validation and governance checks.
-Remaining evidence supports only part of the claim | Narrow or reformulate only through an explicit, evidence-grounded correction process.
-Remaining evidence conflicts with the claim | Reassess its evidence state and retrieval eligibility.
-Remaining evidence has unknown permission | Exclude the memory from the affected use.
-Remaining evidence is invalid or missing | Do not rely on it.
-Dependency cannot be established safely | Block affected retrieval and report the unresolved state.
+| Remaining evidence | Required treatment |
+|---|---|
+| No remaining valid evidence | Remove the memory through the deletion process. |
+| Remaining evidence independently supports the complete claim | It may remain eligible after full validation and governance checks. |
+| Remaining evidence supports only part of the claim | Narrow or reformulate only through an explicit, evidence-grounded correction process. |
+| Remaining evidence conflicts with the claim | Reassess its evidence state and retrieval eligibility. |
+| Remaining evidence has unknown permission | Exclude the memory from the affected use. |
+| Remaining evidence is invalid or missing | Do not rely on it. |
+| Dependency cannot be established safely | Block affected retrieval and report the unresolved state. |
 
 A previously accepted memory does not retain its status as an established fact merely because it was accepted before its supporting evidence changed.
 
