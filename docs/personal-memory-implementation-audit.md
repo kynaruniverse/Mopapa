@@ -9,7 +9,6 @@ Branch: "main"
 Inspected commit: "32f5052c95ab9253be84e877e03319eb59bd02c6"
 
 Status: Historical implementation audit completed on 20 November 2026.
-Inspected commit: "32f5052c95ab9253be84e877e03319eb59bd02c6"
 Current authority: "docs/personal-memory-record-specification.md" and "docs/personal-memory-build-plan.md".
 Document role: Historical evidence about the implementation inspected at the recorded commit. Not a current repository audit.
 Implementation status: No production changes authorised by this document.
