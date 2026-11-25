@@ -69,7 +69,7 @@ No production schema version 2, IndexedDB migration, external AI processing, pai
 
 ## Documentation maintenance
 
-The six documents listed in the reading order above are the only master documents.
+These six documents are the only master documents: this README and the five documents listed in the reading order above.
 
 The following retained documents are historical or supporting engineering references. They are not part of the primary reading path and must not create competing implementation instructions.
 

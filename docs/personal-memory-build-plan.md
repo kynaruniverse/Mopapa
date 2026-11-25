@@ -283,6 +283,29 @@ Create a fixed, repeatable evaluation set covering:
 
 Critical privacy, attribution, provenance and deletion failures must be release blockers. They must not be averaged away by a high overall score.
 
+G. Identity, attribution and temporal edge cases
+
+Complete the remaining design decisions inherited from the historical identity and evidence specification.
+
+The review must explicitly cover:
+
+- Preservation of original timestamp information alongside normalised values.
+- Deterministic treatment of approximate dates, partial dates and timezone uncertainty.
+- Whole-message evidence versus located UTF-16 evidence spans.
+- Nested quotation structure and attribution-chain validation.
+- Compound claims and independently assessable provenance.
+- Reversible participant correction, merge and unmerge behaviour.
+- Identity deletion and reassessment of dependent records.
+
+Acceptance requirements:
+
+- Unknown identity and temporal information must remain explicitly unknown.
+- Original source text and source evidence must not be silently rewritten.
+- No global identity matching or merging is introduced without separate approval.
+- Ambiguous attribution must remain unresolved or be rejected safely.
+- Every resolved rule must have corresponding evaluation fixtures.
+- Any decision that remains open must be recorded as a blocker rather than guessed during implementation.
+
 7. Consolidated implementation sequence
 
 The build is divided into eight stages. Completing one stage does not automatically authorise the next.

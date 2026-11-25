@@ -2046,6 +2046,12 @@ The following remain open and must not be represented as settled:
 25. Archive-size limits and Android device acceptance thresholds.
 26. Evaluation thresholds and release criteria.
 27. Any future global identity-resolution model.
+28. Whether original source timestamp strings must be retained alongside normalised temporal values, including how malformed or ambiguous source timestamps are preserved.
+29. Deterministic rules and limits for approximate temporal bounds, including how timezone uncertainty and partial dates affect comparisons.
+30. Whether nested quoted-speaker annotations require explicit parent-child relationships, and how attribution chains are validated without flattening multiple speakers.
+31. Whether compound claims require claim-level provenance or must instead be represented as separate independently assessable memory records.
+32. The complete reversible correction, merge and unmerge policy for conversation-local participants, including the consequences for dependent memories and relationships. No global identity merge is authorised by this requirement.
+33. The privacy and reference-handling policy for identity correction or deletion, including how affected memories and historical attribution are reassessed.
 
 Each decision must be recorded in the appropriate master document, with its rationale, alternatives considered, consequences, tests and approval status.
 
