@@ -444,6 +444,7 @@ async function run() {
 
   await check('failed recovery preservation locks writes and permits exact original download', async function (page) {
     var originalRaw = JSON.stringify({
+      schemaVersion: 2,
       entries: [
         {
           id: 'valid-memory',
@@ -457,7 +458,12 @@ async function run() {
       ask: {
         aliases: [],
         boosts: {},
-        unanswered: []
+        unanswered: [],
+        conversations: [],
+        messages: [],
+        memories: [],
+        memorySources: [],
+        memoryRelations: []
       }
     });
 
@@ -1951,7 +1957,7 @@ async function run() {
   await check('successful browser restore replaces data and preserves custom rooms and Ask learning', async function (page) {
     await page.evaluate(function () {
       localStorage.setItem('mopapa.v1', JSON.stringify({
-        schemaVersion: 1,
+        schemaVersion: 2,
         entries: [
           { id: 'old', text: 'Old memory', room: 'notes' }
         ],
@@ -2200,7 +2206,7 @@ async function run() {
 
   await check('downloaded recovery copy can restore the complete previous state', async function (page) {
     var original = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       entries: [
         {
           id: 'drill-original',
@@ -2257,7 +2263,12 @@ async function run() {
       ask: {
         aliases: [],
         boosts: {},
-        unanswered: []
+        unanswered: [],
+        conversations: [],
+        messages: [],
+        memories: [],
+        memorySources: [],
+        memoryRelations: []
       }
     };
 
