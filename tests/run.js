@@ -10659,35 +10659,53 @@ test('failed schema migration preserves the original data and blocks writes', fu
     'The original entry must survive loading'
   );
 
-  const originalSetItem = w.localStorage.setItem;
-  let failedPrimaryWrite = false;
+  assert.strictEqual(
+    w.Mopapa.store.preserveCurrentRecoveryCopy(),
+    true,
+    'A verified recovery copy must exist before migration is attempted'
+  );
 
-  w.localStorage.setItem = function (key, value) {
-    if (key === 'mopapa.v1' && !failedPrimaryWrite) {
-      failedPrimaryWrite = true;
-      throw new Error('simulated migration write failure');
-    }
+  const copiesBeforeFailure = w.Mopapa.store.recoveryCopies();
 
-    return originalSetItem.call(this, key, value);
-  };
+  assert.ok(copiesBeforeFailure.length >= 1);
 
-  assert.strictEqual(w.Mopapa.store.migrate(), false);
-  assert.strictEqual(failedPrimaryWrite, true);
-  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
-  assert.strictEqual(w.Mopapa.store.save(), false);
+  w.localStorage.failWrites = true;
+
+  assert.strictEqual(
+    w.Mopapa.store.migrate(),
+    false,
+    'Migration must fail when the primary storage write fails'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.migrationBlocked(),
+    true,
+    'Failed migration must block further writes'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.save(),
+    false,
+    'Normal saves must remain blocked after failed migration'
+  );
 
   assert.strictEqual(
     w.localStorage.getItem('mopapa.v1'),
-    originalRaw
+    originalRaw,
+    'The original saved data must remain unchanged'
   );
 
-  const copies = w.Mopapa.store.recoveryCopies();
+  const copiesAfterFailure = w.Mopapa.store.recoveryCopies();
 
-  assert.ok(copies.length >= 1);
+  assert.ok(copiesAfterFailure.length >= 1);
 
-  const recovery = w.localStorage.getItem(copies[0].key);
+  const recovery = w.localStorage.getItem(copiesAfterFailure[0].key);
 
-  assert.strictEqual(recovery, originalRaw);
+  assert.strictEqual(
+    recovery,
+    originalRaw,
+    'The recovery copy must contain the exact original data'
+  );
 });
 
 test('restore rejects JSON without an entries array', function () {
