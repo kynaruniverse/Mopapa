@@ -727,4 +727,4 @@ The current localStorage decision remains unchanged.
 
 IndexedDB remains a candidate for investigation, not an approved migration.
 
-No schema version 2 activation, storage-key change or second authoritative store is authorised by this follow-up.
+No non-empty personal-memory record activation, storage-key change or second authoritative store is authorised by this follow-up. The Stage 1 schema-version-2 foundation remains active, with all five additional collections restricted to empty arrays.

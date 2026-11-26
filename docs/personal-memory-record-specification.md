@@ -1691,9 +1691,9 @@ Raw deleted content must not be retained merely to make suppression easier.
 
 18.1 Version boundaries
 
-The live application remains on schema version 1 and uses the existing "mopapa.v1" storage key.
+The live application uses schema version 2 and the existing "mopapa.v1" storage key.
 
-The proposed schema version 2 is inactive.
+Stage 1 introduced the five personal-memory collections as empty arrays. Non-empty records remain unsupported until their relevant implementation stages are separately approved and completed.
 
 Application schema version and backup format version are separate concepts. A future backup envelope must identify them separately.
 
@@ -1969,11 +1969,11 @@ Error messages must not expose unnecessary personal message content.
 
 20.1 Current storage boundary
 
-The live application currently uses localStorage and schema version 1.
+The live application currently uses localStorage and schema version 2.
 
 The current storage key is "mopapa.v1".
 
-No schema change is implied by this specification.
+The five additional collections exist as empty arrays only. This specification defines the intended later record structures and behaviour; it does not imply that non-empty record functionality is already implemented.
 
 IndexedDB remains a candidate, not an approved migration.
 

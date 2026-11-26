@@ -204,8 +204,8 @@ The following boundaries govern the storage and schema foundation:
 3. Initialise all five collections as empty arrays.
 4. Preserve existing `entries`, `learned`, `customRooms` and `ask` data.
 5. Keep the existing plain JSON backup representation. `schemaVersion` remains the data-schema version. Do not add a backup wrapper or independent backup-format version in this stage.
-6. Validate the complete proposed dataset before replacing current data.
-7. Reject unsupported schema versions, malformed records, duplicate identifiers and invalid cross-collection references.
+6. Validate the existing supported data domains and enforce the Stage 1 empty-only restriction for all five new collections before replacing current data. Record-level validation is deferred to the relevant later stages.
+7. Reject unsupported schema versions, malformed collection structures and any non-empty proposed collection. Duplicate identifiers, record-level validation and cross-collection references must be validated before the relevant non-empty records are introduced in later stages.
 8. Preserve unknown values as unknown. Do not invent dates, authors, identities, permissions or memory states.
 9. Prepare the next dataset before writing. Verify the stored value by reading it back.
 10. Preserve the existing best-effort rollback and recovery approach. Do not describe it as an atomic database transaction or guarantee rollback where the browser cannot guarantee it.
@@ -400,7 +400,8 @@ Work:
 - Message ordering and timestamps.
 - Stable source identifiers where available.
 - Duplicate import protection.
-- Archive inspection and deletion.
+- Archive inspection.
+- No archive deletion functionality in Stage 2. Deletion is deferred to Stage 4, when suppression, older-backup handling, recovery-copy sanitisation and incomplete-cleanup behaviour have been defined and tested.
 
 Acceptance:
 
@@ -410,7 +411,7 @@ Acceptance:
 - Unknown timestamps remain unknown.
 - Retry does not create uncontrolled duplicates.
 - Failed imports do not corrupt existing data.
-- Backup, restore and deletion include the archive.
+- Backup and restore include the archive. Archive deletion remains disabled until Stage 4 governance and recovery requirements are implemented and verified.
 
 No automatic memory extraction is introduced until evidence preservation is reliable.
 
