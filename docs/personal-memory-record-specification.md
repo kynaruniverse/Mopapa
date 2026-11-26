@@ -199,21 +199,31 @@ The exact generator must be reviewed against the existing identifier implementat
 
 4.2 Timestamps and dates
 
-Known absolute instants use ISO 8601 timestamps with an explicit timezone or UTC designator.
+Message timestamps must preserve the distinction between the source value and any normalised interpretation.
 
-Example:
+A message timestamp uses these fields:
 
-2026-11-20T09:30:00.000Z
+- "originalTimestamp": The timestamp value supplied by the source, retained without modification. It may be a string, number or null.
+- "timestamp": A normalised ISO 8601 timestamp with an explicit timezone or UTC designator, or null when safe normalisation is not possible.
+- "timestampPrecision": The precision actually supplied: "year", "month", "day", "minute", "second", "millisecond" or "unknown".
+- "sourceTimezone": The timezone or offset explicitly supplied by the source, or null when absent.
+- "timestampStatus": "normalised", "unknown", "invalid" or "ambiguous".
+- "receivedAt": The UTC time Mopapa received or imported the message.
 
 Rules:
 
-- Unknown timestamps are represented as "null".
-- Do not invent a timestamp to fill a missing value.
-- Original event time, message time, import receipt time, record creation time and update time are distinct.
-- A date-only value remains date-only when the source supplies no time.
-- A month or year must not be converted into an invented day.
-- Original timezone information should be retained separately when supplied and relevant.
-- Invalid timestamps must be rejected, not silently normalised into a different date.
+- Never overwrite or discard the original source timestamp when normalising it.
+- Do not invent missing days, times, seconds, milliseconds or timezone offsets.
+- An absent source timestamp has originalTimestamp null, timestamp null and status "unknown".
+- An invalid or ambiguous source timestamp remains preserved in originalTimestamp. Its normalised timestamp must be null.
+- Preserve the precision supplied by the source. Do not imply millisecond precision merely because a normalised ISO value contains milliseconds.
+- Preserve an explicitly supplied timezone or offset in sourceTimezone.
+- A timestamp without a timezone must not be silently treated as UTC.
+- Receipt time is not a substitute for original message time.
+- Original event time, message time, import receipt time, record creation time and update time remain distinct.
+- Date-only values and partial dates remain at their supplied precision.
+- Invalid timestamps must not be silently corrected or normalised into a different date.
+- Ordering must use source sequence as the primary ordering mechanism. Timestamps may provide temporal context but must not override a reliable source sequence.
 
 4.3 Null and optional values
 
@@ -362,21 +372,9 @@ Field| Requirement| Rule
 
 6.2 Author representation
 
-A participant author may use:
+The source role and the actual author are separate fields.
 
-{
-  "kind": "participant",
-  "participantId": "par_example001",
-  "attribution": "user"
-}
-
-An unknown author may use:
-
-{
-  "kind": "unknown",
-  "participantId": null,
-  "attribution": "unknown"
-}
+"role" preserves the source's message-role classification. "author" identifies the person or system responsible for the message where the source establishes that information.
 
 The proposed author kinds are:
 
@@ -391,7 +389,15 @@ The attribution classes are:
 - "third_party"
 - "unknown"
 
-A system author may use:
+A participant author uses:
+
+{
+  "kind": "participant",
+  "participantId": "par_example001",
+  "attribution": "user"
+}
+
+A system author uses:
 
 {
   "kind": "system",
@@ -399,7 +405,7 @@ A system author may use:
   "attribution": "assistant"
 }
 
-An unknown author must use:
+An unknown author uses:
 
 {
   "kind": "unknown",
@@ -407,18 +413,28 @@ An unknown author must use:
   "attribution": "unknown"
 }
 
-Author validation requirements:
+Source-role mapping requirements:
 
-- A "participant" author must reference an existing participant in the same conversation.
-- A "system" author must have a null participant reference and "assistant" attribution.
-- An "unknown" author must have a null participant reference and "unknown" attribution.
+| Source role | Author handling |
+|---|---|
+| "user" | Map to a conversation-local participant with "user" attribution only when the source establishes the author. Otherwise use unknown attribution. |
+| "assistant" | Map to a conversation-local participant with "assistant" attribution when the source establishes that participant. Do not confuse assistant messages with system messages. |
+| "system" | Use the system author representation where the source establishes a system-originated message. |
+| "other" or an unsupported source role | Preserve the source role. Use a known participant with "third_party" attribution only where the source establishes that identity. Otherwise use unknown attribution. |
+
+Validation requirements:
+
+- A participant author must reference an existing participant in the same conversation.
+- A system author must have a null participant reference and assistant attribution.
+- An unknown author must have a null participant reference and unknown attribution.
 - Unsupported author kinds must be rejected.
 - A participant reference belonging to another conversation must be rejected.
-- A role and author combination that contradicts the original source must be rejected or retained as unresolved rather than silently rewritten.
-
-Import origin must never be used as an authorship value. An imported message may still have been written by the user.
-
-The complete validation decision table for message "role", "author.kind" and "author.attribution" remains a pre-implementation requirement. These structural rules do not authorise an assumed mapping between source roles and authorship.
+- A source role must not be rewritten to make it agree with an assumed author.
+- Where source role and author information contradict each other, preserve the source role and retain unresolved authorship or reject the affected record. Never guess.
+- Import origin must never be used as an authorship value.
+- An imported message may still have been written by the user.
+- A person mentioned in a message is not automatically its author or a conversation participant.
+- Author attribution must not be inferred from writing style or message wording.
 
 6.3 Message invariants
 
@@ -458,6 +474,7 @@ Required fields:
 - "textEnd": Exclusive UTF-16 end offset or null.
 - "status": "resolved", "unresolved", "ambiguous" or "unknown".
 - "quotationType": "direct_quote", "reported_speech", "paraphrase" or "uncertain".
+- "parentQuoteId": Existing quoted-speaker annotation ID or null when the quotation is not nested.
 
 Quotation types:
 
@@ -482,6 +499,18 @@ Rules:
 The canonical offset convention is defined in Section 8. Where a reliable span is unavailable, use the explicit whole-message evidence representation rather than inventing offsets.
 
 Nested quotations must not flatten multiple speakers into one attribution. If the attribution chain cannot be represented reliably, retain the report with unresolved attribution.
+
+Nested quotation representation:
+
+- A nested quotation references its immediate parent annotation through "parentQuoteId".
+- The parent annotation must exist within the same message.
+- A quotation cannot reference itself or create a parent-child cycle.
+- Where both parent and child have reliable text spans, the child span must be contained within the parent span.
+- Separate nested speakers must remain separate annotations.
+- A nested speaker must not inherit the parent's identity or attribution.
+- If the source does not establish the nesting or speaker reliably, preserve the original message and mark the affected attribution unresolved.
+- A missing parent reference must not be interpreted as proof that a quotation is not nested.
+- Original message text must remain unchanged. Annotation offsets must continue to use the canonical UTF-16 convention.
 
 Nested quotations, compound claims and conflicting attribution require dedicated evaluation fixtures before implementation.
 
@@ -1646,23 +1675,66 @@ If reliable reconciliation cannot be established, the affected restore must be r
 
 17. Re-import and deletion suppression
 
-17.1 Required behaviour
+17.1 Stage 2 duplicate-import behaviour
 
-Ordinary re-import or extraction must not silently reverse a deliberate deletion, dismissal or revocation decision.
+Stage 2 must prevent uncontrolled duplicates when a source supplies stable identifiers.
 
-The initial model contains five proposed personal-memory collections. No sixth collection or persistent import ledger is approved.
+A source conversation is identified using the combination of:
 
-17.2 Source identity
+- Source type.
+- Original source conversation identifier.
 
-- Prefer stable source identifiers supplied by the original source.
-- Keep source identifiers separate from Mopapa-generated IDs.
-- Text similarity alone must not establish source identity.
-- Do not claim reliable duplicate detection when source identity is unavailable.
-- Do not retain raw deleted message text solely to recognise a future import.
+A source message is identified using the combination of:
 
-17.3 Ambiguous re-import
+- Source type.
+- Original source conversation identifier, where available.
+- Original source message identifier.
 
-Where the system cannot establish whether an import would reverse a prior deletion or revocation:
+Rules:
+
+- Source identifiers remain separate from Mopapa-generated IDs.
+- Stable source identifiers must be compared within their source namespace.
+- Re-importing an already imported source conversation must not create another copy.
+- Re-importing an existing source message must not create a duplicate message.
+- A retry after an interrupted import must be safe when stable source identifiers are available.
+- Duplicate identifiers referring to materially conflicting source content must not be silently overwritten. The affected import must be rejected or held for explicit review.
+- Text similarity alone must never establish source identity.
+- Message wording, timestamps, participant names and array position are not substitutes for stable source identifiers.
+
+Where stable source identifiers are unavailable:
+
+- Mopapa must not claim reliable cross-import duplicate detection.
+- No persistent import ledger or sixth collection is authorised.
+- No content-similarity fingerprint may be treated as proof of source identity.
+- An ambiguous retry must not silently merge records.
+- The affected operation must be blocked or require an explicit, separately designed review process.
+- Any duplicate-risk warning must accurately describe the limitation.
+
+17.2 Deletion and re-import boundary
+
+Stage 2 does not implement conversation or message deletion.
+
+Deletion remains deferred to Stage 4, where the full effects on derived memories, provenance, relationships, backups and recovery copies can be implemented together.
+
+Ordinary re-import must not silently reverse a deliberate deletion, dismissal or revocation decision.
+
+Before deletion is implemented, Stage 4 must define:
+
+- How deliberate deletion is distinguished from ordinary re-import.
+- How older backups and recovery copies are handled.
+- How deleted information is prevented from returning through restore or import.
+- How suppression works without retaining deleted message text.
+- Whether an existing collection can safely represent the necessary suppression metadata without compromising its data ownership.
+- How incomplete cleanup blocks affected retrieval and reports failure.
+- How deliberate user-authorised reintroduction differs from ordinary import.
+
+No sixth collection, persistent import ledger or alternative suppression mechanism is approved by this section.
+
+Raw deleted content must not be retained merely to make future suppression easier.
+
+17.3 Re-import after deletion
+
+Where the system cannot establish whether an import would reverse a previous deletion or revocation:
 
 - Do not silently recreate the affected information.
 - Do not claim that suppression is reliable.
@@ -1675,15 +1747,7 @@ A dismissed candidate must not silently return as an accepted memory.
 
 A deliberate user instruction to reintroduce previously deleted information must be distinguishable from ordinary repeated import.
 
-The confirmation, retention and audit behaviour for explicit reintroduction remain unresolved.
-
-17.5 Suppression decision
-
-The minimum metadata, storage location, retention period, deletion behaviour, backup inclusion and restore behaviour remain unresolved.
-
-No import ledger, fingerprint scheme, sixth collection or alternative persistent suppression mechanism is approved.
-
-Raw deleted content must not be retained merely to make suppression easier.
+The confirmation, retention and audit behaviour for explicit reintroduction remains a Stage 4 decision.
 
 ---
 

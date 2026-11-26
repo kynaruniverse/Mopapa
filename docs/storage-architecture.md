@@ -727,4 +727,41 @@ The current localStorage decision remains unchanged.
 
 IndexedDB remains a candidate for investigation, not an approved migration.
 
+### Stage 2 archive benchmark plan
+
+The existing manual-entry benchmarks are not a proxy for conversation-archive performance.
+
+Once Stage 2 has a working archive implementation, benchmark three message-count workloads:
+
+- 1,000 messages.
+- 10,000 messages.
+- 50,000 messages.
+
+These are diagnostic workload sizes, not supported archive limits or guarantees.
+
+Message text sizes and metadata distribution should be based on representative authorised conversation exports. Record the actual message-size distribution, conversation count, participant count and source metadata size used by each fixture. Include a separate stress fixture containing unusually long messages.
+
+Measure:
+
+- Initial load and parsing.
+- Full-dataset validation.
+- Complete serialisation.
+- Save and verified read-back.
+- Backup export.
+- Backup restore.
+- Recovery-copy creation and storage growth.
+- Import duration.
+- Retry duration.
+- Quota and interrupted-write behaviour.
+
+For each workload, record dataset size, browser, device, repetitions, median and p95 where the sample size permits.
+
+Use at least 30 measured repetitions for stable timing comparisons after warm-up. Keep CI Chromium results separate from real-device results.
+
+The first Android measurements should use the actual supported mobile browser and a representative device. CI results are diagnostic evidence, not proof of Android performance.
+
+Do not introduce a hard archive-size limit, change the existing 5 MiB import limit or migrate to IndexedDB solely because a synthetic stress workload is large.
+
+The storage decision remains localStorage until representative evidence demonstrates a material reliability or usability problem. If it does, conduct a separate storage review before proposing a migration.
+
 No non-empty personal-memory record activation, storage-key change or second authoritative store is authorised by this follow-up. The Stage 1 schema-version-2 foundation remains active, with all five additional collections restricted to empty arrays.

@@ -22,6 +22,76 @@ Critical privacy, attribution, provenance, permission, deletion and data-integri
 
 ---
 
+## Stage 2 conversation and message preservation evaluation
+
+Stage 2 must be evaluated as an original-evidence preservation system. It is not an extraction or retrieval benchmark.
+
+Required fixture categories:
+
+1. Source-role and author mapping:
+   - User-authored messages.
+   - Assistant-authored messages.
+   - System messages.
+   - Third-party participants.
+   - Unknown authors.
+   - Contradictory source role and author information.
+   - Imported messages whose author is the user.
+
+2. Quotation attribution:
+   - Direct quotations.
+   - Reported speech.
+   - Paraphrases.
+   - Uncertain attribution.
+   - Multiple speakers in one message.
+   - Nested quotations.
+   - Ambiguous or conflicting speaker attribution.
+   - Missing or invalid quotation spans.
+
+3. Timestamp preservation:
+   - UTC timestamps.
+   - Explicit positive and negative offsets.
+   - Timestamps without timezone information.
+   - Date-only values.
+   - Partial dates.
+   - Numeric source timestamps where supported.
+   - Invalid and ambiguous source timestamps.
+   - Different source precision.
+   - Receipt time distinct from original message time.
+
+4. Message integrity and ordering:
+   - Stable source sequence.
+   - Missing sequence values.
+   - Duplicate sequence values.
+   - Out-of-order source records.
+   - Identical timestamps on separate messages.
+   - Empty and unusually long messages.
+   - Unicode, emoji, surrogate pairs and combining characters.
+   - Exact original text preservation.
+
+5. Duplicate import and retry:
+   - Repeated import with identical stable source identifiers.
+   - Interrupted import followed by retry.
+   - Duplicate message identifiers with identical content.
+   - Duplicate identifiers with conflicting content.
+   - Missing stable conversation identifiers.
+   - Missing stable message identifiers.
+   - Similar wording with different source identifiers.
+   - Same wording from unrelated source conversations.
+
+6. Failure and recovery:
+   - Invalid conversation references.
+   - Invalid participant references.
+   - Broken quotation parent references.
+   - Cyclic quotation relationships.
+   - Failed persistence.
+   - Interrupted import.
+   - Backup export and restore of a populated archive.
+   - Reload and verification of preserved source text and metadata.
+
+Release-blocking failures include altered original text, invented authorship, false quotation attribution, invented timestamps, uncontrolled duplicate creation, partial imports reported as successful, and failed restore operations that damage existing data.
+
+Stage 2 results must report each category separately. A single aggregate score must not conceal a critical attribution, evidence-integrity or data-loss failure.
+
 ## 2. Existing deterministic Ask regression suite
 
 ### 2.1 Purpose and principles

@@ -445,26 +445,40 @@ Purpose: Turn reliable candidates into independently inspectable and controllabl
 
 Work:
 
-- Memory records and types.
-- Provenance and evidence spans.
-- Lifecycle and evidence states.
-- Derivation dependencies.
-- Semantic relationships.
-- Scope and use restrictions.
-- Identity correction.
-- Inspection, correction and dismissal.
-- Revocation and deletion.
+- Conversation creation and management.
+- Message preservation.
+- Conversation-local participants.
+- Explicit source-role and author separation.
+- Original timestamp preservation and safe normalisation.
+- Nested quoted-speaker annotations with parent-child references.
+- Message ordering and conversation boundaries.
+- Stable source identifiers where available.
+- Idempotent duplicate protection using stable source identifiers.
+- Explicit handling of imports without stable source identifiers.
+- Archive inspection.
+- Backup and restore compatibility for the archive.
+- No archive deletion functionality in Stage 2. Deletion remains deferred to Stage 4.
 
 Acceptance:
 
-- Every memory has traceable evidence.
-- Invalid provenance and dependency references are rejected.
-- Corrections do not rewrite original evidence.
-- Restrictions propagate conservatively.
-- Dismissed memories are not silently reactivated.
-- Deletion reassesses direct and indirect dependencies.
-- Revoked information is excluded from prohibited use.
-- Failure and recovery paths are tested.
+- Original message text is preserved unchanged.
+- Message ordering and conversation boundaries are correct.
+- Source role, author, quoted speaker and subject remain distinct.
+- Unknown or contradictory authorship remains unresolved rather than guessed.
+- Nested quotations preserve their parent-child relationships where established.
+- Invalid or ambiguous quotation attribution is not silently resolved.
+- Original timestamp values are preserved independently from normalised timestamps.
+- Missing, invalid and ambiguous timestamps remain unknown for temporal use.
+- Receipt time is not substituted for original message time.
+- Stable source identifiers prevent uncontrolled duplicate imports.
+- Imports without stable identifiers do not claim reliable cross-import deduplication.
+- Conflicting duplicate identifiers are rejected or held for review.
+- Failed imports do not corrupt existing data.
+- Backup and restore include the archive.
+- Archive deletion remains disabled until Stage 4 governance and recovery requirements are implemented and verified.
+- Representative archive performance is measured and reported separately from existing manual-entry benchmarks.
+
+No automatic memory extraction is introduced until evidence preservation is reliable.
 
 Stage 5: Temporal and relational memory
 
@@ -682,7 +696,11 @@ The historical-document reconciliation and reference audit are complete. The red
 
 This build plan is the authoritative location for current implementation sequencing, outstanding decisions and verified engineering progress.
 
-The next milestone after documentation closure is a finite implementation-readiness review. It must inspect the current repository, verify the complete proposed record model, resolve the remaining blockers, establish the production baseline and define the smallest safe first implementation phase.
+The Stage 2 readiness review has resolved the design requirements for source authorship, quoted-speaker attribution, nested quotations, original timestamp preservation, duplicate import handling and the deletion boundary.
+
+The remaining Stage 2 preparation is to define the concrete import-format mapping and evaluation fixtures, verify that the proposed record fields can be validated against those fixtures, and establish the archive benchmark workload.
+
+Stage 2 production implementation remains subject to a separate explicit approval. Documentation readiness does not authorise production changes.
 
 The first production milestone remains the smallest independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 
