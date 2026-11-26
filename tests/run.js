@@ -859,14 +859,20 @@ test('ask modules are loaded once and before ask.js', function () {
 });
 
 
+
 function stored(entries, learned, ask) {
   return {
     'mopapa.v1': JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       entries: entries || [],
       learned: learned || {},
       customRooms: [],
-      ask: ask || { aliases: [], boosts: {}, unanswered: [] }
+      ask: ask || { aliases: [], boosts: {}, unanswered: [] },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
     })
   };
 }
