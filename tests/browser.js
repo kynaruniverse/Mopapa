@@ -458,13 +458,13 @@ async function run() {
       ask: {
         aliases: [],
         boosts: {},
-        unanswered: [],
-        conversations: [],
-        messages: [],
-        memories: [],
-        memorySources: [],
-        memoryRelations: []
-      }
+        unanswered: []
+      },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
     });
 
     await page.evaluate(function (raw) {
@@ -1963,7 +1963,12 @@ async function run() {
         ],
         learned: {},
         customRooms: [],
-        ask: { aliases: [], boosts: {}, unanswered: [] }
+        ask: { aliases: [], boosts: {}, unanswered: [] },
+        conversations: [],
+        messages: [],
+        memories: [],
+        memorySources: [],
+        memoryRelations: []
       }));
     });
 
@@ -2115,18 +2120,19 @@ async function run() {
       ],
       ask: {
         aliases: [['gp', 'doctor']],
-        boosts: {
-          'gp doctor': {
-            backup: 2
-          }
-        },
+        boosts: {},
         unanswered: [
           {
             q: 'Where was the original appointment?',
             at: '2026-10-01'
           }
         ]
-      }
+      },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
     };
 
     await page.evaluate(function (raw) {
