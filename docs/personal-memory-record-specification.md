@@ -4,7 +4,7 @@ Status: Consolidated canonical technical specification
 Date: 23 November 2026
 Repository: https://github.com/kynaruniverse/Mopapa
 Authority: This document is the technical authority for the proposed personal-memory record model.
-Implementation status: Design only. Production implementation and schema migration remain unauthorised.
+Implementation status: The Stage 1 schema-version-2 storage foundation is implemented and verified. All five proposed collections remain empty. Non-empty record support and all subsequent personal-memory functionality remain design-only and subject to separate approval.
 
 ---
 
@@ -49,7 +49,7 @@ Where a supporting document conflicts with this specification, this specificatio
 This document does not authorise:
 
 - Production JavaScript changes.
-- Activation of schema version 2.
+- Creation or import of non-empty conversation, message, memory, source or relationship records without the relevant stage approval.
 - A storage-key change.
 - IndexedDB migration.
 - External AI processing or hosted inference.
@@ -133,7 +133,7 @@ The proposed logical dataset is:
   "memoryRelations": []
 }
 
-This is an illustrative target structure, not the live schema. Schema version 2 remains proposed and inactive.
+This structure represents the current Stage 1 live schema foundation. Schema version 2 is active, but all five additional collections must remain empty until their respective record-validation and functionality stages have been approved and implemented.
 
 ### Stage 1 empty-collection restriction
 

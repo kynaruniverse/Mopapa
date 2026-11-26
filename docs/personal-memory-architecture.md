@@ -86,6 +86,8 @@ Its established characteristics include:
 - Backup, restore and recovery functionality.
 - Automated unit and browser tests.
 
+The current live schema version is 2. The five additional personal-memory collections exist as empty arrays only; conversation and memory record functionality has not yet been implemented.
+
 The current application is not yet the complete personal memory system described in this architecture.
 
 In particular, it does not yet provide a complete automatic memory lifecycle or a general-purpose persistent archive of conversations and messages.
@@ -112,7 +114,7 @@ Their intended responsibilities are:
 - Memory sources: connect memories to the evidence supporting them.
 - Memory relations: represent meaningful relationships between memories.
 
-This is a proposed logical model. It is not a statement that these collections already exist in production.
+This is the target logical model. Stage 1 has introduced all five collections into the live schema as empty arrays. Their intended record structures and functionality remain subject to the later implementation stages.
 
 The canonical technical specification defines the detailed fields, validation rules, identity handling, temporal behaviour, governance and lifecycle requirements.
 

@@ -5,7 +5,7 @@ Build Roadmap and Verification Log
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
 Document date: 23 November 2026
-Status: Consolidated roadmap. Production implementation has not yet been authorised.
+Status: Consolidated roadmap. Stage 1 storage and schema foundation implemented and verified on 26 November 2026. Stage 2 readiness review in progress. No Stage 2 production implementation authorised.
 
 1. Purpose and authority
 
@@ -104,10 +104,11 @@ Do not introduce a framework or undertake a wholesale rewrite without measured e
 
 Storage
 
-- The live application remains on localStorage and schema version 1.
-- The current storage key remains "mopapa.v1".
-- IndexedDB is a candidate, not an approved migration.
-- No production schema version 2 is active.
+- The live application uses localStorage and schema version 2.
+- The existing storage key remains "mopapa.v1".
+- Exactly five additional collections exist as empty arrays.
+- IndexedDB remains a candidate, not an approved migration.
+- Non-empty personal-memory records remain unsupported.
 - No second unprotected source of truth may be introduced.
 
 Evidence and reliability
@@ -144,7 +145,7 @@ Existing manual entries remain separate.
 
 No sixth collection or persistent import ledger is approved.
 
-The proposed collections and capabilities are not present in the live schema merely because they have been documented.
+The five proposed collections are present in the live schema as empty arrays following the verified Stage 1 implementation. Their non-empty record functionality and associated capabilities remain unimplemented.
 
 Before the first production change, record a fresh baseline against the exact current "main" commit:
 
@@ -343,7 +344,7 @@ Scope:
 - Preserve the existing `entries`, `learned`, `customRooms` and `ask` domains.
 - Keep the `mopapa.v1` storage key and current localStorage architecture.
 - Keep the existing plain JSON backup representation and schema-version compatibility model.
-- Validate collection types, record structures, identifiers and cross-collection references.
+- Validate the five collection types and enforce the empty-only restriction. Record-level validation, identifiers and cross-collection references are deferred until the relevant later stages.
 - Implement the approved schema-v1 to schema-v2 migration.
 - Preserve a recoverable pre-migration copy.
 - Extend backup, restore and recovery validation for the complete schema.
@@ -369,7 +370,7 @@ Acceptance:
 - All five new collections are present and correctly initialised as empty arrays.
 - Existing entries, learning data, custom rooms and Ask state remain intact.
 - Valid empty collections are accepted.
-- Malformed records, duplicate identifiers and invalid references are rejected.
+- Missing, malformed or non-empty proposed collections are rejected without replacing existing data. Record-level validation is not claimed as a Stage 1 capability.
 - Unsupported future schema versions fail safely.
 - Invalid connected data is not silently discarded during a successful restore.
 - A failed migration does not get reported as successful.

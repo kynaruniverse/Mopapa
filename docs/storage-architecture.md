@@ -704,7 +704,7 @@ Until the decision changes:
 
 **Review date:** 23 November 2026
 
-The proposed personal-memory architecture introduces conversation, message, memory, memory-source and memory-relationship collections.
+The Stage 1 implementation has introduced conversation, message, memory, memory-source and memory-relationship collections as empty arrays in the live schema. Their non-empty archive workloads have not yet been implemented or benchmarked.
 
 These proposed collections increase the importance of measuring realistic archive workloads before making a storage decision.
 
