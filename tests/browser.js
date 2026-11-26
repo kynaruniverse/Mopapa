@@ -2274,12 +2274,7 @@ async function run() {
       ask: {
         aliases: [],
         boosts: {},
-        unanswered: [],
-        conversations: [],
-        messages: [],
-        memories: [],
-        memorySources: [],
-        memoryRelations: []
+        unanswered: []
       }
     };
 
