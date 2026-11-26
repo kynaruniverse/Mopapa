@@ -1916,7 +1916,12 @@ async function run() {
 
     var data = await savedData(page);
 
-    assert.strictEqual(data.schemaVersion, 1);
+    assert.strictEqual(data.schemaVersion, 2);
+    assert.deepStrictEqual(data.conversations, []);
+    assert.deepStrictEqual(data.messages, []);
+    assert.deepStrictEqual(data.memories, []);
+    assert.deepStrictEqual(data.memorySources, []);
+    assert.deepStrictEqual(data.memoryRelations, []);
 
     assert.strictEqual(data.entries.length, 1);
     assert.strictEqual(data.entries[0].id, 'restored');
@@ -2044,7 +2049,12 @@ async function run() {
       fs.readFileSync(backupPath, 'utf8')
     );
 
-    assert.strictEqual(exported.schemaVersion, 1);
+    assert.strictEqual(exported.schemaVersion, 2);
+    assert.deepStrictEqual(exported.conversations, []);
+    assert.deepStrictEqual(exported.messages, []);
+    assert.deepStrictEqual(exported.memories, []);
+    assert.deepStrictEqual(exported.memorySources, []);
+    assert.deepStrictEqual(exported.memoryRelations, []);
     assert.strictEqual(exported.entries.length, 1);
     assert.strictEqual(
       exported.entries[0].id,

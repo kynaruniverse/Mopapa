@@ -2,7 +2,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var SCHEMA_VERSION = 1;
+  var SCHEMA_VERSION = 2;
   
   var MAX_PROTECTED_RECOVERY_COPIES = 10;
   var MAX_PROTECTED_RECOVERY_BYTES = 10 * 1024 * 1024;
