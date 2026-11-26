@@ -1854,6 +1854,99 @@ async function run() {
     );
   });
 
+  await check('schema-v1 startup migration preserves data, creates a recovery copy and survives reload', async function (page) {
+    var original = {
+      schemaVersion: 1,
+      entries: [
+        {
+          id: 'stage-one-migration',
+          text: 'Original memory survives schema migration',
+          room: 'notes',
+          when: null,
+          hasTime: false,
+          amount: null,
+          fact: null,
+          amounts: null,
+          created: '2026-01-01T10:00:00.000Z',
+          done: false
+        }
+      ],
+      learned: {},
+      customRooms: [],
+      ask: {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      }
+    };
+
+    var originalRaw = JSON.stringify(original);
+
+    await page.evaluate(function (raw) {
+      localStorage.setItem('mopapa.v1', raw);
+    }, originalRaw);
+
+    await page.reload({ waitUntil: 'load' });
+
+    var migrated = await savedData(page);
+
+    assert.strictEqual(migrated.schemaVersion, 2);
+    assert.strictEqual(migrated.entries.length, 1);
+    assert.strictEqual(
+      migrated.entries[0].id,
+      'stage-one-migration'
+    );
+    assert.strictEqual(
+      migrated.entries[0].text,
+      'Original memory survives schema migration'
+    );
+
+    assert.deepStrictEqual(migrated.conversations, []);
+    assert.deepStrictEqual(migrated.messages, []);
+    assert.deepStrictEqual(migrated.memories, []);
+    assert.deepStrictEqual(migrated.memorySources, []);
+    assert.deepStrictEqual(migrated.memoryRelations, []);
+
+    var recovery = await page.evaluate(function (expectedRaw) {
+      var prefix = 'mopapa.v1.recovery.';
+
+      for (var i = 0; i < localStorage.length; i++) {
+        var key = localStorage.key(i);
+
+        if (
+          key &&
+          key.indexOf(prefix) === 0 &&
+          localStorage.getItem(key) === expectedRaw
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    }, originalRaw);
+
+    assert.strictEqual(
+      recovery,
+      true,
+      'The exact schema-v1 data must be retained as a recovery copy'
+    );
+
+    await page.reload({ waitUntil: 'load' });
+
+    var afterReload = await savedData(page);
+
+    assert.strictEqual(afterReload.schemaVersion, 2);
+    assert.strictEqual(afterReload.entries.length, 1);
+    assert.strictEqual(
+      afterReload.entries[0].id,
+      'stage-one-migration'
+    );
+    assert.deepStrictEqual(afterReload.conversations, []);
+    assert.deepStrictEqual(afterReload.messages, []);
+    assert.deepStrictEqual(afterReload.memories, []);
+    assert.deepStrictEqual(afterReload.memorySources, []);
+    assert.deepStrictEqual(afterReload.memoryRelations, []);
+  });
 
   await check('successful browser restore replaces data and preserves custom rooms and Ask learning', async function (page) {
     await page.evaluate(function () {

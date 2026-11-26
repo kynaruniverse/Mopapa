@@ -858,9 +858,11 @@ test('ask modules are loaded once and before ask.js', function () {
   });
 });
 
+
 function stored(entries, learned, ask) {
   return {
     'mopapa.v1': JSON.stringify({
+      schemaVersion: 1,
       entries: entries || [],
       learned: learned || {},
       customRooms: [],
@@ -10610,11 +10612,23 @@ test('schema version 2 rejects a missing memory collection', function () {
   assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
 });
 
+
 test('failed schema migration preserves the original data and blocks writes', function () {
   const originalRaw = JSON.stringify({
     schemaVersion: 1,
     entries: [
-      { id: 'before-migration', text: 'Original data', room: 'notes' }
+      {
+        id: 'before-migration',
+        text: 'Original data',
+        room: 'notes',
+        when: null,
+        hasTime: false,
+        amount: null,
+        fact: null,
+        amounts: null,
+        created: '2026-01-01T10:00:00.000Z',
+        done: false
+      }
     ],
     learned: {},
     customRooms: [],
@@ -10624,6 +10638,20 @@ test('failed schema migration preserves the original data and blocks writes', fu
   const w = boot({
     'mopapa.v1': originalRaw
   });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corrupt,
+    undefined,
+    'The schema-v1 fixture must load as valid data'
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().entries.length,
+    1,
+    'The original entry must survive loading'
+  );
 
   const originalSetItem = w.localStorage.setItem;
   let failedPrimaryWrite = false;
@@ -10637,9 +10665,8 @@ test('failed schema migration preserves the original data and blocks writes', fu
     return originalSetItem.call(this, key, value);
   };
 
-  w.Mopapa.store.load();
-
   assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(failedPrimaryWrite, true);
   assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
   assert.strictEqual(w.Mopapa.store.save(), false);
 
