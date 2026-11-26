@@ -3,17 +3,24 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
   var SCHEMA_VERSION = 1;
-
+  
   var MAX_PROTECTED_RECOVERY_COPIES = 10;
   var MAX_PROTECTED_RECOVERY_BYTES = 10 * 1024 * 1024;
   var lastKnownRaw = null;
   var saveError = null;
+  var migrationPending = false;
+  var migrationBlocked = false;
   var data = {
     schemaVersion: SCHEMA_VERSION,
     entries: [],
     learned: {},
     customRooms: [],
-    ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
+    ask: { aliases: [], boosts: Object.create(null), unanswered: [] },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
   };
   var writeMode = 'unprotected';
 
@@ -957,19 +964,57 @@ function preserveRecoveryCopy(rawData) {
   return true;
 }
 
+function validMemoryCollections(value, requireAll) {
+  var names = [
+    'conversations',
+    'messages',
+    'memories',
+    'memorySources',
+    'memoryRelations'
+  ];
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  for (var i = 0; i < names.length; i++) {
+    var name = names[i];
+    var present = Object.prototype.hasOwnProperty.call(value, name);
+
+    if (!present) {
+      if (requireAll) return false;
+      continue;
+    }
+
+    if (!Array.isArray(value[name]) || value[name].length !== 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function load() {
   lastKnownRaw = null;
   saveError = null;
+  migrationPending = false;
+  migrationBlocked = false;
 
   data = {
     schemaVersion: SCHEMA_VERSION,
     entries: [],
     learned: {},
     customRooms: [],
-    ask: { aliases: [], boosts: Object.create(null), unanswered: [] }
+    ask: { aliases: [], boosts: Object.create(null), unanswered: [] },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
   };
 
   var raw = null;
+  var storedVersion = 0;
 
   try {
     raw = localStorage.getItem(KEY);
@@ -984,7 +1029,8 @@ function load() {
   try {
     if (raw !== null) {
       var p = JSON.parse(raw);
-      var storedVersion = p &&
+
+      storedVersion = p &&
         Object.prototype.hasOwnProperty.call(p, 'schemaVersion')
           ? p.schemaVersion
           : 0;
@@ -994,14 +1040,19 @@ function load() {
         !isFinite(storedVersion) ||
         Math.floor(storedVersion) !== storedVersion ||
         storedVersion < 0 ||
-        storedVersion > SCHEMA_VERSION
+        storedVersion > SCHEMA_VERSION ||
+        !validMemoryCollections(
+          p,
+          storedVersion === SCHEMA_VERSION
+        )
       ) {
-        throw new Error('unsupported schema version');
+        throw new Error('unsupported schema or memory collections');
       }
 
       if (p && Array.isArray(p.entries)) {
-        data.schemaVersion = SCHEMA_VERSION;
-        var cleanedEntries = cleanEntries(normaliseLegacyAmounts(p.entries));
+        var cleanedEntries = cleanEntries(
+          normaliseLegacyAmounts(p.entries)
+        );
 
         if (cleanedEntries.length < p.entries.length) {
           data.rejectedEntries = p.entries.length - cleanedEntries.length;
@@ -1050,9 +1101,11 @@ function load() {
 
           var customRoomsRecoverySaved = preserveRecoveryCopy(raw);
 
-          data.recoveryCopySaved = customRoomsRecoverySaved;
-          data.recoveryBlocked = data.recoveryBlocked ||
-            !customRoomsRecoverySaved;
+          data.recoveryCopySaved =
+            data.recoveryCopySaved === true || customRoomsRecoverySaved;
+
+          data.recoveryBlocked =
+            data.recoveryBlocked || !customRoomsRecoverySaved;
         }
 
         var cleanedAsk = cleanAsk(p.ask);
@@ -1073,12 +1126,15 @@ function load() {
         }
 
         data.ask = cleanedAsk;
+
+        migrationPending = storedVersion < SCHEMA_VERSION;
       } else {
         throw new Error('unexpected shape');
       }
     }
-
   } catch (e) {
+    migrationPending = false;
+
     if (raw !== null) {
       data.corruptCopySaved = preserveCorruptCopy(raw);
       data.corrupt = true;
@@ -1086,6 +1142,95 @@ function load() {
   }
 
   return data;
+}
+
+function migrate() {
+  if (!migrationPending) {
+    return !migrationBlocked;
+  }
+
+  saveError = null;
+
+  if (writeMode === 'readonly') {
+    migrationBlocked = true;
+    saveError = 'readonly';
+    return false;
+  }
+
+  if (data.storageUnavailable || data.corrupt || data.recoveryBlocked) {
+    migrationBlocked = true;
+    saveError = data.recoveryBlocked ? 'recovery' : 'storage';
+    return false;
+  }
+
+  var currentRaw;
+
+  try {
+    currentRaw = localStorage.getItem(KEY);
+  } catch (e) {
+    migrationBlocked = true;
+    saveError = 'storage';
+    return false;
+  }
+
+  if (currentRaw !== lastKnownRaw) {
+    migrationBlocked = true;
+    saveError = 'conflict';
+    return false;
+  }
+
+  if (currentRaw === null) {
+    migrationPending = false;
+    return true;
+  }
+
+  if (!preserveRecoveryCopy(currentRaw)) {
+    migrationBlocked = true;
+    data.recoveryBlocked = true;
+    saveError = 'recovery';
+    return false;
+  }
+
+  var nextRaw;
+
+  try {
+    nextRaw = JSON.stringify(data);
+    localStorage.setItem(KEY, nextRaw);
+
+    if (localStorage.getItem(KEY) !== nextRaw) {
+      throw new Error('migration read-back mismatch');
+    }
+
+    lastKnownRaw = nextRaw;
+    migrationPending = false;
+    migrationBlocked = false;
+
+    return true;
+  } catch (e) {
+    var restored = false;
+
+    try {
+      localStorage.setItem(KEY, currentRaw);
+      restored = localStorage.getItem(KEY) === currentRaw;
+    } catch (restoreError) {}
+
+    if (restored) {
+      lastKnownRaw = currentRaw;
+    } else {
+      data.recoveryBlocked = true;
+    }
+
+    migrationBlocked = true;
+    saveError = (
+      e && (
+        e.name === 'QuotaExceededError' ||
+        e.code === 22 ||
+        e.code === 1014
+      )
+    ) ? 'quota' : 'storage';
+
+    return false;
+  }
 }
 
   function preserveCurrentRecoveryCopy() {
@@ -1142,6 +1287,14 @@ function load() {
     var nextRaw;
 
     saveError = null;
+    if (migrationPending && !migrate()) {
+      return false;
+    }
+
+    if (migrationBlocked) {
+      saveError = saveError || 'migration';
+      return false;
+    }
 
     if (writeMode === 'readonly') {
       saveError = 'readonly';
@@ -1217,6 +1370,18 @@ function load() {
     var currentRaw;
 
     saveError = null;
+    if (migrationPending && !migrate()) {
+      throw new Error(
+        'Mopapa could not safely complete its data migration. No backup was created.'
+      );
+    }
+
+    if (migrationBlocked) {
+      saveError = saveError || 'migration';
+      throw new Error(
+        'Mopapa could not safely complete its data migration. Resolve the migration problem before creating a backup.'
+      );
+    }
 
     if (data.storageUnavailable) {
       saveError = 'storage';
@@ -1554,6 +1719,10 @@ function load() {
 
       try {
         var p = JSON.parse(r.result);
+        var importedVersion = p &&
+          Object.prototype.hasOwnProperty.call(p, 'schemaVersion')
+            ? p.schemaVersion
+            : 0;
 
         if (p && Array.isArray(p.entries)) {
           p.entries = normaliseLegacyAmounts(p.entries);
@@ -1577,13 +1746,16 @@ function load() {
           (
             Object.prototype.hasOwnProperty.call(p, 'schemaVersion') &&
             (
-              typeof p.schemaVersion !== 'number' ||
-              !isFinite(p.schemaVersion) ||
-              Math.floor(p.schemaVersion) !== p.schemaVersion ||
-              p.schemaVersion < 0 ||
-              p.schemaVersion > SCHEMA_VERSION
-            )
-          ) ||
+              typeof importedVersion !== 'number' ||
+                !isFinite(importedVersion) ||
+                Math.floor(importedVersion) !== importedVersion ||
+                importedVersion < 0 ||
+                importedVersion > SCHEMA_VERSION
+                ) ||
+            !validMemoryCollections(
+              p,
+              importedVersion === SCHEMA_VERSION
+            ) ||
           !validImportedEntries(p.entries) ||
           (
             Object.prototype.hasOwnProperty.call(p, 'learned') &&
@@ -1600,7 +1772,7 @@ function load() {
             stableJSON(cleanAsk(p.ask)) !== stableJSON(p.ask)
           ) ||
           !importedCustomRooms
-        ) {
+        )) {
           throw new Error('bad file');
         }
 
@@ -1630,17 +1802,29 @@ function load() {
         }
 
         var previous = data;
+        var previousMigrationPending = migrationPending;
+        var previousMigrationBlocked = migrationBlocked;
+        
+        migrationPending = false;
+        migrationBlocked = false;
 
         data = {
           schemaVersion: SCHEMA_VERSION,
           entries: cleanEntries(normaliseLegacyAmounts(p.entries)),
           learned: cleanLegacyLearned(p.learned),
           customRooms: importedCustomRooms,
-          ask: cleanAsk(p.ask)
+          ask: cleanAsk(p.ask),
+          conversations: [],
+          messages: [],
+          memories: [],
+          memorySources: [],
+          memoryRelations: []
         };
 
         if (!save()) {
           data = previous;
+          migrationPending = previousMigrationPending;
+          migrationBlocked = previousMigrationBlocked;
           finish(false);
           return;
         }
@@ -1665,6 +1849,8 @@ function load() {
   return {
     data: function () { return data; },
     load: load,
+    migrate: migrate,
+    migrationBlocked: function () { return migrationBlocked; },
     save: save,
     preserveCurrentRecoveryCopy: preserveCurrentRecoveryCopy,
     saveError: function () { return saveError; },

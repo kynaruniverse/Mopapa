@@ -135,6 +135,14 @@ The proposed logical dataset is:
 
 This is an illustrative target structure, not the live schema. Schema version 2 remains proposed and inactive.
 
+### Stage 1 empty-collection restriction
+
+The Stage 1 schema-v2 migration introduces the five collections as empty arrays only.
+
+Stage 1 does not accept or create conversation, message, memory, source or relation records. A schema-v2 dataset with a missing collection, a non-array collection or any non-empty proposed collection is invalid and must be preserved as recovery data rather than partially accepted.
+
+Record-level validation and non-empty collection support are introduced only through their separately approved later stages.
+
 3.3 No additional collection is approved
 
 The following are not approved as additional persistent collections:

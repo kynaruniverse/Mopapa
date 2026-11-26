@@ -8,6 +8,7 @@
 
     M.store.setWriteMode(writeMode);
     M.store.load();
+    M.store.migrate();
 
     var writeStatus = document.getElementById('write-status');
 
@@ -109,6 +110,11 @@
   if (M.store.data().storageUnavailable) {
     M.dialog.notice(
       'Mopapa could not access this browser’s saved data. Your existing memories have not been loaded. Do not add or restore anything yet. Check browser storage permissions and reload Mopapa.'
+    );
+    
+  else if (M.store.migrationBlocked()) {
+    M.dialog.notice(
+    'Mopapa could not safely complete its data upgrade. Do not continue editing in this tab. Your original saved data has not been intentionally replaced. Check the recovery copies and reload Mopapa before trying again.'
     );
   } else if (M.store.data().corrupt) {
     M.dialog.notice(

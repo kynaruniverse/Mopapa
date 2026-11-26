@@ -8764,28 +8764,28 @@ test('orphan-room repair is cancelled when saved data changes before preservatio
   );
 });
 
-test('loading unversioned data upgrades it to schema version 1', function () {
+test('loading unversioned data upgrades it to schema version 2', function () {
   const w = boot(stored([
     { id: 'legacy', text: 'Older saved memory', room: 'notes' }
   ]));
 
   w.Mopapa.store.load();
 
-  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 1);
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 2);
   assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
 
   assert.strictEqual(w.Mopapa.store.save(), true);
 
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
-  assert.strictEqual(saved.schemaVersion, 1);
+  assert.strictEqual(saved.schemaVersion, 2);
   assert.strictEqual(saved.entries[0].id, 'legacy');
 });
 
 test('loading a future schema version preserves it as corrupt recovery data', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
-      schemaVersion: 2,
+      schemaVersion: 3,
       entries: []
     })
   });
@@ -8904,7 +8904,7 @@ test('normal backup refuses to export when existing storage is empty and corrupt
 
 test('store refuses to overwrite data loaded from an unsupported schema', function () {
   const originalRaw = JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
   });
 
@@ -8926,7 +8926,7 @@ test('store refuses to overwrite data loaded from an unsupported schema', functi
 
 test('store protects corrupt data even when recovery-copy creation fails', function () {
   const originalRaw = JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
   });
 
@@ -8959,7 +8959,7 @@ test('store protects corrupt data even when recovery-copy creation fails', funct
 
 test('normal backup export refuses to export an empty replacement for corrupt data', function () {
   const originalRaw = JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
   });
 
@@ -8983,7 +8983,7 @@ test('normal backup export refuses to export an empty replacement for corrupt da
 
 test('valid backup restore can replace corrupt saved data', function () {
   const originalRaw = JSON.stringify({
-    schemaVersion: 2,
+    schemaVersion: 3,
     entries: [{ id: 'future', text: 'Future data', room: 'notes' }]
   });
 
@@ -9027,7 +9027,7 @@ test('valid backup restore can replace corrupt saved data', function () {
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
   assert.strictEqual(saved.entries[0].id, 'restored');
-  assert.strictEqual(saved.schemaVersion, 1);
+  assert.strictEqual(saved.schemaVersion, 2);
 });
 
 test('loading rejects a non-numeric schema version', function () {
@@ -9394,7 +9394,7 @@ test('store distinguishes storage failures from save conflicts', function () {
     w.localStorage.getItem('mopapa.v1')
   );
 
-  assert.strictEqual(recovered.schemaVersion, 1);
+  assert.strictEqual(recovered.schemaVersion, 2);
   assert.strictEqual(recovered.entries.length, 1);
   assert.strictEqual(recovered.entries[0].id, 'original');
   assert.strictEqual(
@@ -9581,7 +9581,7 @@ test('failed JSON serialisation preserves the saved record and can be retried', 
     w.localStorage.getItem('mopapa.v1')
   );
 
-  assert.strictEqual(recovered.schemaVersion, 1);
+  assert.strictEqual(recovered.schemaVersion, 2);
   assert.strictEqual(recovered.entries.length, 1);
   assert.strictEqual(recovered.entries[0].id, 'original');
   assert.strictEqual(
@@ -10468,7 +10468,7 @@ test('restore rejects a future schema version without replacing current data', f
     {
       size: 50,
       content: JSON.stringify({
-        schemaVersion: 2,
+        schemaVersion: 3,
         entries: [
           { id: 'future', text: 'Future-format entry', room: 'notes' }
         ]
@@ -10484,7 +10484,7 @@ test('restore rejects a future schema version without replacing current data', f
   assert.strictEqual(w.localStorage.getItem('mopapa.v1'), before);
 });
 
-test('restore upgrades a valid unversioned backup to schema version 1', function () {
+test('restore upgrades a valid unversioned backup to schema version 2', function () {
   const w = boot(stored([
     { id: 'old', text: 'Old entry', room: 'notes' }
   ]));
@@ -10515,12 +10515,146 @@ test('restore upgrades a valid unversioned backup to schema version 1', function
   );
 
   assert.strictEqual(result, true);
-  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 1);
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 2);
   assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'imported');
 
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
-  assert.strictEqual(saved.schemaVersion, 1);
+  assert.strictEqual(saved.schemaVersion, 2);
+});
+
+test('schema version 2 requires all five empty memory collections', function () {
+  const valid = {
+    schemaVersion: 2,
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
+  };
+
+  const w = boot({
+    'mopapa.v1': JSON.stringify(valid)
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, undefined);
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().conversations),
+    []
+  );
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().messages),
+    []
+  );
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().memories),
+    []
+  );
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().memorySources),
+    []
+  );
+  assert.deepStrictEqual(
+    Array.from(w.Mopapa.store.data().memoryRelations),
+    []
+  );
+});
+
+test('schema version 2 rejects a non-empty proposed memory collection', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      schemaVersion: 2,
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] },
+      conversations: [{ id: 'unapproved' }],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+  assert.strictEqual(w.Mopapa.store.save(), false);
+});
+
+test('schema version 2 rejects a missing memory collection', function () {
+  const w = boot({
+    'mopapa.v1': JSON.stringify({
+      schemaVersion: 2,
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: { aliases: [], boosts: {}, unanswered: [] },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: []
+    })
+  });
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.data().corrupt, true);
+  assert.strictEqual(w.Mopapa.store.data().corruptCopySaved, true);
+});
+
+test('failed schema migration preserves the original data and blocks writes', function () {
+  const originalRaw = JSON.stringify({
+    schemaVersion: 1,
+    entries: [
+      { id: 'before-migration', text: 'Original data', room: 'notes' }
+    ],
+    learned: {},
+    customRooms: [],
+    ask: { aliases: [], boosts: {}, unanswered: [] }
+  });
+
+  const w = boot({
+    'mopapa.v1': originalRaw
+  });
+
+  const originalSetItem = w.localStorage.setItem;
+  let failedPrimaryWrite = false;
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1' && !failedPrimaryWrite) {
+      failedPrimaryWrite = true;
+      throw new Error('simulated migration write failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+  assert.strictEqual(w.Mopapa.store.save(), false);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.ok(copies.length >= 1);
+
+  const recovery = w.localStorage.getItem(copies[0].key);
+
+  assert.strictEqual(recovery, originalRaw);
 });
 
 test('restore rejects JSON without an entries array', function () {

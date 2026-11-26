@@ -382,7 +382,9 @@ Acceptance:
 - New tests cover only genuinely missing behaviours after checking `tests/run.js` and `tests/browser.js` for duplication.
 - No deferred Stage 2 to Stage 7 feature is accidentally introduced.
 
-Exit: Verified Stage 1 implementation, passing automated tests, successful deployment and explicit user approval before Stage 2.
+Exit: Verified  implementation, passing automated tests, successful deployment and explicit user approval before Stage 2.
+
+Stage 1 permits only empty arrays in all five new collections. Schema-v2 backups with missing, malformed or non-empty proposed collections must be rejected without replacing current data. Non-empty record support requires the relevant later-stage approval and validation.
 
 Stage 2: Conversation and message preservation
 
