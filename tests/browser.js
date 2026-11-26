@@ -2244,7 +2244,12 @@ async function run() {
             at: '2026-10-01'
           }
         ]
-      }
+      },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
     };
 
     var originalRaw = JSON.stringify(original);
