@@ -102,7 +102,14 @@ Do not recreate these retired documents or use historical next-work instructions
 
 ### Current status
 
-The six-master-document structure is complete. The historical-document reconciliation is complete.
+The six-master-document structure is complete. Historical-document reconciliation is complete.
 
-Stage 1 storage and schema implementation is complete and verified. 
-The project is finalising the source-independent Stage 2 conversation and message preservation specification, evaluation fixtures and code-alignment review. Stage 2 production implementation remains subject to its own explicit approval gate.
+Stage 1 storage and schema implementation is complete and verified. The live application uses schema version 2 and retains the existing `mopapa.v1` localStorage key.
+
+Stage 2 has been specified as native, source-independent conversation and message preservation. Its technical record requirements, schema-v2-to-v3 migration, backup and recovery requirements, evaluation specification, research alignment and existing-code review have been completed.
+
+The final documentation reconciliation and explicit implementation approval remain outstanding. Stage 2 production implementation has not been authorised.
+
+Executable unit and browser tests will be developed alongside the approved implementation, before the corresponding production behaviour is accepted. Representative archive benchmarks will be conducted once the archive exists, including real Android measurements.
+
+No external platform imports, automatic memory extraction, deletion, IndexedDB migration, paid services, cloud synchronisation or replacement of deterministic Ask are authorised by Stage 2.

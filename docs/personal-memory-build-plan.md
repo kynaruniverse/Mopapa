@@ -5,7 +5,7 @@ Build Roadmap and Verification Log
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
 Document date: 23 November 2026
-Status: Consolidated roadmap. Stage 1 storage and schema foundation implemented and verified on 26 November 2026. Stage 2 readiness review in progress. No Stage 2 production implementation authorised.
+Status: Consolidated roadmap. Stage 1 storage and schema foundation implemented and verified on 26 November 2026. Stage 2 architecture, technical specification, evaluation requirements and code-alignment review completed. Final documentation reconciliation and explicit implementation approval remain outstanding. No Stage 2 production implementation authorised.
 
 1. Purpose and authority
 
@@ -791,17 +791,27 @@ This build plan is the authoritative location for current implementation sequenc
 
 The Stage 2 readiness review has established the direction of native, source-independent conversation and message preservation.
 
-The core conversation, participant, message, timestamp, quotation and retry requirements are documented in the canonical record specification. The Stage 2 source-independent authorship rules and schema-version-2-to-version-3 migration requirements are now explicitly defined. Stage 2 retains the existing plain JSON backup format and requires complete validation and preservation of populated conversations and messages.
+The architecture, canonical record model, source-independent authorship rules, timestamp preservation, quotation handling, schema-v2-to-v3 migration, backup compatibility and recovery requirements are documented.
 
-Remaining preparation is to complete the code-alignment review against the current storage, startup, interface and script-loading implementation; convert the Stage 2 evaluation requirements into executable fixtures without duplicating existing tests; and complete the representative archive benchmark methodology.
+The code-alignment review against the existing storage, startup, interface and script-loading implementation is complete. Its findings and required implementation order are recorded above.
 
-The archive benchmark must distinguish diagnostic workload sizes from supported limits. No arbitrary message-size or total-archive limit may be selected from the existing Keep input limit or CI Chromium measurements. Any proposed boundary must be supported by representative archive measurements and an explicit approval decision.
+The Stage 2 evaluation specification defines the required synthetic fixtures, negative cases, failure scenarios, migration checks, backup round trips and regression boundaries. Executable unit and browser tests must be written alongside implementation, before the corresponding production behaviour is accepted. Existing tests must be extended where appropriate rather than duplicated.
 
-The implementation must also be checked against the existing codebase to identify any required changes to storage, startup, interface, script loading and tests.
+The representative archive benchmark methodology is documented in `storage-architecture.md`. It defines diagnostic message-count workloads, message-size distributions, required measurements, repetition requirements and the distinction between CI Chromium and real Android measurements. Benchmark results must be collected once a working archive exists; diagnostic workload sizes must not be treated as supported archive limits.
 
-External platform import formats are not a Stage 2 prerequisite. They are deferred to separately approved future adapters.
+Before the first production change, record a fresh baseline against the exact current main commit, including unit tests, browser tests, GitHub Actions, Vercel, schema version, backup and restore behaviour, Ask regression behaviour and recovery behaviour.
 
-Stage 2 production implementation remains subject to a separate explicit approval. Documentation readiness does not authorise production changes.
+The Stage 2 implementation sequence remains:
+
+1. Schema-v3 validation and migration preflight.
+2. Safe migration candidate construction, recovery and verified commit.
+3. Backup export, import and restore compatibility.
+4. Archive operations with complete in-memory rollback on failed writes.
+5. Separate conversation archive interface and exact-text message input.
+6. Unit and browser tests for the complete archive lifecycle.
+7. Representative archive benchmarks and real Android verification.
+
+No production implementation begins until the user explicitly approves the final Stage 2 implementation proposal.
 
 The first production milestone remains the smallest independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 

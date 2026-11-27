@@ -2321,8 +2321,8 @@ The following decisions close the initial design-readiness review. A decision ma
 
 | No. | Decision | Disposition |
 |---:|---|---|
-| 19 | Message role, author kind and attribution combinations | Resolve before Stage 2. Define and test the complete allowed role, author and attribution combinations for native and user-supplied messages. External adapter mappings must be specified and tested separately for each approved source format. Unknown or contradictory attribution must remain unresolved or be rejected, never guessed. |
-| 20 | Nested quotations, compound claims and attribution conflicts | Resolve before Stage 2 for message preservation and before Stage 3 for extraction. Preserve the original message unchanged. Keep nested speaker attribution explicit. Do not treat quoted or reported speech as direct evidence from the quoted person. Compound claims must be split into independently assessable claims where safe; otherwise retain them as one uncertain candidate with evidence limitations. |
+| 19 | Message role, author kind and attribution combinations | Resolved for Stage 2. The Stage 2 authorship rules define source role separately from actual author, the supported author kinds and attribution classes, and the handling of native and user-supplied messages. Unknown or contradictory attribution remains unresolved or is rejected. External adapter mappings remain deferred to separately approved adapters. |
+| 20 | Nested quotations, compound claims and attribution conflicts | Resolved for Stage 2 message preservation. Original message text remains unchanged; quotation annotations preserve explicit parent-child relationships where established; uncertain attribution remains unresolved. Compound-claim splitting and independent memory provenance remain Stage 3 requirements. Quoted or reported speech must not be treated as direct evidence from the quoted person. |
 
 #### D. Backup, migration and storage
 
@@ -2340,9 +2340,9 @@ The following decisions close the initial design-readiness review. A decision ma
 | No. | Decision | Disposition |
 |---:|---|---|
 | 27 | Global identity resolution | Excluded from the initial model. Identity remains conversation-local. No global identity collection, automatic cross-conversation matching or global merge is authorised. Reconsider only through a separate proposal and approval. |
-| 28 | Original timestamp preservation | Resolve before Stage 2. Preserve the original supplied timestamp representation separately from any normalised value. Do not overwrite malformed or ambiguous source values with a guessed date. |
+| 28 | Original timestamp preservation | Resolved for Stage 2. Preserve the original supplied timestamp separately from its normalised interpretation, including its actual precision and explicit timezone information. Invalid, ambiguous or incomplete values must not be silently corrected or converted into established dates. |
 | 29 | Approximate dates, partial dates and timezone uncertainty | Resolve before Stage 5. Preserve date precision as supplied. Comparisons must not invent missing days, times or timezones. Ambiguous temporal ordering must remain uncertain. |
-| 30 | Nested quoted-speaker structure | Resolve before Stage 2. Preserve parent-child quotation relationships where the source supports them. Do not flatten nested speakers. If a reliable attribution chain cannot be represented, retain unresolved attribution. |
+| 30 | Nested quoted-speaker structure | Resolved for Stage 2 message preservation. Preserve nested quotation annotations using explicit parent-child references where established. Do not infer missing speakers or flatten uncertain attribution chains. Automatic quotation extraction remains outside Stage 2. |
 | 31 | Compound-claim provenance | Resolve before Stage 3. Prefer separate independently assessable memory records when a compound statement can be safely divided without changing its meaning. If it cannot, retain the compound candidate with provenance to the complete supporting message and mark unsupported components as uncertain. |
 | 32 | Reversible participant correction, merge and unmerge | Defer to Stage 5. Corrections must be explicit, reversible and conversation-local. No global identity merge is implied. Dependent memories and relationships must be reassessed after a correction. |
 | 33 | Identity correction or deletion and dependent references | Defer to Stage 5. Define reference handling, historical attribution and dependent-record reassessment before identity deletion or merge functionality is implemented. |
