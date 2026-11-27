@@ -1,7 +1,7 @@
 
 # Mopapa Storage Architecture Decision
 
-**Status:** Supporting storage decision for the existing production schema v1.  
+**Status:** Supporting storage decision for the existing production schema version 2, with all five personal-memory collections restricted to empty arrays.  
 **Decision date:** 5 November 2026  
 **Scope:** Existing localStorage implementation and its measured behaviour  
 **Current authority:** `docs/personal-memory-architecture.md`, `docs/personal-memory-record-specification.md` and `docs/personal-memory-build-plan.md`

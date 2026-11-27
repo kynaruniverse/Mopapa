@@ -34,8 +34,11 @@ The fixtures must cover:
 - A conversation with multiple participants.
 - User-entered and pasted message content.
 - Long messages and multi-paragraph messages.
-- Empty or whitespace-only message rejection.
-- Original text preservation, including punctuation and line breaks.
+- Messages exceeding the existing Keep input's 1,000-character limit.
+- Leading and trailing whitespace preservation.
+- Exact preservation of punctuation, line breaks and original message text.
+- Empty or whitespace-only message rejection without altering valid message text.
+- Explicit message-size boundary validation.
 - Message ordering and sequence validation.
 - Missing, invalid and ambiguous timestamps.
 - Date-only and partial timestamp precision.
@@ -46,9 +49,13 @@ The fixtures must cover:
 - Conflicting speaker attribution.
 - Duplicate Mopapa-generated identifiers.
 - Invalid conversation and participant references.
-- Repeated save attempts.
+- Repeated save attempts using the same pending operation identifiers.
 - Failed saves and interrupted operations.
+- In-memory rollback after failed saves.
 - Backup and restore of conversations and messages.
+- Full backup and restore round trips containing existing application data and non-empty conversations and messages.
+- Rejection of malformed conversation and message records during restore.
+- Failed restore attempts preserving the previously active dataset.
 - Migration from schema version 2 to schema version 3.
 - Preservation of existing Keep, Ask, learning and recovery data.
 - Confirmation that the three later-stage collections remain empty.
@@ -1244,7 +1251,7 @@ The technical specification defines what must be correct. This evaluation docume
 
 Do not duplicate the canonical data model or create a second implementation roadmap here.
 
-Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus remain separate evaluation assets. Stage 1 schema version 2 is implemented and verified. Stage 2 is being specified as native, source-independent conversation and message preservation, with schema version 3 proposed for implementation. Its evaluation fixtures and migration tests must be completed before implementation approval. No Stage 2 production implementation is authorised by this document.
+Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus are now documented together but remain separate evaluation assets. The future Personal Memory Companion requires its own end-to-end evaluation before implementation can be considered reliable. No production implementation or schema activation is authorised by this document.
 
 ---
 

@@ -468,7 +468,7 @@ Validation requirements:
 
 6.3 Message invariants
 
-- Original message text must not be rewritten during extraction.
+- Original message text must not be rewritten during extraction or storage.
 - Each message belongs to exactly one existing conversation.
 - Sequence numbers must be unique within their conversation.
 - Message ordering must be deterministic.
@@ -476,6 +476,15 @@ Validation requirements:
 - Assistant statements must not automatically become user facts.
 - A message's original timestamp remains separate from its receipt time.
 - Original source identifiers remain distinct from Mopapa identifiers.
+- Native message creation must use a dedicated conversation and message workflow.
+- Native message creation must not reuse the existing Keep entry-creation pipeline.
+- The existing Keep input, entry parser, room sorter and entry normalisation must not process or rewrite native message text.
+- Original message text must be preserved exactly, including leading and trailing whitespace, punctuation and line breaks.
+- Validation may determine whether a message contains meaningful non-whitespace content, but must not trim or otherwise alter the stored original text.
+- The existing Keep input's 1,000-character limit is not a message archive limit.
+- Any future message-size limit must be explicitly specified and supported by representative archive benchmarks.
+- A failed save must restore the in-memory dataset to its previous state before the failed operation.
+- A retry of the same pending creation must reuse its original Mopapa-generated identifiers.
 
 6.4 Quoted-speaker annotations
 
@@ -1723,7 +1732,12 @@ Rules:
 - A failed save must not be reported as successful.
 - Retrying the same logical creation or save operation must not silently create duplicate records.
 - Identifiers for a logical operation must remain stable across its retry.
+- Native conversation and message identifiers must be allocated before the first save attempt and retained while that same pending operation is retried.
+- Retrying the same pending operation must reuse its original identifiers rather than generate new identifiers.
+- A failed save must not leave an unsaved record in the active in-memory dataset.
+- A failed save must not be reported as successful.
 - Conflicting identifiers must be rejected rather than silently overwritten.
+- Stage 2 must not introduce a separate persistent operation ledger or sixth collection merely to support retry safety.
 - Message text, sequence and authorship must not be used to invent identity or merge separate messages.
 
 17.2 Optional future source imports

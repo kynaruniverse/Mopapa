@@ -402,9 +402,14 @@ Work:
 - Enable non-empty records only in the "conversations" and "messages" collections.
 - Keep "memories", "memorySources" and "memoryRelations" as empty arrays.
 - Define and implement native conversation creation and management.
+- Create a dedicated conversation archive interface and message-creation workflow, separate from the existing Keep and Ask interface.
 - Allow users to add messages directly within Mopapa.
 - Support deliberate entry or pasting of message content.
-- Preserve original message text without rewriting, trimming or normalising its content.
+- Do not route native messages through the existing Keep submission, room classification, entry parsing or entry normalisation pipeline.
+- Preserve original message text exactly, including leading and trailing whitespace, punctuation and line breaks.
+- Reject empty or whitespace-only messages without altering valid message text.
+- Do not inherit the existing Keep input's 1,000-character limit as the archive message-size limit.
+- Establish any explicit message-size limit using representative archive workloads and documented performance measurements.
 - Store conversation-local participants without assuming global identity.
 - Preserve source role separately from actual author attribution.
 - Represent author attribution independently from quoted speakers and future memory subjects.
@@ -415,7 +420,12 @@ Work:
 - Preserve nested quotation annotations with explicit parent-child references where established.
 - Use Mopapa-generated identifiers for native conversations, participants and messages.
 - Define safe creation and save-retry behaviour that does not create duplicate records.
+- Allocate identifiers before the first save attempt and reuse them when retrying the same pending operation.
+- Restore the previous in-memory dataset when a save fails.
 - Reject conflicting identifiers and invalid conversation or participant references.
+- Adapt backup import and restore to validate and preserve supported non-empty conversations and messages.
+- Ensure failed or invalid restores leave the existing active dataset unchanged.
+- Preserve the existing recovery-copy and verified-write safeguards.
 - Provide archive inspection sufficient to verify original content, authorship, timestamps, quotations and provenance.
 - Include conversations and messages in backup and restore.
 - Preserve existing manual Keep, deterministic Ask, learning and recovery behaviour.
@@ -429,7 +439,10 @@ Acceptance:
 - Existing schema version 0 and version 1 migration behaviour remains supported.
 - The original pre-migration data remains recoverable.
 - Failed or interrupted migrations do not silently corrupt or replace existing data.
-- Original message text is preserved unchanged.
+- Original message text is preserved unchanged, including leading and trailing whitespace, punctuation and line breaks.
+- Messages longer than the existing Keep input's 1,000-character limit are supported within the separately approved archive size boundary.
+- Whitespace-only messages are rejected without altering valid message content.
+- Native conversation and message creation does not alter the existing Keep or Ask workflows.
 - Conversation boundaries and source message ordering are correct.
 - Source role, actual author, quoted speaker and future memory subject remain distinct.
 - Unknown, unsupported or contradictory authorship is preserved as unresolved rather than guessed.
@@ -442,8 +455,12 @@ Acceptance:
 - Every message references an existing conversation.
 - Every participant reference is valid within its conversation.
 - Message sequence values are valid and unique within their conversation.
-- Retrying a failed native creation or save does not silently create duplicate records.
+- Retrying a failed native creation or save reuses the same identifiers and does not silently create duplicate records.
+- Failed or interrupted saves restore the previous in-memory dataset.
 - Failed or interrupted saves do not corrupt previously stored data.
+- Backup and restore preserve conversations and messages through a complete round trip.
+- Invalid conversation or message backup records are rejected safely.
+- Failed restores preserve the previously active dataset and its recovery copy.
 - Archive inspection exposes enough information to verify preserved evidence and attribution.
 - Backup and restore preserve the complete supported conversation and message archive.
 - The three later-stage collections remain empty.
