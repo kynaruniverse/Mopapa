@@ -5,7 +5,7 @@ Build Roadmap and Verification Log
 Repository: https://github.com/kynaruniverse/Mopapa
 Branch: "main"
 Document date: 23 November 2026
-Status: Consolidated roadmap. Stage 1 storage and schema foundation implemented and verified on 26 November 2026. Stage 2 architecture, technical specification, evaluation requirements and code-alignment review completed. Final documentation reconciliation and explicit implementation approval remain outstanding. No Stage 2 production implementation authorised.
+Status: Consolidated roadmap. Stage 1 storage and schema foundation implemented and verified on 26 November 2026. Stage 2 architecture, technical specification, evaluation requirements and code-alignment review completed. Stage 2 implementation explicitly approved on 27 November 2026. Phase 1 baseline verified against commit 94d704d54d108e1da72d9ad1fe00de8f96d0a8a1. Baseline evidence reconciliation is in progress. No Stage 2 production code has been changed.
 
 1. Purpose and authority
 
@@ -799,7 +799,44 @@ The Stage 2 evaluation specification defines the required synthetic fixtures, ne
 
 The representative archive benchmark methodology is documented in `storage-architecture.md`. It defines diagnostic message-count workloads, message-size distributions, required measurements, repetition requirements and the distinction between CI Chromium and real Android measurements. Benchmark results must be collected once a working archive exists; diagnostic workload sizes must not be treated as supported archive limits.
 
-Before the first production change, record a fresh baseline against the exact current main commit, including unit tests, browser tests, GitHub Actions, Vercel, schema version, backup and restore behaviour, Ask regression behaviour and recovery behaviour.
+### Fresh pre-implementation baseline
+
+**Baseline commit:** `94d704d54d108e1da72d9ad1fe00de8f96d0a8a1`
+
+**Verification date:** 27 November 2026
+
+**GitHub Actions:** Run #490, ID `46072880520`, completed successfully.
+
+**Vercel:** Combined commit status successful.
+
+**Automated results:**
+
+| Check | Result |
+|---|---:|
+| JavaScript syntax check | Passed |
+| Unit tests | 592/592 passed |
+| Browser tests | 104/104 passed |
+| GitHub Actions job | Successful |
+| Vercel deployment status | Successful |
+
+The automated suites include coverage for existing Keep and Ask behaviour, migration, backup export and restore, recovery-copy preservation, corrupt and partially rejected data, failed-write rollback, storage conflicts, mobile layout and multi-tab write ownership.
+
+**Live storage state:**
+
+- Production schema version: 2.
+- Primary storage key: `mopapa.v1`.
+- The five proposed personal-memory collections exist as empty arrays.
+- Non-empty conversations and messages are not yet supported.
+- `memories`, `memorySources` and `memoryRelations` must remain empty throughout Stage 2.
+- The existing 5 MiB backup-import limit remains unchanged.
+
+**Benchmark discrepancy discovered during baseline verification:**
+
+The latest CI benchmark output does not support the older documentation claim that 3,000 entries containing 1,000 characters each were successfully saved in the latest run. The current run successfully saved the 1,000-entry long-text workload, but the 1,500-entry and larger workloads returned a `recovery` error. The benchmark uses one browser storage context and accumulates protected recovery copies between workloads. The result is consistent with the 10 MiB protected recovery-copy ceiling being reached, rather than establishing a direct LocalStorage capacity limit. The detailed measurements and interpretation are recorded in `storage-architecture.md`.
+
+This is a CI Chromium baseline, not a real Android performance result. The archive benchmark remains future Stage 2 work.
+
+No production files were changed during this baseline inspection.
 
 The Stage 2 implementation sequence remains:
 
@@ -811,7 +848,7 @@ The Stage 2 implementation sequence remains:
 6. Unit and browser tests for the complete archive lifecycle.
 7. Representative archive benchmarks and real Android verification.
 
-No production implementation begins until the user explicitly approves the final Stage 2 implementation proposal.
+The user explicitly approved the Stage 2 implementation proposal on 27 November 2026. Phase 1 begins with the verified baseline above and the recording of its evidence. Production changes must follow the approved implementation sequence and pass their corresponding verification gates.
 
 The first production milestone remains the smallest independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 

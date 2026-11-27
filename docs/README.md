@@ -53,11 +53,13 @@ The target model contains exactly five additional collections:
 
 The five collections are present in the live schema version 2 as empty arrays only. Their non-empty record functionality is not yet implemented.
 
-Stage 2 is being redesigned around native, source-independent conversation and message preservation. Users will be able to create and preserve conversations directly within Mopapa. ChatGPT exports and other external platform imports are not prerequisites and are not part of the initial Stage 2 scope.
+Stage 2 is specified as native, source-independent conversation and message preservation. Users will create and preserve conversations directly within Mopapa. ChatGPT exports and other external platform imports are not prerequisites and are not part of the initial Stage 2 scope.
 
-Stage 2 is expected to introduce schema version 3, with an explicit and tested migration from schema version 2. The other three personal-memory collections will remain empty during Stage 2.
+Stage 2 introduces schema version 3, with an explicit and tested migration from schema version 2. Only conversations and messages may contain records during Stage 2. The memories, memorySources and memoryRelations collections remain empty.
 
-Stage 1 is implemented and verified. Stage 2 production implementation has not been authorised. No IndexedDB migration, external AI processing, paid service, cloud synchronisation, mandatory account system or replacement of deterministic Ask is authorised.
+Stage 2 implementation was explicitly approved on 27 November 2026. Phase 1 has established a fresh baseline against commit `94d704d54d108e1da72d9ad1fe00de8f96d0a8a1`: 592/592 unit tests and 104/104 browser tests passed, GitHub Actions run #490 succeeded and Vercel reported success. Schema version 3 has not yet been implemented.
+
+No IndexedDB migration, external AI processing, paid service, cloud synchronisation, mandatory account system, external platform import or replacement of deterministic Ask is authorised by Stage 2.
 
 ## Development rules
 

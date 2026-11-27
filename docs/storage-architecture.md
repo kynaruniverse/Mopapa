@@ -329,9 +329,9 @@ guarantee against all forms of data loss.
 
 The current application is relatively small and has no demonstrated need for database-level querying, large binary attachments or complex transactions.
 
-The latest browser benchmark results provide useful evidence:
+Previously recorded browser benchmark results provide historical evidence:
 
-| Dataset | Save result | Measured save time |
+| Dataset | Save result | Previously measured save time |
 |---|---|---:|
 | 250 short entries | Successful | 0.7 ms |
 | 1,000 short entries | Successful | 2.5 ms |
@@ -339,10 +339,42 @@ The latest browser benchmark results provide useful evidence:
 | 5,000 short entries | Successful | 14.1 ms |
 | 3,000 entries of 1,000 characters | Successful | 24.9 ms |
 
-These are measurements from the current test environment, not guarantees for every device or browser.
+These are measurements from an earlier recorded run. They must not be described as the latest benchmark results.
 
-They do not establish that localStorage will remain suitable indefinitely. They do establish that a migration is not currently justified by the measured save performance alone.
+### Latest verified CI benchmark: 27 November 2026
 
+Source: GitHub Actions run #490, commit `94d704d54d108e1da72d9ad1fe00de8f96d0a8a1`, headless Chromium.
+
+**Short-entry workloads:**
+
+| Entries | Save result | Save time |
+|---:|---|---:|
+| 250 | Successful | 0.5 ms |
+| 1,000 | Successful | 5.2 ms |
+| 3,000 | Successful | 17.2 ms |
+| 5,000 | Successful | 32.0 ms |
+
+**1,000-character entry workloads:**
+
+| Entries | Save result | Save time |
+|---:|---|---:|
+| 250 | Successful | 7.9 ms |
+| 500 | Successful | 7.9 ms |
+| 1,000 | Successful | 17.1 ms |
+| 1,500 | Blocked by recovery preservation | Not a successful save |
+| 2,000 | Blocked by recovery preservation | Not a successful save |
+| 2,500 | Blocked by recovery preservation | Not a successful save |
+| 3,000 | Blocked by recovery preservation | Not a successful save |
+
+The failed long-entry workloads returned the `recovery` save error. They must not be interpreted as successful saves or as direct measurements of the maximum LocalStorage record size.
+
+The benchmark executes multiple workloads sequentially in the same browser storage context. Earlier saves create protected recovery copies. At the end of this run, six recovery copies contained 3,632,053 stored characters, including their keys. Using the application's approximate two-byte-per-character estimate, this represents about 7.26 MB. Preserving the previous record for the 1,500-entry workload would require a further copy of approximately 3.53 MB. Together, these estimates exceed the application's 10 MiB protected recovery-copy creation ceiling.
+
+The later workload failures therefore expose an interaction between the benchmark's shared storage context and recovery protection. They do not establish that a fresh storage context could not save a record of that size. They do establish that recovery-copy capacity must be considered when evaluating large records.
+
+These are CI Chromium measurements, not Android performance guarantees. The benchmark uses a small number of timing repetitions and does not establish p95 latency.
+
+The current results do not justify an IndexedDB migration. They do require future archive benchmarks to isolate workloads or explicitly account for recovery-copy accumulation.
 
 ## Practical archive-size assumptions
 
@@ -350,15 +382,22 @@ The current benchmark results establish a tested performance envelope, not a gua
 
 The following assumptions apply to the current implementation:
 
-| Archive shape | Evidence | Interpretation |
+| Archive shape | Latest CI evidence | Interpretation |
 |---|---|---|
-| 250 short entries | Saved successfully in CI Chromium. | Small benchmark baseline. |
-| 1,000 short entries | Saved successfully in CI Chromium. | Intermediate benchmark. |
-| 3,000 short entries | Saved successfully in CI Chromium. | Larger short-entry benchmark. |
-| 5,000 short entries | Saved successfully in CI Chromium. | Largest short-entry benchmark completed. |
-| 3,000 entries with 1,000-character text | Saved successfully in CI Chromium. | Largest long-text benchmark completed. |
+| 250 short entries | Saved successfully. | Small benchmark workload. |
+| 1,000 short entries | Saved successfully. | Intermediate benchmark workload. |
+| 3,000 short entries | Saved successfully. | Larger short-entry workload. |
+| 5,000 short entries | Saved successfully. | Largest short-entry workload in the latest run. |
+| 250 entries of 1,000 characters | Saved successfully. | Long-text workload. |
+| 500 entries of 1,000 characters | Saved successfully. | Long-text workload. |
+| 1,000 entries of 1,000 characters | Saved successfully. | Largest successful long-text workload in the latest run. |
+| 1,500 or more entries of 1,000 characters | Blocked by protected recovery-copy preservation in the shared benchmark context. | Does not establish the maximum record size or fresh-context storage capacity. |
 
-The 3,000-entry long-text dataset produced approximately 3.53 million JSON characters. The latest recorded CI run measured a save time of approximately 24.9 ms and an application load time of approximately 10.6 ms.
+The latest successful long-text workload contained approximately 1.18 million JSON characters. The 1,500-entry workload attempted approximately 1.77 million JSON characters but could not secure the required recovery copy under the accumulated protected-copy ceiling.
+
+The latest successful 5,000-entry short-text workload contained approximately 1.49 million JSON characters and took 32.0 ms to save in CI Chromium.
+
+These figures are workload-specific observations. They do not establish a universal maximum record size, a supported archive limit or Android performance.
 
 These measurements were taken in headless Chromium on a CI runner. They are not mobile-device performance guarantees. They do not establish performance for every browser, device, operating-system version or storage condition.
 
@@ -800,4 +839,4 @@ Do not introduce a hard archive-size limit, change the existing 5 MiB import lim
 
 The storage decision remains localStorage until representative evidence demonstrates a material reliability or usability problem. If it does, conduct a separate storage review before proposing a migration.
 
-No non-empty personal-memory record activation, storage-key change or second authoritative store is authorised by this follow-up. The Stage 1 schema-version-2 foundation remains active, with all five additional collections restricted to empty arrays.
+Stage 2 native conversation and message archive implementation was explicitly approved on 27 November 2026. The live application remains on the Stage 1 schema-version-2 foundation under the existing `mopapa.v1` storage key until the approved schema-version-3 migration is implemented and verified. No production schema activation has occurred yet. Once implemented, only conversations and messages may contain records during Stage 2; memories, memorySources and memoryRelations must remain empty. No storage-key change, second authoritative store or IndexedDB migration is authorised by this approval.

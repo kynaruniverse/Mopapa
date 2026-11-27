@@ -4,7 +4,7 @@ Status: Consolidated canonical technical specification
 Date: 23 November 2026
 Repository: https://github.com/kynaruniverse/Mopapa
 Authority: This document is the technical authority for the proposed personal-memory record model.
-Implementation status: The Stage 1 schema-version-2 storage foundation is implemented and verified. All five proposed collections remain empty. Non-empty record support and all subsequent personal-memory functionality remain design-only and subject to separate approval.
+Implementation status: The Stage 1 schema-version-2 storage foundation is implemented and verified. Stage 2 native conversation and message archive implementation was explicitly approved on 27 November 2026 but has not yet been implemented. The live application remains on schema version 2, with all five proposed collections empty. Stage 2 may populate only conversations and messages after its schema-version-3 migration and archive implementation have been verified. The other three collections and all subsequent functionality remain subject to their respective implementation stages and approval gates.
 
 ---
 
@@ -2398,4 +2398,4 @@ Do not recreate supporting specifications that repeat these definitions.
 
 Research rationale belongs in "personal-memory-research-review.md". Product direction belongs in "personal-memory-architecture.md". Implementation sequencing and verified progress belong in "personal-memory-build-plan.md". Evaluation fixtures and results belong in "personal-memory-evaluation.md".
 
-Current position: The live application uses schema version 2 and localStorage under the existing "mopapa.v1" key. The five additional collections exist as empty arrays only. Stage 2 is being specified as native, source-independent conversation and message preservation, with schema version 3 proposed for its implementation. The other three collections remain empty during Stage 2. This specification does not authorise production changes. Stage 2 requires completed documentation, evaluation fixtures, code-alignment review and explicit implementation approval.
+Current position: The live application uses schema version 2 and localStorage under the existing "mopapa.v1" key. The five additional collections currently exist as empty arrays only. Stage 2 native, source-independent conversation and message preservation has been specified and explicitly approved for implementation on 27 November 2026. Schema version 3 is not yet implemented. Only conversations and messages may contain records after the approved migration and archive implementation. The other three collections must remain empty throughout Stage 2. The fresh pre-implementation baseline is recorded in the build plan. Production changes must follow its verified implementation sequence and acceptance requirements.

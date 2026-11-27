@@ -1308,7 +1308,7 @@ The technical specification defines what must be correct. This evaluation docume
 
 Do not duplicate the canonical data model or create a second implementation roadmap here.
 
-Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus remain separate evaluation assets. Stage 1 schema version 2 is implemented and verified. Stage 2 is specified as native, source-independent conversation and message preservation, with schema version 3 proposed but not authorised for implementation. Its evaluation fixtures, migration requirements and end-to-end acceptance criteria must be completed before implementation approval. No Stage 2 production implementation or schema activation is authorised by this document.
+Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus remain separate evaluation assets. Stage 1 schema version 2 is implemented and verified. Stage 2 native, source-independent conversation and message preservation has been specified and explicitly approved for implementation on 27 November 2026. Schema version 3 is not yet implemented. Its specified evaluation fixtures, migration requirements and end-to-end acceptance criteria remain mandatory implementation acceptance requirements. Unit and browser tests must be extended alongside the corresponding production changes. Approval does not establish that any Stage 2 production behaviour has already been implemented or verified.
 
 ---
 
