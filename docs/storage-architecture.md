@@ -175,9 +175,17 @@ A boost records a person's previous confirmation of which saved entry answered a
 
 ### Schema version and import normalisation
 
-The current schema version is `1`.
+The current production schema version is `2`.
 
-A record without `schemaVersion` is treated as legacy version `0`. Supported integer versions from `0` through `1` are accepted. Unsupported, negative, non-integer or non-numeric versions are rejected.
+The live application uses the existing `mopapa.v1` storage key.
+
+A record without `schemaVersion` is treated as legacy version `0`. Schema versions `0` and `1` are supported through the implemented migration to version `2`.
+
+Schema version `2` requires all five additional personal-memory collections to exist as valid empty arrays. Missing, malformed or non-empty proposed collections are rejected.
+
+Unsupported, negative, non-integer or non-numeric schema versions are rejected.
+
+Schema version `3` is proposed for Stage 2 native conversation and message records. It has not been implemented or authorised. Do not describe schema version 3 as current production behaviour.
 
 On loading saved data, Mopapa cleans and normalises entries, room-learning data, custom rooms and Ask learning before using them.
 
@@ -739,7 +747,7 @@ Once Stage 2 has a working archive implementation, benchmark three message-count
 
 These are diagnostic workload sizes, not supported archive limits or guarantees.
 
-Message text sizes and metadata distribution should be based on representative authorised conversation exports. Record the actual message-size distribution, conversation count, participant count and source metadata size used by each fixture. Include a separate stress fixture containing unusually long messages.
+Message text sizes and metadata distribution should be based on reproducible synthetic native-conversation fixtures. No personal export or third-party platform data is required. Record the message-size distribution, conversation count, participant count and metadata size used by each fixture. Include a separate stress fixture containing unusually long messages.
 
 Measure:
 
@@ -750,8 +758,8 @@ Measure:
 - Backup export.
 - Backup restore.
 - Recovery-copy creation and storage growth.
-- Import duration.
-- Retry duration.
+- Native conversation and message creation duration.
+- Save and retry duration.
 - Quota and interrupted-write behaviour.
 
 For each workload, record dataset size, browser, device, repetitions, median and p95 where the sample size permits.

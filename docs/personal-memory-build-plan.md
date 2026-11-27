@@ -385,56 +385,73 @@ Acceptance:
 
 Exit: Verified  implementation, passing automated tests, successful deployment and explicit user approval before Stage 2.
 
-Stage 1 permits only empty arrays in all five new collections. Schema-v2 backups with missing, malformed or non-empty proposed collections must be rejected without replacing current data. Non-empty record support requires the relevant later-stage approval and validation.
+Stage 1 permits only empty arrays in all five new collections. Schema-v2 backups with missing, malformed or non-empty proposed collections must be rejected without replacing current data.
 
-Stage 2: Conversation and message preservation
+Stage 1 is complete and verified. Stage 2 is expected to introduce schema version 3 through an explicit migration from version 2. Non-empty conversation and message records remain unsupported until Stage 2 has been separately approved, implemented and verified.
 
-Purpose: Give Mopapa a reliable original-evidence archive.
+Stage 2: Native conversation and message preservation
+
+Purpose: Give Mopapa a reliable, source-independent archive of conversations and original message evidence.
+
+Stage 2 must work without external platform integrations, exported account data, paid services or external processing.
 
 Work:
 
-- Define and implement conversation creation, management and source metadata.
+- Introduce schema version 3 through a documented and tested migration from schema version 2.
+- Preserve the existing "mopapa.v1" storage key and localStorage architecture.
+- Enable non-empty records only in the "conversations" and "messages" collections.
+- Keep "memories", "memorySources" and "memoryRelations" as empty arrays.
+- Define and implement native conversation creation and management.
+- Allow users to add messages directly within Mopapa.
+- Support deliberate entry or pasting of message content.
 - Preserve original message text without rewriting, trimming or normalising its content.
 - Store conversation-local participants without assuming global identity.
-- Preserve the source message role separately from actual author attribution.
-- Represent author attribution independently from quoted speakers and memory subjects.
-- Preserve original timestamp values, their supplied precision and explicit timezone information.
+- Preserve source role separately from actual author attribution.
+- Represent author attribution independently from quoted speakers and future memory subjects.
+- Preserve original timestamp values, supplied precision and explicit timezone information.
 - Store normalised timestamps separately and only when interpretation is unambiguous.
-- Keep original message time separate from Mopapa receipt/import time.
-- Preserve source message sequence and conversation boundaries.
-- Preserve nested quotation annotations with explicit parent-child references where the source establishes them.
-- Preserve original source conversation and message identifiers separately from Mopapa-generated identifiers.
-- Define source-specific import mapping for each supported import format.
-- Make retries idempotent where stable source identifiers are available.
-- Reject or hold conflicting duplicate identifiers for explicit review.
-- Define safe handling for imports without stable source identifiers without claiming reliable cross-import deduplication.
+- Keep original message time separate from Mopapa receipt and record-creation time.
+- Preserve message sequence and conversation boundaries.
+- Preserve nested quotation annotations with explicit parent-child references where established.
+- Use Mopapa-generated identifiers for native conversations, participants and messages.
+- Define safe creation and save-retry behaviour that does not create duplicate records.
+- Reject conflicting identifiers and invalid conversation or participant references.
 - Provide archive inspection sufficient to verify original content, authorship, timestamps, quotations and provenance.
 - Include conversations and messages in backup and restore.
+- Preserve existing manual Keep, deterministic Ask, learning and recovery behaviour.
 - Measure representative archive storage, validation, save, load, backup and restore performance.
 - Do not implement conversation or message deletion in Stage 2. Deletion remains deferred to Stage 4, including suppression, older-backup handling, recovery-copy sanitisation and incomplete-cleanup behaviour.
+- Do not implement external platform imports in Stage 2. Future import adapters require separate approval.
 
 Acceptance:
 
+- Schema version 2 data migrates safely to schema version 3.
+- Existing schema version 0 and version 1 migration behaviour remains supported.
+- The original pre-migration data remains recoverable.
+- Failed or interrupted migrations do not silently corrupt or replace existing data.
 - Original message text is preserved unchanged.
 - Conversation boundaries and source message ordering are correct.
-- Source role, actual author, quoted speaker and memory subject remain distinct.
+- Source role, actual author, quoted speaker and future memory subject remain distinct.
 - Unknown, unsupported or contradictory authorship is preserved as unresolved rather than guessed.
 - Original timestamp values remain available independently of normalised timestamps.
 - Missing, invalid or ambiguous timestamps are not used as established temporal facts.
 - Supplied timestamp precision and explicit timezone information are preserved.
-- Receipt/import time is never substituted for original message time.
+- Receipt time is never substituted for original message time.
 - Nested quotations preserve their parent-child relationships where established.
 - Invalid, ambiguous or unsupported quotation attribution is not silently resolved.
-- Source conversation and message identifiers remain distinct from Mopapa-generated IDs.
-- Stable source identifiers prevent uncontrolled duplicate imports and make safe retries possible.
-- Conflicting duplicate identifiers are rejected or held for explicit review rather than silently overwritten.
-- Imports without stable source identifiers do not claim reliable cross-import duplicate detection.
-- Failed or interrupted imports do not corrupt previously stored data.
-- Archive inspection exposes enough information to verify the preserved evidence and its attribution.
+- Every message references an existing conversation.
+- Every participant reference is valid within its conversation.
+- Message sequence values are valid and unique within their conversation.
+- Retrying a failed native creation or save does not silently create duplicate records.
+- Failed or interrupted saves do not corrupt previously stored data.
+- Archive inspection exposes enough information to verify preserved evidence and attribution.
 - Backup and restore preserve the complete supported conversation and message archive.
+- The three later-stage collections remain empty.
 - Archive deletion remains unavailable until Stage 4 governance and recovery requirements are implemented and verified.
 - Representative archive performance is measured using documented workloads and reported separately from existing manual-entry benchmarks.
+- Existing Keep, Ask, learning and recovery regression tests continue to pass.
 - No automatic memory extraction or accepted-memory creation is introduced in Stage 2.
+- No external platform import adapter is introduced in Stage 2.
 
 No automatic memory extraction is introduced until evidence preservation is reliable.
 
@@ -462,55 +479,69 @@ Acceptance:
 - Extraction failure does not affect preserved messages.
 - Candidate quality is measured against fixed fixtures.
 
-Stage 4: Stored memories and governance
+Stage 4: Memory lifecycle and governance
 
-Purpose: Turn reliable candidates into independently inspectable and controllable memories.
+Purpose: Turn reliable candidates into independently inspectable, controllable and safely governed memories.
 
 Work:
 
-- Memory records and types.
-- Provenance and evidence spans.
-- Lifecycle and evidence states.
-- Derivation dependencies.
-- Semantic relationships.
-- Scope and use restrictions.
-- Identity correction.
-- Inspection, correction and dismissal.
-- Revocation and deletion.
+- Define accepted memory records and memory types.
+- Define provenance and evidence spans.
+- Define lifecycle and evidence states.
+- Define derivation dependencies.
+- Define source permissions and use restrictions.
+- Define scope and audience rules.
+- Implement candidate inspection and explicit acceptance.
+- Implement correction, dismissal and rejection.
+- Implement memory revocation.
+- Implement safe deletion.
+- Implement deletion suppression and deliberate reintroduction.
+- Handle older backups and recovery copies after deletion or revocation.
+- Handle incomplete cleanup and retrieval restrictions.
+- Keep manual entries separate from extracted memories.
 
 Acceptance:
 
-- Every memory has traceable evidence.
+- Every accepted memory has traceable evidence.
 - Invalid provenance and dependency references are rejected.
 - Corrections do not rewrite original evidence.
 - Restrictions propagate conservatively.
+- Unknown permissions do not become permission.
 - Dismissed memories are not silently reactivated.
 - Deletion reassesses direct and indirect dependencies.
 - Revoked information is excluded from prohibited use.
-- Failure and recovery paths are tested.
-
-No automatic memory extraction is introduced until evidence preservation is reliable.
+- Older backups cannot silently reverse a completed deletion or revocation.
+- Recovery-copy sanitisation and failure paths are tested.
+- Manual entries and extracted memories remain distinct.
+- Users can inspect and control accepted memories.
 
 Stage 5: Temporal and relational memory
 
-Purpose: Support changes, history and relationships without silently destroying previous information.
+Purpose: Support changes, history, identity and relationships without silently destroying previous information.
 
 Work:
 
 - Temporal validity.
 - Historical memory retrieval.
+- Partial-date and timezone-aware temporal interpretation.
 - Supersession.
 - Contradiction handling.
 - Related-memory relationships.
-- Conversation-local identity corrections.
+- Memory-to-memory relationship validation.
+- Conversation-local identity correction.
+- Reversible participant correction, merge and unmerge.
+- Reassessment of dependent memories after identity corrections.
 
 Acceptance:
 
 - A later timestamp alone never proves supersession.
 - Historical information remains available where permitted.
 - Contradictions are not silently resolved.
-- Invalid relationship cycles are rejected.
+- Invalid relationship references and cycles are rejected.
 - Ambiguous changes produce clarification or abstention where appropriate.
+- Identity corrections are explicit, reversible and conversation-local.
+- Corrections do not silently merge unrelated people.
+- Dependent memories are reassessed after identity changes.
 
 Stage 6: Retrieval and deterministic Ask expansion
 
@@ -707,9 +738,13 @@ The historical-document reconciliation and reference audit are complete. The red
 
 This build plan is the authoritative location for current implementation sequencing, outstanding decisions and verified engineering progress.
 
-The Stage 2 readiness review has resolved the design requirements for source authorship, quoted-speaker attribution, nested quotations, original timestamp preservation, duplicate import handling and the deletion boundary.
+The Stage 2 readiness review has established the direction of native, source-independent conversation and message preservation.
 
-The remaining Stage 2 preparation is to define the concrete import-format mapping and evaluation fixtures, verify that the proposed record fields can be validated against those fixtures, and establish the archive benchmark workload.
+The remaining preparation is to finalise the conversation and message record model, schema version 3 migration, participant and authorship rules, timestamp handling, quotation representation, native creation and retry behaviour, archive inspection, backup and restore, evaluation fixtures and archive benchmark methodology.
+
+The implementation must also be checked against the existing codebase to identify any required changes to storage, startup, interface, script loading and tests.
+
+External platform import formats are not a Stage 2 prerequisite. They are deferred to separately approved future adapters.
 
 Stage 2 production implementation remains subject to a separate explicit approval. Documentation readiness does not authorise production changes.
 

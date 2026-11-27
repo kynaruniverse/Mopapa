@@ -201,6 +201,10 @@ Identity must also be handled carefully. Similar names, relationships or referen
 
 The first implementation priority is a reliable, understandable memory-processing pipeline.
 
+The initial conversation archive must be source-independent and usable without external platform integrations. Mopapa must support conversations created directly within the application, including information deliberately entered or pasted by the user.
+
+External platform imports are optional future adapters. The core conversation and message model must not depend on any particular provider's export format, account, API or data structure.
+
 Processing should be deterministic wherever practical.
 
 The system should:

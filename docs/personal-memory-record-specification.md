@@ -254,9 +254,9 @@ Illustrative structure:
   "id": "con_example001",
   "title": "Work and plans",
   "origin": {
-    "type": "chatgpt_import",
-    "sourceId": "source_conversation_123",
-    "label": "ChatGPT export"
+    "type": "mopapa_native",
+    "sourceId": null,
+    "label": "Created in Mopapa"
   },
   "status": "active",
   "participants": [],
@@ -270,7 +270,7 @@ Field| Requirement| Rule
 "id"| Required| Unique Mopapa conversation ID
 "title"| Optional or null| Maximum 200 characters
 "origin"| Required| Source and import-origin metadata
-"origin.type"| Required| "manual", "chatgpt_import", "file_import" or "other"
+"origin.type"| Required| "mopapa_native", "user_supplied", "file_import" or "other"
 "origin.sourceId"| Optional or null| Original stable source ID, if available
 "origin.label"| Optional or null| Human-readable label, maximum 100 characters
 "status"| Required| "active" or "archived"
@@ -354,9 +354,9 @@ Illustrative structure:
   "timestampStatus": "normalised",
   "receivedAt": "2026-11-20T09:30:00.000Z",
   "origin": {
-    "type": "chatgpt_import",
-    "sourceConversationId": "source_conversation_123",
-    "sourceMessageId": "source_message_456"
+    "type": "mopapa_native",
+    "sourceConversationId": null,
+    "sourceMessageId": null
   },
   "quotedSpeakers": [],
   "governance": {}
@@ -376,7 +376,7 @@ Field| Requirement| Rule
 "timestampStatus"| Required| "normalised", "unknown", "invalid" or "ambiguous"
 "receivedAt"| Required| UTC time received or imported by Mopapa
 "origin"| Required| Source and import-origin metadata
-"origin.type"| Required| "manual", "chatgpt_import", "file_import" or "other"
+"origin.type"| Required| "mopapa_native", "user_supplied", "file_import" or "other"
 "origin.sourceConversationId"| Required, nullable| Original source conversation identifier; null when unavailable or not applicable
 "origin.sourceMessageId"| Required, nullable| Original source message identifier; null when unavailable or not applicable
 "quotedSpeakers"| Required| Embedded quoted-speaker annotations
@@ -1704,79 +1704,73 @@ If reliable reconciliation cannot be established, the affected restore must be r
 
 ---
 
-17. Re-import and deletion suppression
+17. Conversation creation, retry safety and deletion boundaries
 
-17.1 Stage 2 duplicate-import behaviour
+17.1 Native conversation creation
 
-Stage 2 must prevent uncontrolled duplicates when a source supplies stable identifiers.
+Stage 2 creates conversations directly within Mopapa.
 
-A source conversation is identified using the combination of:
-
-- Source type.
-- Original source conversation identifier.
-
-A source message is identified using the combination of:
-
-- Source type.
-- Original source conversation identifier, where available.
-- Original source message identifier.
+Mopapa-generated conversation, participant and message identifiers are distinct from any optional external source identifiers.
 
 Rules:
 
-- Source identifiers remain separate from Mopapa-generated IDs.
-- Stable source identifiers must be compared within their source namespace.
-- Re-importing an already imported source conversation must not create another copy.
-- Re-importing an existing source message must not create a duplicate message.
-- A retry after an interrupted import must be safe when stable source identifiers are available.
-- Duplicate identifiers referring to materially conflicting source content must not be silently overwritten. The affected import must be rejected or held for explicit review.
-- Text similarity alone must never establish source identity.
-- Message wording, timestamps, participant names and array position are not substitutes for stable source identifiers.
+- A conversation must have a unique Mopapa-generated identifier.
+- Every message must have a unique Mopapa-generated identifier.
+- Message sequence values must be unique within their conversation.
+- Participants are conversation-local and must not imply global identity.
+- A message must reference an existing conversation.
+- A message author must reference a valid conversation-local participant or an explicitly supported non-participant author representation.
+- A failed save must not be reported as successful.
+- Retrying the same logical creation or save operation must not silently create duplicate records.
+- Identifiers for a logical operation must remain stable across its retry.
+- Conflicting identifiers must be rejected rather than silently overwritten.
+- Message text, sequence and authorship must not be used to invent identity or merge separate messages.
 
-Where stable source identifiers are unavailable:
+17.2 Optional future source imports
 
-- Mopapa must not claim reliable cross-import duplicate detection.
-- No persistent import ledger or sixth collection is authorised.
-- No content-similarity fingerprint may be treated as proof of source identity.
-- An ambiguous retry must not silently merge records.
-- The affected operation must be blocked or require an explicit, separately designed review process.
-- Any duplicate-risk warning must accurately describe the limitation.
+External platform imports are not part of the initial Stage 2 implementation.
 
-17.2 Deletion and re-import boundary
+Future import adapters may map external source identifiers into the existing origin fields.
+
+Any future adapter must define:
+
+- Its supported source format and version.
+- Source conversation and message identifier handling.
+- Participant and author mapping.
+- Timestamp and quotation preservation.
+- Duplicate and retry behaviour.
+- Unsupported-field handling.
+- Failure and interruption behaviour.
+
+An adapter must not silently discard unsupported source content or claim reliable duplicate detection where the source does not provide sufficient identity information.
+
+Each adapter requires separate design, fixtures, testing and approval.
+
+17.3 Deletion boundary
 
 Stage 2 does not implement conversation or message deletion.
 
 Deletion remains deferred to Stage 4, where the full effects on derived memories, provenance, relationships, backups and recovery copies can be implemented together.
 
-Ordinary re-import must not silently reverse a deliberate deletion, dismissal or revocation decision.
-
 Before deletion is implemented, Stage 4 must define:
 
-- How deliberate deletion is distinguished from ordinary re-import.
+- How deliberate deletion is distinguished from ordinary repeated information.
 - How older backups and recovery copies are handled.
 - How deleted information is prevented from returning through restore or import.
 - How suppression works without retaining deleted message text.
 - Whether an existing collection can safely represent the necessary suppression metadata without compromising its data ownership.
 - How incomplete cleanup blocks affected retrieval and reports failure.
-- How deliberate user-authorised reintroduction differs from ordinary import.
+- How deliberate user-authorised reintroduction differs from ordinary restoration or repeated information.
 
 No sixth collection, persistent import ledger or alternative suppression mechanism is approved by this section.
 
 Raw deleted content must not be retained merely to make future suppression easier.
 
-17.3 Re-import after deletion
-
-Where the system cannot establish whether an import would reverse a previous deletion or revocation:
-
-- Do not silently recreate the affected information.
-- Do not claim that suppression is reliable.
-- Block the affected operation or require a separately designed explicit review process.
-- Do not treat similar wording as proof that two records are the same source.
-
 17.4 Dismissal and explicit reintroduction
 
 A dismissed candidate must not silently return as an accepted memory.
 
-A deliberate user instruction to reintroduce previously deleted information must be distinguishable from ordinary repeated import.
+A deliberate user instruction to reintroduce previously deleted information must be distinguishable from ordinary repeated information.
 
 The confirmation, retention and audit behaviour for explicit reintroduction remains a Stage 4 decision.
 
@@ -1902,17 +1896,27 @@ The schema version does not establish that the dataset is valid. Every supported
 The current and proposed schema generations are:
 
 Schema version| Meaning| Current production support
-Unversioned / version 0| Supported legacy form of the existing application data| Accepted and normalised to version 1
-Version 1| Existing four-domain application schema| Supported
-Version 2| Proposed schema containing the five personal-memory collections| Not supported by current production code
-Version 3 or later| Future schema not yet defined| Unsupported until separately designed and implemented
+Unversioned / version 0| Supported legacy form of the existing application data| Accepted through the implemented migration to version 2
+Version 1| Previous four-domain application schema| Accepted through the implemented migration to version 2
+Version 2| Current production schema containing the five additional personal-memory collections as empty arrays| Supported, subject to the implemented empty-collection validation
+Version 3| Proposed Stage 2 schema supporting non-empty conversations and messages| Not yet implemented or supported
+Version 4 or later| Future schema not yet defined| Unsupported until separately designed and implemented
 
 The intended application-to-backup schema compatibility is:
 
-Application schema| Backup schema 0| Backup schema 1| Backup schema 2| Backup schema 3+
-Version 1| Accept and normalise| Accept| Reject safely| Reject safely
-Version 2| Accept only through an explicitly implemented and tested migration| Accept only through an explicitly implemented and tested migration| Accept if fully supported| Reject safely
-Version 3| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only if fully supported
+Application schema| Backup schema 0| Backup schema 1| Backup schema 2| Backup schema 3| Backup schema 4+
+Version 1| Accept and normalise| Accept| Reject safely| Reject safely| Reject safely
+Version 2| Accept only through the implemented migration| Accept only through the implemented migration| Accept if fully supported| Reject safely| Reject safely
+Version 3| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept if fully supported| Reject safely
+Version 4| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only if fully supported
+
+This matrix distinguishes the current production capability from the proposed Stage 2 capability.
+
+Schema version 2 is active in production. Its five additional collections must remain empty.
+
+Stage 2 is expected to introduce schema version 3. The version 2 to version 3 migration must be explicitly designed, implemented and tested before non-empty conversation or message records can be accepted.
+
+No future application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
 
 This matrix records intended compatibility, not current implementation capability or authorisation.
 
@@ -2068,7 +2072,11 @@ The live application currently uses localStorage and schema version 2.
 
 The current storage key is "mopapa.v1".
 
-The five additional collections exist as empty arrays only. This specification defines the intended later record structures and behaviour; it does not imply that non-empty record functionality is already implemented.
+The five additional collections exist as empty arrays only. Stage 1 introduced these collections without enabling non-empty records.
+
+Stage 2 is expected to introduce schema version 3, supporting non-empty conversations and messages. The memories, memorySources and memoryRelations collections must remain empty throughout Stage 2.
+
+The Stage 2 migration must preserve all existing application data and the five collection boundaries. It must not introduce a second authoritative store or change the storage key.
 
 IndexedDB remains a candidate, not an approved migration.
 
@@ -2246,7 +2254,7 @@ A later stage may begin only after its deferred decisions have been resolved in 
 
 The following require explicit approval before the corresponding work begins:
 
-- Production schema version 2.
+- Production schema version 3 for Stage 2 conversation and message records.
 - A storage-key change.
 - IndexedDB migration.
 - Global identity resolution.
@@ -2270,4 +2278,4 @@ Do not recreate supporting specifications that repeat these definitions.
 
 Research rationale belongs in "personal-memory-research-review.md". Product direction belongs in "personal-memory-architecture.md". Implementation sequencing and verified progress belong in "personal-memory-build-plan.md". Evaluation fixtures and results belong in "personal-memory-evaluation.md".
 
-Current position: The five-collection personal-memory model is a proposed target. The live application remains on its existing schema and storage implementation. The record model is not permission to begin production changes. Implementation readiness must be established through the remaining decisions and approval gates in this specification and the build plan.
+Current position: The live application uses schema version 2 and localStorage under the existing "mopapa.v1" key. The five additional collections exist as empty arrays only. Stage 2 is being specified as native, source-independent conversation and message preservation, with schema version 3 proposed for its implementation. The other three collections remain empty during Stage 2. This specification does not authorise production changes. Stage 2 requires completed documentation, evaluation fixtures, code-alignment review and explicit implementation approval.

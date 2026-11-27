@@ -24,7 +24,36 @@ Critical privacy, attribution, provenance, permission, deletion and data-integri
 
 ## Stage 2 conversation and message preservation evaluation
 
-Stage 2 must be evaluated as an original-evidence preservation system. It is not an extraction or retrieval benchmark.
+Stage 2 must be evaluated as a native, source-independent original-evidence preservation system. It is not an extraction, external-import or retrieval benchmark.
+
+The evaluation must use synthetic conversations created specifically for Mopapa's test fixtures. No personal ChatGPT export or third-party account data is required.
+
+The fixtures must cover:
+
+- A simple conversation with two participants.
+- A conversation with multiple participants.
+- User-entered and pasted message content.
+- Long messages and multi-paragraph messages.
+- Empty or whitespace-only message rejection.
+- Original text preservation, including punctuation and line breaks.
+- Message ordering and sequence validation.
+- Missing, invalid and ambiguous timestamps.
+- Date-only and partial timestamp precision.
+- Explicit timezone offsets.
+- Unknown authorship.
+- Unsupported source-role values where relevant to user-supplied material.
+- Quoted speech and nested quotations.
+- Conflicting speaker attribution.
+- Duplicate Mopapa-generated identifiers.
+- Invalid conversation and participant references.
+- Repeated save attempts.
+- Failed saves and interrupted operations.
+- Backup and restore of conversations and messages.
+- Migration from schema version 2 to schema version 3.
+- Preservation of existing Keep, Ask, learning and recovery data.
+- Confirmation that the three later-stage collections remain empty.
+
+External platform import fixtures are deferred until a particular import adapter has been separately approved.
 
 Required fixture categories:
 
@@ -883,8 +912,9 @@ Required compatibility fixtures:
 
 - Supported unversioned legacy data.
 - Valid schema version 1.
-- Proposed schema version 2.
-- Unsupported future schema version.
+- Current schema version 2 with all five additional collections empty.
+- Proposed schema version 3 with valid native conversations and messages.
+- Unsupported future schema version 4 or later.
 - Invalid schema version.
 - Missing required collections.
 - Valid empty collections.
@@ -902,7 +932,11 @@ Required compatibility fixtures:
 
 Required migration and recovery fixtures:
 
+- Successful version 0 to version 2 migration.
 - Successful version 1 to version 2 migration.
+- Successful version 2 to version 3 migration.
+- Version 2 to version 3 migration preserving all existing application data.
+- Version 2 to version 3 migration leaving memories, memorySources and memoryRelations empty.
 - Migration with existing manual entries.
 - Migration with existing learning data.
 - Migration with Ask aliases and boosts.
@@ -1210,7 +1244,7 @@ The technical specification defines what must be correct. This evaluation docume
 
 Do not duplicate the canonical data model or create a second implementation roadmap here.
 
-Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus are now documented together but remain separate evaluation assets. The future Personal Memory Companion requires its own end-to-end evaluation before implementation can be considered reliable. No production implementation or schema activation is authorised by this document.
+Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus remain separate evaluation assets. Stage 1 schema version 2 is implemented and verified. Stage 2 is being specified as native, source-independent conversation and message preservation, with schema version 3 proposed for implementation. Its evaluation fixtures and migration tests must be completed before implementation approval. No Stage 2 production implementation is authorised by this document.
 
 ---
 

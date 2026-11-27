@@ -43,7 +43,7 @@ The current application and the proposed target architecture must not be confuse
 
 The live application now uses schema version 2 under its existing `mopapa.v1` storage key. Stage 1 introduced exactly five additional top-level collections as empty arrays. Existing manual entries, learning data and deterministic Ask remain separate from the personal-memory model. Non-empty conversation, message, memory, source and relationship records are not yet supported.
 
-The proposed target model contains exactly five additional collections:
+The target model contains exactly five additional collections:
 
 - `conversations`
 - `messages`
@@ -51,9 +51,13 @@ The proposed target model contains exactly five additional collections:
 - `memorySources`
 - `memoryRelations`
 
-These five collections are active in production as empty arrays only. Stage 1 rejects missing, malformed or non-empty proposed collections. Their record-level functionality remains deferred to separately approved stages.
+The five collections are present in the live schema version 2 as empty arrays only. Their non-empty record functionality is not yet implemented.
 
-The Stage 1 schema-version-2 foundation is implemented and verified. No non-empty personal-memory records, IndexedDB migration, external AI processing, paid service, cloud synchronisation, mandatory account system or replacement of deterministic Ask is authorised.
+Stage 2 is being redesigned around native, source-independent conversation and message preservation. Users will be able to create and preserve conversations directly within Mopapa. ChatGPT exports and other external platform imports are not prerequisites and are not part of the initial Stage 2 scope.
+
+Stage 2 is expected to introduce schema version 3, with an explicit and tested migration from schema version 2. The other three personal-memory collections will remain empty during Stage 2.
+
+Stage 1 is implemented and verified. Stage 2 production implementation has not been authorised. No IndexedDB migration, external AI processing, paid service, cloud synchronisation, mandatory account system or replacement of deterministic Ask is authorised.
 
 ## Development rules
 
@@ -100,4 +104,5 @@ Do not recreate these retired documents or use historical next-work instructions
 
 The six-master-document structure is complete. The historical-document reconciliation is complete.
 
-Stage 1 storage and schema implementation is complete and verified. The project is now undertaking the Stage 2 conversation and message preservation readiness review. Stage 2 production implementation remains subject to its own explicit approval gate.
+Stage 1 storage and schema implementation is complete and verified. 
+The project is finalising the source-independent Stage 2 conversation and message preservation specification, evaluation fixtures and code-alignment review. Stage 2 production implementation remains subject to its own explicit approval gate.
