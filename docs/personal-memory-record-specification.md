@@ -286,6 +286,8 @@ Rules:
 - A participant ID is not a global identity.
 - A conversation must not store its complete message history in one text field.
 - Message order must be established through message sequence and source timestamps, not array position.
+- Conversation deletion is an operation, not a status value.
+- A completed deletion must process dependent records under the approved deletion policy.
 - Stage 2 may create only "mopapa_native" and "user_supplied" origin types. "file_import" and "other" are reserved for separately approved future adapters and do not authorise import functionality.
 
 5.2 Participant records
