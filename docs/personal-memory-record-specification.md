@@ -1925,6 +1925,16 @@ In particular, migration must be blocked when any of the following recovery indi
 
 The exact original stored data must remain recoverable. The application must report that migration is blocked and require a separately validated recovery or restore procedure. It must not silently migrate the remaining subset.
 
+The preflight must inspect both the current in-memory validation result and the original parsed schema-v2 object.
+
+It must not rely only on transient flags held in memory. An earlier legacy migration may have serialised rejection indicators into the schema-v2 primary record, and a later startup must not ignore those persisted indicators.
+
+Any present rejection indicator blocks schema-v2-to-v3 migration, even when a recovery copy was successfully saved and "recoveryBlocked" is false.
+
+Migration must not clear, normalise away or overwrite rejection indicators before the preflight decision.
+
+A preserved recovery copy does not convert a partially recovered dataset into a valid migration source.
+
 Before migration:
 
 1. Read and retain the exact original serialized storage value.

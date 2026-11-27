@@ -159,7 +159,27 @@ Additional Stage 2 acceptance checks:
    - A failure during commit or read-back does not report success.
    - A failed restoration leaves the application in a blocked or recovery-required state.
    - Reload after an interrupted migration identifies the actual valid primary schema rather than assuming the previous operation succeeded.
-   - Legacy version 0 and version 1 inputs continue through their existing migration path before reaching version 3.
+  - Legacy version 0 and version 1 inputs continue through their existing migration path before reaching version 3.
+
+5. Existing implementation alignment regressions:
+
+   - A schema-v2 dataset with rejected entries must block schema-v3 migration, even when its original recovery copy was successfully saved.
+   - A schema-v2 dataset with rejected learning data must block schema-v3 migration.
+   - Rejected custom rooms and rejected Ask data must independently block schema-v3 migration.
+   - A `recoveryBlocked` indicator must block migration.
+   - Persisted rejection indicators in the original parsed schema-v2 object must still block migration after a reload.
+   - Migration must not proceed merely because transient in-memory rejection flags are absent.
+   - Every blocked migration must leave the exact original primary storage value unchanged.
+   - A blocked migration must not write a schema-v3 candidate or report successful migration.
+   - A populated schema-v3 backup must restore every conversation and message without altering original text or metadata.
+   - A schema-v3 restore containing an invalid conversation, participant or quotation reference must reject the complete restore.
+   - A failed archive save must restore the previous in-memory dataset and must not overwrite a newer primary record after a storage conflict.
+   - The separate archive input must preserve leading and trailing whitespace, line breaks, punctuation and Unicode.
+   - The archive input must support messages beyond the existing Keep input's 1,000-character limit, within the separately approved archive boundary.
+   - The existing Keep and Ask composer must continue to behave as before.
+   - Startup must not enable archive writes when migration has been blocked or the storage state is uncertain.
+
+These cases must extend existing migration, restore, rollback and browser tests wherever possible. They must not duplicate existing assertions that already prove the same behaviour.
 
 Release-blocking failures include altered original text, invented authorship, false quotation attribution, invented timestamps, uncontrolled duplicate creation, partial imports reported as successful, and failed restore operations that damage existing data.
 

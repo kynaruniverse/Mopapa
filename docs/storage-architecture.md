@@ -202,6 +202,27 @@ Legacy monetary values beginning with a pound sign can be converted to numeric v
 
 This section describes the current implementation. It is not a promise that future schema changes will preserve every field without an explicit migration and compatibility test.
 
+### Stage 2 implementation alignment observations
+
+Reviewed against repository commit `3a2dcd3ea43e8ef335c301e4601c5df08dd4712a` on 27 November 2026.
+
+The following are verified properties and limitations of the current code:
+
+- `js/store.js` currently uses schema version 2.
+- `validMemoryCollections()` rejects non-empty records in all five proposed collections.
+- `load()` can clean legacy data and record rejection indicators.
+- The current `migrate()` gate does not independently check every rejection indicator. When a recovery copy succeeds, `recoveryBlocked` may remain false even though the in-memory dataset has been reduced.
+- The current migration serialises the active in-memory dataset. It does not construct and independently validate a separate migration candidate.
+- Rejection indicators can be included in a migrated schema-v2 serialisation, but the current loader does not restore those indicators from the parsed stored object on a later startup. A future migration must inspect persisted indicators directly.
+- `save()` verifies the primary write and attempts best-effort restoration. It does not automatically roll back all in-memory mutations.
+- `importJSON()` currently reconstructs the five proposed collections as empty arrays. It cannot yet restore populated conversations or messages.
+- The existing Keep and Ask composer trims submitted text and has a 1,000-character input limit. It is not suitable for exact original-message preservation.
+- `js/main.js` loads and migrates storage before initialising the application interface.
+
+These findings are not evidence that schema version 3 is implemented. They identify changes required before the Stage 2 migration and archive can be safely enabled.
+
+The canonical record specification governs the required migration, restore and validation behaviour. The build plan governs the implementation sequence and approval gate. No production change is authorised by this supporting review.
+
 
 ## Write and rollback guarantees
 

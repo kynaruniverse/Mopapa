@@ -470,6 +470,40 @@ Acceptance:
 - No automatic memory extraction or accepted-memory creation is introduced in Stage 2.
 - No external platform import adapter is introduced in Stage 2.
 
+### Stage 2 code-alignment review
+
+Repository review completed against commit `3a2dcd3ea43e8ef335c301e4601c5df08dd4712a` on 27 November 2026.
+
+The following findings describe the existing implementation. They are constraints for the future Stage 2 implementation, not approval to begin it.
+
+| Area | Verified current behaviour | Required Stage 2 alignment |
+|---|---|---|
+| Store schema | `js/store.js` currently uses schema version 2 and the existing `mopapa.v1` key. | Preserve the key and introduce schema version 3 only through the separately approved migration. |
+| Collection validation | `validMemoryCollections()` accepts only empty arrays for all five proposed collections. | Introduce schema-v3 validation that permits records only in `conversations` and `messages`. The other three collections must remain empty. |
+| Startup validation | `load()` cleans legacy entries, learning, custom rooms and Ask data. It records rejection indicators when data is removed or normalised. | Preserve the distinction between a valid dataset and a partially recovered dataset. |
+| Migration gate | `migrate()` currently checks storage availability, corruption and `recoveryBlocked`, but does not independently reject every `rejectedEntries`, `rejectedLearned`, `rejectedCustomRooms` or `rejectedAsk` indicator. | The schema-v2-to-v3 preflight must reject every specified indicator, even when a recovery copy exists. It must also inspect persisted indicators in the original parsed schema-v2 object. |
+| Migration candidate | The current migration serialises the active `data` object after legacy cleaning. | Construct and validate a separate candidate from the exact validated source. Do not migrate a reduced or partially recovered dataset. |
+| Save behaviour | `save()` verifies the primary write and attempts best-effort restoration, but does not automatically restore every in-memory mutation. | Every new archive operation must snapshot its previous in-memory state and restore it when persistence fails. It must not overwrite newer data after a conflict. |
+| Backup import | `importJSON()` currently supports the existing schema versions and reconstructs all five additional collections as empty arrays. | Implement complete schema-v3 validation and preserve populated conversations and messages. Reject the entire restore if any connected record or reference is invalid. |
+| Backup export | `exportJSON()` exports the current application data as plain JSON. | Preserve the existing format and include all supported schema-v3 collections and records without introducing a separate envelope. |
+| Keep and Ask composer | `js/ui/talk.js` trims submitted text. `index.html` limits `#talk-input` to 1,000 characters. Keep submission also uses the existing entry parsing and classification pipeline. | Build a separate archive input and message workflow. Preserve valid message text exactly and do not inherit the Keep limit or processing pipeline. |
+| Startup and script order | `js/main.js` loads the store and runs migration before initialising the interface. `index.html` loads the store before domain and UI modules, with `main.js` last. | Complete migration safety before enabling archive functionality. Load new domain and UI modules in explicit dependency order, retaining startup as the final entry point. |
+| Existing tests | `tests/run.js` already contains substantial storage, migration, write-failure, recovery and restore coverage. `tests/browser.js` covers real browser storage, restore and recovery behaviour. | Extend existing tests for genuinely missing Stage 2 behaviour. Do not create duplicate tests or weaken existing recovery coverage. |
+
+#### Required implementation order after Stage 2 approval
+
+1. Complete schema-v3 validation and migration preflight.
+2. Implement safe migration candidate construction, recovery and verified commit.
+3. Extend backup export, import and restore for populated conversations and messages.
+4. Implement archive record operations with complete in-memory rollback on failed writes.
+5. Introduce the separate conversation archive interface and exact-text message input.
+6. Extend unit and browser tests for the complete archive lifecycle.
+7. Measure representative archive workloads and verify behaviour on the target Android browser.
+
+The current implementation is not yet aligned with all Stage 2 requirements. These findings must be resolved and verified before Stage 2 can be considered complete.
+
+No Stage 2 production implementation is authorised by this review.
+
 No automatic memory extraction is introduced until evidence preservation is reliable.
 
 Stage 3: Deterministic candidate extraction
