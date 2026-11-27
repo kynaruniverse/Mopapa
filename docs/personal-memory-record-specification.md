@@ -347,7 +347,7 @@ Illustrative structure:
     "attribution": "user"
   },
   "text": "I now work at Company B.",
-  "originalTimestamp": "2026-11-20T09:15:00+00:00",
+  "originalTimestamp": "2026-11-20T09:15+00:00",
   "timestamp": "2026-11-20T09:15:00.000Z",
   "timestampPrecision": "minute",
   "sourceTimezone": "+00:00",

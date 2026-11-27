@@ -715,4 +715,4 @@ Stage 2 production implementation remains subject to a separate explicit approva
 
 The first production milestone remains the smallest independently testable storage foundation that can support the intended conversation and memory system without compromising existing user data.
 
-No production implementation, schema version 2 activation, IndexedDB migration, external AI, paid services or cloud synchronisation is authorised until the relevant phase has been explicitly approved.
+No Stage 2 production implementation, IndexedDB migration, external AI, paid services or cloud synchronisation is authorised until the relevant phase has been explicitly approved.
