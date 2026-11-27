@@ -441,7 +441,9 @@ An unknown author uses:
   "attribution": "unknown"
 }
 
-Source-role mapping requirements:
+Future external-adapter source-role mapping requirements (not used by Stage 2):
+
+The following table is reserved for separately approved external source adapters. It does not authorise source-role mapping, platform imports or role inference in Stage 2.
 
 | Source role | Author handling |
 |---|---|
@@ -472,16 +474,21 @@ Stage 2 role handling:
 - The absence of a role does not prevent explicit author attribution.
 - No Stage 2 source-role adapter mapping is permitted.
 
-Allowed participant-author combinations:
+Participant and author representation combinations:
 
-| Participant kind | Required author attribution |
-|---|---|
-| "user" | "user" |
-| "assistant" | "assistant" |
-| "third_party" | "third_party" |
-| "unknown" | "unknown" |
+| Established author identity | Message author kind | Required attribution | Participant reference |
+|---|---|---|---|
+| Conversation participant with kind "user" | "participant" | "user" | Required; matching conversation-local participant |
+| Conversation participant with kind "assistant" | "participant" | "assistant" | Required; matching conversation-local participant |
+| Conversation participant with kind "third_party" | "participant" | "third_party" | Required; matching conversation-local participant |
+| Explicit system author | "system" | "assistant" | Null |
+| Unknown or unestablished author | "unknown" | "unknown" | Null |
 
-A participant author must reference the matching participant in the same conversation. The participant kind and author attribution must agree with the table.
+A message author with kind "participant" must reference an existing participant in the same conversation. The participant's kind and the author's attribution must agree with the table.
+
+An unknown author must use the unknown author representation rather than inventing or assigning a participant identity.
+
+A conversation participant with kind "system" must not be used as a participant author. System authors use the separate system-author representation above.
 
 System messages use the existing system-author representation:
 
@@ -1903,6 +1910,20 @@ An older application must refuse to write a newer unsupported schema as though i
 18.4 Schema-v2-to-v3 migration preflight
 
 The Stage 2 migration must accept only a fully valid schema-v2 dataset.
+
+The migration must not use a partially recovered or silently cleaned dataset as its source.
+
+If startup validation has rejected or removed any existing entries, learning data, custom rooms or Ask data, the schema-v2-to-v3 migration must not proceed using the reduced in-memory dataset.
+
+In particular, migration must be blocked when any of the following recovery indicators are present:
+
+- "rejectedEntries"
+- "rejectedLearned"
+- "rejectedCustomRooms"
+- "rejectedAsk"
+- "recoveryBlocked"
+
+The exact original stored data must remain recoverable. The application must report that migration is blocked and require a separately validated recovery or restore procedure. It must not silently migrate the remaining subset.
 
 Before migration:
 
