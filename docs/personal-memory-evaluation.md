@@ -159,7 +159,7 @@ Additional Stage 2 acceptance checks:
    - A failure during commit or read-back does not report success.
    - A failed restoration leaves the application in a blocked or recovery-required state.
    - Reload after an interrupted migration identifies the actual valid primary schema rather than assuming the previous operation succeeded.
-  - Legacy version 0 and version 1 inputs continue through their existing migration path before reaching version 3.
+   - Legacy version 0 and version 1 inputs continue through their existing migration path before reaching version 3.
 
 5. Existing implementation alignment regressions:
 
