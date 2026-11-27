@@ -757,7 +757,11 @@ This build plan is the authoritative location for current implementation sequenc
 
 The Stage 2 readiness review has established the direction of native, source-independent conversation and message preservation.
 
-The core conversation, participant, message, timestamp, quotation and retry requirements are now documented in the canonical record specification. Remaining preparation is to close the explicitly unresolved author, role and attribution combinations; specify the schema-version-2-to-version-3 migration, backup, restore and failure paths against the current storage implementation; establish a measured message and archive size boundary; and complete the code-alignment review, executable evaluation fixtures and archive benchmark methodology.
+The core conversation, participant, message, timestamp, quotation and retry requirements are documented in the canonical record specification. The Stage 2 source-independent authorship rules and schema-version-2-to-version-3 migration requirements are now explicitly defined. Stage 2 retains the existing plain JSON backup format and requires complete validation and preservation of populated conversations and messages.
+
+Remaining preparation is to complete the code-alignment review against the current storage, startup, interface and script-loading implementation; convert the Stage 2 evaluation requirements into executable fixtures without duplicating existing tests; and complete the representative archive benchmark methodology.
+
+The archive benchmark must distinguish diagnostic workload sizes from supported limits. No arbitrary message-size or total-archive limit may be selected from the existing Keep input limit or CI Chromium measurements. Any proposed boundary must be supported by representative archive measurements and an explicit approval decision.
 
 The implementation must also be checked against the existing codebase to identify any required changes to storage, startup, interface, script loading and tests.
 

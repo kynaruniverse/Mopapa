@@ -451,6 +451,60 @@ Source-role mapping requirements:
 | Any other source role | Preserve the exact source role value. Use a known participant with "third_party" attribution only where the source establishes that identity. Otherwise use unknown attribution. |
 | No source role | Preserve null. Determine author attribution independently; do not invent a role. |
 
+### Stage 2 source-independent authorship rules
+
+Stage 2 supports only "mopapa_native" and "user_supplied" origins. It does not implement external platform adapters or infer authorship from an import format.
+
+The following rules apply:
+
+1. Conversation origin describes how the conversation entered Mopapa. Message origin describes how that individual message entered Mopapa. They are separate fields and must not be assumed to be identical.
+2. Origin never establishes message authorship. A user supplying or pasting content does not prove that the user originally wrote it.
+3. The application must not infer authorship from the person operating the interface, writing style, message wording or source role alone.
+4. A message without an explicitly established author must use the unknown author representation.
+5. A message entered directly by the user may be attributed to the user only where that authorship is explicitly established.
+6. A user-supplied message may be attributed to the user, an assistant, a third party, a system or an unknown author, according to the available evidence.
+
+Stage 2 role handling:
+
+- A native message has a null "role" unless an explicit source role is separately supplied.
+- A user-supplied message has a null "role" unless the user explicitly supplies the original source role as metadata.
+- Where a role is supplied, preserve its exact original value. Do not normalise it or infer it from the selected author.
+- The absence of a role does not prevent explicit author attribution.
+- No Stage 2 source-role adapter mapping is permitted.
+
+Allowed participant-author combinations:
+
+| Participant kind | Required author attribution |
+|---|---|
+| "user" | "user" |
+| "assistant" | "assistant" |
+| "third_party" | "third_party" |
+| "unknown" | "unknown" |
+
+A participant author must reference the matching participant in the same conversation. The participant kind and author attribution must agree with the table.
+
+System messages use the existing system-author representation:
+
+{
+  "kind": "system",
+  "participantId": null,
+  "attribution": "assistant"
+}
+
+Unknown authors use:
+
+{
+  "kind": "unknown",
+  "participantId": null,
+  "attribution": "unknown"
+}
+
+A participant record with kind "system" must not be used as a participant author in Stage 2. System authors use the system-author representation above.
+
+If explicit author information conflicts with other supplied attribution information, preserve the original source role and leave authorship unknown or reject the affected record. Never resolve the conflict by guessing.
+
+Quoted-speaker annotations remain separate from message authorship. Stage 2 must not automatically extract or infer quoted speakers from message wording. An annotation may be stored only where its attribution and text span have been explicitly supplied and validated. Otherwise "quotedSpeakers" remains an empty array.
+
 The source role must not be rewritten or replaced with a normalised value. Any future source-specific normalisation must be stored separately and must not replace the original role.
 
 Validation requirements:
@@ -1798,25 +1852,30 @@ The live application uses schema version 2 and the existing "mopapa.v1" storage 
 
 Stage 1 introduced the five personal-memory collections as empty arrays. Non-empty records remain unsupported until their relevant implementation stages are separately approved and completed.
 
-Application schema version and backup format version are separate concepts. A future backup envelope must identify them separately.
+Stage 2 introduces schema version 3. Only "conversations" and "messages" may contain records in that version. "memories", "memorySources" and "memoryRelations" must remain empty arrays.
 
-18.2 Backup requirements
+Stage 2 retains the existing plain JSON backup representation. The top-level "schemaVersion" identifies the application data schema.
 
-A future complete backup must:
+A new backup envelope, independent backup-format version, checksum or integrity wrapper is not part of Stage 2. These may be reconsidered through a separate design if a demonstrated compatibility requirement justifies them.
 
-- Include every required data domain, including empty collections.
-- Identify the application schema version.
-- Identify the backup format version.
-- Record export time.
-- Record app version where available.
-- Distinguish complete and scoped exports.
-- Identify excluded data where applicable.
-- Avoid unnecessary device, account or personal identifiers.
-- Validate its structure before restore.
+18.2 Stage 2 backup requirements
 
-An integrity digest or checksum must not be described as encryption or proof of authenticity unless it actually provides those properties.
+A Stage 2 backup must:
 
-The exact backup envelope and integrity mechanism remain unresolved.
+- Remain a plain JSON representation of the complete supported application dataset.
+- Include the schema version.
+- Include every required application data domain.
+- Include all five personal-memory collections, including empty collections.
+- Preserve complete conversation and message records.
+- Preserve original message text exactly, including whitespace and line breaks.
+- Preserve original roles, author attribution, timestamps, quotation annotations and source metadata.
+- Preserve existing entries, learning data, custom rooms and Ask state.
+- Exclude no supported data domain silently.
+- Be validated before it is accepted for restoration.
+
+The export must not create a backup from stale or unverified in-memory data.
+
+A checksum must not be described as encryption or proof of authenticity unless it actually provides those properties.
 
 18.3 Restore requirements
 
@@ -1824,88 +1883,118 @@ The default restore is complete, not silently partial.
 
 Before replacing active data:
 
-- Validate the backup envelope.
-- Validate supported schema and format versions.
+- Validate the complete JSON structure.
+- Validate the supported schema version and migration path.
 - Validate every required collection.
-- Validate every record.
-- Validate all cross-collection references.
-- Validate provenance, derivation and semantic relationships.
-- Validate governance and deletion-related constraints.
+- Validate every conversation and message record.
+- Validate all participant, conversation and quotation references.
+- Validate sequence uniqueness and message ordering constraints.
+- Validate original text without trimming or normalising it.
+- Validate the three Stage 3 and later collections remain empty.
 - Check size and storage feasibility.
 - Secure and verify the required recovery copy.
 
-Malformed records or broken references must not be silently discarded while reporting a complete successful restore.
+Malformed records, duplicate identifiers or broken references must not be silently discarded while reporting a complete successful restore.
+
+A failed restore must leave the previously active dataset unchanged. If the actual storage state becomes uncertain, further writes must be blocked until recovery is established.
 
 An older application must refuse to write a newer unsupported schema as though it were compatible.
 
-18.4 Migration preflight
+18.4 Schema-v2-to-v3 migration preflight
 
-A future migration must:
+The Stage 2 migration must accept only a fully valid schema-v2 dataset.
 
-1. Inventory the complete source dataset.
-2. Validate the existing schema and all existing domains.
-3. Preserve "entries", "learned", "customRooms" and "ask".
-4. Check storage capacity and relevant conflicts.
-5. Check that the application can create and verify a recovery copy.
-6. Establish that the source dataset has not changed during preparation.
-7. Refuse to proceed if required preconditions cannot be secured.
+Before migration:
+
+1. Read and retain the exact original serialized storage value.
+2. Validate the complete schema-v2 dataset.
+3. Confirm all five personal-memory collections exist as empty arrays.
+4. Confirm existing application domains are valid.
+5. Confirm the dataset has not changed since it was read.
+6. Confirm the application can create and verify a recovery copy.
+7. Check that sufficient storage is available for the candidate dataset and recovery copy.
+8. Refuse migration if any required precondition fails.
+
+A schema-v2 dataset containing non-empty personal-memory collections is invalid. It must not be partially migrated or silently repaired.
 
 18.5 Candidate construction and commit
 
-A future migration must:
+The schema-v2-to-v3 migration must:
 
-1. Construct the candidate dataset without modifying the active dataset.
-2. Initialise all five proposed collections.
-3. Validate all records and cross-collection references.
-4. Validate provenance, derivation, relationships and governance.
-5. Preserve every existing manual entry and learning domain.
-6. Check the candidate's serialised size and storage feasibility.
-7. Create and verify a distinct recovery copy.
-8. Commit only if the source remains unchanged and storage is writable.
-9. Read back the committed dataset.
-10. Parse and validate the read-back dataset.
-11. Update in-memory state only after verified success.
+1. Construct a separate candidate dataset without modifying the active in-memory dataset.
+2. Preserve "entries", "learned", "customRooms" and "ask".
+3. Preserve the existing five collection boundaries.
+4. Preserve the empty "memories", "memorySources" and "memoryRelations" arrays.
+5. Preserve empty "conversations" and "messages" arrays during migration.
+6. Change only "schemaVersion" from 2 to 3.
+7. Validate the complete candidate against the schema-v3 rules.
+8. Check the candidate's serialized size and storage feasibility.
+9. Create a distinct recovery copy of the original schema-v2 value.
+10. Read back and verify the recovery copy.
+11. Confirm the original primary value has not changed.
+12. Commit the candidate only after all preconditions succeed.
+13. Read back the committed primary value.
+14. Parse and validate the schema-v3 result.
+15. Verify that all pre-existing application data and collection boundaries remain intact.
+16. Update active in-memory state only after verified success.
 
-18.6 Failure and rollback
+The migration must not create conversations, messages, memories, provenance records or relationships.
 
-If a write or read-back fails:
+The migration must be safe to retry. A valid schema-v3 dataset must not be migrated again.
 
-- Inspect the actual stored state.
+18.6 Failure, interruption and rollback
+
+If preparation, recovery-copy creation, commit, read-back or validation fails:
+
+- Do not report migration success.
+- Inspect the actual stored primary value.
 - Do not assume rollback succeeded.
-- Do not report success.
-- Do not continue writes if the active state is uncertain.
-- Preserve the recovery copy.
-- Restore or recover only through a verified procedure.
-- Ensure interrupted operations cannot leave a mixed or partially migrated dataset reported as valid.
+- Attempt restoration of the exact original serialized value only through the verified recovery procedure.
+- Verify any attempted restoration by reading back the stored value.
+- Preserve the original recovery copy.
+- Restore the previous in-memory dataset if the operation fails.
+- Block further writes if the primary storage state is uncertain.
+- Do not leave a partially migrated dataset available as though it were valid.
 
-The current storage layer's best-effort rollback must not be described as an absolute database transaction.
+The existing storage layer uses best-effort restoration. It must not be described as an atomic database transaction or as guaranteeing rollback.
 
-18.7 Post-migration verification
+An interrupted migration must be recoverable by reloading the application and determining whether the authoritative primary dataset is still valid schema version 2 or has become fully valid schema version 3.
 
-A future migration must verify:
+A partially written or invalid schema-v3 dataset must never be treated as a successful migration.
 
-- All five new collections.
-- All cross-collection references.
-- Existing manual entries.
-- Existing learned data.
-- Custom rooms.
-- Ask state and regression behaviour.
-- Backup export.
-- Restore validation.
-- Persistence after application reload.
-- Recovery behaviour.
+18.7 Schema-v3 backup compatibility
+
+A Stage 2 application must support the following restore paths:
+
+- Supported unversioned legacy data: use the existing migration path through schema version 2, then migrate to version 3.
+- Schema version 1: use the existing migration path through schema version 2, then migrate to version 3.
+- Schema version 2: validate the complete schema-v2 dataset, then migrate to version 3.
+- Schema version 3: accept only after complete schema-v3 record and reference validation.
+- Schema version 4 or later: reject safely.
+
+A schema-v2 backup must contain the five additional collections as empty arrays. A schema-v2 backup containing non-empty personal-memory collections must be rejected.
+
+A schema-v3 backup may contain non-empty conversations and messages only. The other three personal-memory collections must remain empty.
+
+Restoring a supported older backup must not silently discard existing data from the backup being restored. The complete candidate must be validated before replacing the active dataset.
+
+The original recovery copy must be verified before a restore commit.
 
 18.8 Deletion-aware backup policy
 
 Restoring an older backup must not silently undo a later deletion, dismissal or revocation.
 
-The reconciliation mechanism, recovery-copy sanitisation and failure policy remain unresolved. If reliable reconciliation cannot be provided, the restore must be refused or restricted under an explicitly approved policy.
+Deletion-aware reconciliation, recovery-copy sanitisation and the failure policy remain Stage 4 requirements.
+
+Stage 2 must not implement conversation or message deletion or claim that older backups are reconciled against deletion history.
+
+If a later deletion-aware restore cannot establish a safe result, the restore must be refused or restricted under an explicitly approved policy.
 
 18.9 Schema compatibility requirements
 
 Schema compatibility describes whether an application can safely understand and process a dataset.
 
-The schema version does not establish that the dataset is valid. Every supported dataset must still pass complete structural, record, reference, provenance, temporal, governance and deletion-related validation.
+The schema version does not establish that the dataset is valid. Every supported dataset must still pass complete structural, record, reference, temporal and applicable governance validation.
 
 The current and proposed schema generations are:
 
@@ -1922,25 +2011,15 @@ Application schema| Backup schema 0| Backup schema 1| Backup schema 2| Backup sc
 Version 2| Accept through the implemented migration| Accept through the implemented migration| Accept if fully supported| Reject safely| Reject safely
 Version 3| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept if fully supported| Reject safely
 
-This matrix distinguishes current production capability from proposed Stage 2 capability.
-
-Schema version 2 is active in production. Its five additional collections must remain empty.
-
 Migrations from schema versions 0 and 1 to version 2 are implemented and supported.
 
-Stage 2 is expected to introduce schema version 3. The version 2 to version 3 migration must be explicitly designed, implemented and tested before non-empty conversation or message records can be accepted.
+The schema-v2-to-v3 migration is a Stage 2 requirement and must be implemented and tested before non-empty conversation or message records can be accepted.
 
 Version 3 compatibility with older backups is a requirement for the future implementation, not a claim about current production capability.
 
-No future application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
+No application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
 
-Schema version and backup format version must remain separate:
-
-- Schema version identifies the structure of application data.
-- Backup format version identifies the outer backup representation, envelope and integrity metadata.
-- A backup format version must not be substituted for the application schema version.
-- No final backup envelope or backup format version has been approved.
-- Backup-format compatibility requires a separate explicit design before implementation.
+The Stage 2 backup remains plain JSON. Its "schemaVersion" identifies the application data schema. A separate backup-format version or envelope is not introduced in this stage.
 
 18.10 Protection against older applications and unsupported data
 

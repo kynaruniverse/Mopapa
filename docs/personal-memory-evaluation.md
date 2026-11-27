@@ -121,6 +121,46 @@ Required fixture categories:
    - Backup export and restore of a populated archive.
    - Reload and verification of preserved source text and metadata.
 
+Additional Stage 2 acceptance checks:
+
+1. Origin and authorship:
+   - A native conversation containing a user-authored message.
+   - A native conversation containing a message explicitly attributed to another participant.
+   - A user-supplied conversation containing user-authored material.
+   - A user-supplied conversation containing third-party or assistant-authored material.
+   - A message whose supplier is known but whose original author is unknown.
+   - A conversation and its messages with different valid origin types.
+   - Confirmation that neither conversation origin nor message origin determines authorship.
+   - Confirmation that the interface operator is not automatically recorded as the original author.
+
+2. Source-role handling:
+   - Native messages with no source role.
+   - User-supplied messages with no source role.
+   - Explicitly supplied source-role values preserved exactly.
+   - Author attribution remaining independent of source role.
+   - Contradictory role and author information remaining unresolved or being rejected.
+
+3. Exact backup preservation:
+   - Export a populated schema-v3 dataset as plain JSON.
+   - Confirm that no new backup envelope or independent backup-format version is introduced.
+   - Restore the exported backup into a clean application instance.
+   - Compare every supported data domain before and after the round trip.
+   - Verify exact original message text, including leading and trailing whitespace, punctuation, line breaks and Unicode.
+   - Verify conversation and participant identifiers, sequence values, timestamps, roles, authorship, quotation annotations and origin metadata.
+   - Verify that memories, memorySources and memoryRelations remain empty.
+
+4. Migration safety:
+   - A valid schema-v2 dataset migrates to schema version 3 without changing existing application data.
+   - A schema-v2 dataset with any non-empty proposed collection is rejected.
+   - A schema-v2 dataset missing a required collection is rejected.
+   - A schema-v3 dataset is not migrated a second time.
+   - A failure during candidate construction leaves the original dataset unchanged.
+   - A failure during recovery-copy creation prevents migration.
+   - A failure during commit or read-back does not report success.
+   - A failed restoration leaves the application in a blocked or recovery-required state.
+   - Reload after an interrupted migration identifies the actual valid primary schema rather than assuming the previous operation succeeded.
+   - Legacy version 0 and version 1 inputs continue through their existing migration path before reaching version 3.
+
 Release-blocking failures include altered original text, invented authorship, false quotation attribution, invented timestamps, uncontrolled duplicate creation, partial imports reported as successful, and failed restore operations that damage existing data.
 
 Stage 2 results must report each category separately. A single aggregate score must not conceal a critical attribution, evidence-integrity or data-loss failure.
