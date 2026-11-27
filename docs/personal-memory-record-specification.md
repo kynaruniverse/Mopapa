@@ -208,7 +208,7 @@ A message timestamp uses these fields:
 - "timestampPrecision": The precision actually supplied: "year", "month", "day", "minute", "second", "millisecond" or "unknown".
 - "sourceTimezone": The timezone or offset explicitly supplied by the source, or null when absent.
 - "timestampStatus": "normalised", "unknown", "invalid" or "ambiguous".
-- "receivedAt": The UTC time Mopapa received or imported the message.
+- "receivedAt": The UTC time Mopapa received or imported the message. It is separate from the original source timestamp and must not be used as a substitute for it.
 
 Rules:
 
@@ -347,10 +347,15 @@ Illustrative structure:
     "attribution": "user"
   },
   "text": "I now work at Company B.",
-  "timestamp": null,
+  "originalTimestamp": "2026-11-20T09:15:00+00:00",
+  "timestamp": "2026-11-20T09:15:00.000Z",
+  "timestampPrecision": "minute",
+  "sourceTimezone": "+00:00",
+  "timestampStatus": "normalised",
   "receivedAt": "2026-11-20T09:30:00.000Z",
   "origin": {
     "type": "chatgpt_import",
+    "sourceConversationId": "source_conversation_123",
     "sourceMessageId": "source_message_456"
   },
   "quotedSpeakers": [],
@@ -361,20 +366,42 @@ Field| Requirement| Rule
 "id"| Required| Unique Mopapa message ID
 "conversationId"| Required| Must reference an existing conversation
 "sequence"| Required| Non-negative integer, unique within conversation
-"role"| Required| "user", "assistant", "system" or "other"
-"author"| Required| Explicit author attribution
+"role"| Required, nullable| Original source role preserved verbatim as a string; null only when the source supplies no role
+"author"| Required| Explicit author attribution, independently represented from source role
 "text"| Required| Original, non-empty, unmodified text
-"timestamp"| Required, nullable| Original message time, if known
-"receivedAt"| Required| Time received or imported by Mopapa
-"origin"| Required| Source type and original message identifier
+"originalTimestamp"| Required, nullable| Exact source timestamp value, retained without normalisation
+"timestamp"| Required, nullable| Normalised ISO 8601 timestamp with explicit timezone or UTC designator; null when safe normalisation is not possible
+"timestampPrecision"| Required| Precision actually supplied by the source: "year", "month", "day", "minute", "second", "millisecond" or "unknown"
+"sourceTimezone"| Required, nullable| Explicit source timezone or offset; null when absent
+"timestampStatus"| Required| "normalised", "unknown", "invalid" or "ambiguous"
+"receivedAt"| Required| UTC time received or imported by Mopapa
+"origin"| Required| Source and import-origin metadata
+"origin.type"| Required| "manual", "chatgpt_import", "file_import" or "other"
+"origin.sourceConversationId"| Required, nullable| Original source conversation identifier; null when unavailable or not applicable
+"origin.sourceMessageId"| Required, nullable| Original source message identifier; null when unavailable or not applicable
 "quotedSpeakers"| Required| Embedded quoted-speaker annotations
 "governance"| Required| Applicable scope, audience, permissions and restrictions
+
+Rules:
+
+- The message's "originalTimestamp" must preserve the source value without modification.
+- The message's "timestamp" is a separate normalised interpretation, not a replacement for the original value.
+- The "role" field preserves the source-provided role value. It is not a closed enumeration and must not discard an unsupported source role.
+- The "author" field represents attribution separately from the source role.
+- "origin.sourceConversationId" must identify the same source conversation as the parent conversation's "origin.sourceId" when both are available.
+- Source identifiers must remain distinct from Mopapa-generated record identifiers.
+- For manual records or sources without stable identifiers, the applicable source identifier fields remain null rather than being invented.
+- A source identifier must not be fabricated from message text, timestamps, participant names or array position.
 
 6.2 Author representation
 
 The source role and the actual author are separate fields.
 
-"role" preserves the source's message-role classification. "author" identifies the person or system responsible for the message where the source establishes that information.
+"role" preserves the original source-provided role value exactly as supplied. It is a raw source value, not a closed Mopapa enumeration. It may contain a recognised role, an unsupported role or null when the source provides no role.
+
+"author" identifies the person or system responsible for the message where the source establishes that information. It is represented independently and must not be inferred solely from the source role.
+
+Preserving an unsupported source role does not mean accepting an unsupported author kind or attribution value. The source role remains intact while the author is represented using the defined author model or left unknown.
 
 The proposed author kinds are:
 
@@ -418,9 +445,12 @@ Source-role mapping requirements:
 | Source role | Author handling |
 |---|---|
 | "user" | Map to a conversation-local participant with "user" attribution only when the source establishes the author. Otherwise use unknown attribution. |
-| "assistant" | Map to a conversation-local participant with "assistant" attribution when the source establishes that participant. Do not confuse assistant messages with system messages. |
+| "assistant" | Map to a conversation-local participant with "assistant" attribution when the source establishes that participant. Do not confuse an assistant participant with a system-originated message. |
 | "system" | Use the system author representation where the source establishes a system-originated message. |
-| "other" or an unsupported source role | Preserve the source role. Use a known participant with "third_party" attribution only where the source establishes that identity. Otherwise use unknown attribution. |
+| Any other source role | Preserve the exact source role value. Use a known participant with "third_party" attribution only where the source establishes that identity. Otherwise use unknown attribution. |
+| No source role | Preserve null. Determine author attribution independently; do not invent a role. |
+
+The source role must not be rewritten or replaced with a normalised value. Any future source-specific normalisation must be stored separately and must not replace the original role.
 
 Validation requirements:
 
@@ -461,7 +491,8 @@ Illustrative structure:
   "textStart": 0,
   "textEnd": 32,
   "status": "unresolved",
-  "quotationType": "reported_speech"
+  "quotationType": "reported_speech",
+  "parentQuoteId": null
 }
 
 Required fields:

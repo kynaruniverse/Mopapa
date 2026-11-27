@@ -393,25 +393,48 @@ Purpose: Give Mopapa a reliable original-evidence archive.
 
 Work:
 
-- Conversation creation and management.
-- Message preservation.
-- Conversation-local participants.
-- Original author attribution.
-- Message ordering and timestamps.
-- Stable source identifiers where available.
-- Duplicate import protection.
-- Archive inspection.
-- No archive deletion functionality in Stage 2. Deletion is deferred to Stage 4, when suppression, older-backup handling, recovery-copy sanitisation and incomplete-cleanup behaviour have been defined and tested.
+- Define and implement conversation creation, management and source metadata.
+- Preserve original message text without rewriting, trimming or normalising its content.
+- Store conversation-local participants without assuming global identity.
+- Preserve the source message role separately from actual author attribution.
+- Represent author attribution independently from quoted speakers and memory subjects.
+- Preserve original timestamp values, their supplied precision and explicit timezone information.
+- Store normalised timestamps separately and only when interpretation is unambiguous.
+- Keep original message time separate from Mopapa receipt/import time.
+- Preserve source message sequence and conversation boundaries.
+- Preserve nested quotation annotations with explicit parent-child references where the source establishes them.
+- Preserve original source conversation and message identifiers separately from Mopapa-generated identifiers.
+- Define source-specific import mapping for each supported import format.
+- Make retries idempotent where stable source identifiers are available.
+- Reject or hold conflicting duplicate identifiers for explicit review.
+- Define safe handling for imports without stable source identifiers without claiming reliable cross-import deduplication.
+- Provide archive inspection sufficient to verify original content, authorship, timestamps, quotations and provenance.
+- Include conversations and messages in backup and restore.
+- Measure representative archive storage, validation, save, load, backup and restore performance.
+- Do not implement conversation or message deletion in Stage 2. Deletion remains deferred to Stage 4, including suppression, older-backup handling, recovery-copy sanitisation and incomplete-cleanup behaviour.
 
 Acceptance:
 
 - Original message text is preserved unchanged.
-- Message ordering and conversation boundaries are correct.
-- Author and quoted-speaker distinctions are preserved.
-- Unknown timestamps remain unknown.
-- Retry does not create uncontrolled duplicates.
-- Failed imports do not corrupt existing data.
-- Backup and restore include the archive. Archive deletion remains disabled until Stage 4 governance and recovery requirements are implemented and verified.
+- Conversation boundaries and source message ordering are correct.
+- Source role, actual author, quoted speaker and memory subject remain distinct.
+- Unknown, unsupported or contradictory authorship is preserved as unresolved rather than guessed.
+- Original timestamp values remain available independently of normalised timestamps.
+- Missing, invalid or ambiguous timestamps are not used as established temporal facts.
+- Supplied timestamp precision and explicit timezone information are preserved.
+- Receipt/import time is never substituted for original message time.
+- Nested quotations preserve their parent-child relationships where established.
+- Invalid, ambiguous or unsupported quotation attribution is not silently resolved.
+- Source conversation and message identifiers remain distinct from Mopapa-generated IDs.
+- Stable source identifiers prevent uncontrolled duplicate imports and make safe retries possible.
+- Conflicting duplicate identifiers are rejected or held for explicit review rather than silently overwritten.
+- Imports without stable source identifiers do not claim reliable cross-import duplicate detection.
+- Failed or interrupted imports do not corrupt previously stored data.
+- Archive inspection exposes enough information to verify the preserved evidence and its attribution.
+- Backup and restore preserve the complete supported conversation and message archive.
+- Archive deletion remains unavailable until Stage 4 governance and recovery requirements are implemented and verified.
+- Representative archive performance is measured using documented workloads and reported separately from existing manual-entry benchmarks.
+- No automatic memory extraction or accepted-memory creation is introduced in Stage 2.
 
 No automatic memory extraction is introduced until evidence preservation is reliable.
 
@@ -445,38 +468,26 @@ Purpose: Turn reliable candidates into independently inspectable and controllabl
 
 Work:
 
-- Conversation creation and management.
-- Message preservation.
-- Conversation-local participants.
-- Explicit source-role and author separation.
-- Original timestamp preservation and safe normalisation.
-- Nested quoted-speaker annotations with parent-child references.
-- Message ordering and conversation boundaries.
-- Stable source identifiers where available.
-- Idempotent duplicate protection using stable source identifiers.
-- Explicit handling of imports without stable source identifiers.
-- Archive inspection.
-- Backup and restore compatibility for the archive.
-- No archive deletion functionality in Stage 2. Deletion remains deferred to Stage 4.
+- Memory records and types.
+- Provenance and evidence spans.
+- Lifecycle and evidence states.
+- Derivation dependencies.
+- Semantic relationships.
+- Scope and use restrictions.
+- Identity correction.
+- Inspection, correction and dismissal.
+- Revocation and deletion.
 
 Acceptance:
 
-- Original message text is preserved unchanged.
-- Message ordering and conversation boundaries are correct.
-- Source role, author, quoted speaker and subject remain distinct.
-- Unknown or contradictory authorship remains unresolved rather than guessed.
-- Nested quotations preserve their parent-child relationships where established.
-- Invalid or ambiguous quotation attribution is not silently resolved.
-- Original timestamp values are preserved independently from normalised timestamps.
-- Missing, invalid and ambiguous timestamps remain unknown for temporal use.
-- Receipt time is not substituted for original message time.
-- Stable source identifiers prevent uncontrolled duplicate imports.
-- Imports without stable identifiers do not claim reliable cross-import deduplication.
-- Conflicting duplicate identifiers are rejected or held for review.
-- Failed imports do not corrupt existing data.
-- Backup and restore include the archive.
-- Archive deletion remains disabled until Stage 4 governance and recovery requirements are implemented and verified.
-- Representative archive performance is measured and reported separately from existing manual-entry benchmarks.
+- Every memory has traceable evidence.
+- Invalid provenance and dependency references are rejected.
+- Corrections do not rewrite original evidence.
+- Restrictions propagate conservatively.
+- Dismissed memories are not silently reactivated.
+- Deletion reassesses direct and indirect dependencies.
+- Revoked information is excluded from prohibited use.
+- Failure and recovery paths are tested.
 
 No automatic memory extraction is introduced until evidence preservation is reliable.
 
