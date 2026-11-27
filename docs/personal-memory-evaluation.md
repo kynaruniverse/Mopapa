@@ -1251,7 +1251,7 @@ The technical specification defines what must be correct. This evaluation docume
 
 Do not duplicate the canonical data model or create a second implementation roadmap here.
 
-Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus are now documented together but remain separate evaluation assets. The future Personal Memory Companion requires its own end-to-end evaluation before implementation can be considered reliable. No production implementation or schema activation is authorised by this document.
+Current position: Existing deterministic Ask regression coverage and its 50-question diagnostic corpus remain separate evaluation assets. Stage 1 schema version 2 is implemented and verified. Stage 2 is specified as native, source-independent conversation and message preservation, with schema version 3 proposed but not authorised for implementation. Its evaluation fixtures, migration requirements and end-to-end acceptance criteria must be completed before implementation approval. No Stage 2 production implementation or schema activation is authorised by this document.
 
 ---
 

@@ -1735,7 +1735,6 @@ Rules:
 - Native conversation and message identifiers must be allocated before the first save attempt and retained while that same pending operation is retried.
 - Retrying the same pending operation must reuse its original identifiers rather than generate new identifiers.
 - A failed save must not leave an unsaved record in the active in-memory dataset.
-- A failed save must not be reported as successful.
 - Conflicting identifiers must be rejected rather than silently overwritten.
 - Stage 2 must not introduce a separate persistent operation ledger or sixth collection merely to support retry safety.
 - Message text, sequence and authorship must not be used to invent identity or merge separate messages.
