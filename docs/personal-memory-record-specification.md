@@ -1905,22 +1905,18 @@ Version 4 or later| Future schema not yet defined| Unsupported until separately 
 The intended application-to-backup schema compatibility is:
 
 Application schema| Backup schema 0| Backup schema 1| Backup schema 2| Backup schema 3| Backup schema 4+
-Version 1| Accept and normalise| Accept| Reject safely| Reject safely| Reject safely
-Version 2| Accept only through the implemented migration| Accept only through the implemented migration| Accept if fully supported| Reject safely| Reject safely
+Version 2| Accept through the implemented migration| Accept through the implemented migration| Accept if fully supported| Reject safely| Reject safely
 Version 3| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept if fully supported| Reject safely
-Version 4| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only through explicitly implemented and tested migrations| Accept only if fully supported
 
-This matrix distinguishes the current production capability from the proposed Stage 2 capability.
+This matrix distinguishes current production capability from proposed Stage 2 capability.
 
 Schema version 2 is active in production. Its five additional collections must remain empty.
 
+Migrations from schema versions 0 and 1 to version 2 are implemented and supported.
+
 Stage 2 is expected to introduce schema version 3. The version 2 to version 3 migration must be explicitly designed, implemented and tested before non-empty conversation or message records can be accepted.
 
-No future application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
-
-This matrix records intended compatibility, not current implementation capability or authorisation.
-
-Version 1 to version 2 migration remains proposed and unauthorised.
+Version 3 compatibility with older backups is a requirement for the future implementation, not a claim about current production capability.
 
 No future application may accept a backup merely because its schema version is numerically older or equal. It must validate the complete backup and establish that the required migration path is explicitly supported.
 
