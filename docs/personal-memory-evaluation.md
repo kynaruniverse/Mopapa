@@ -71,7 +71,7 @@ Required fixture categories:
    - Third-party participants.
    - Unknown authors.
    - Contradictory source role and author information.
-   - Imported messages whose author is the user.
+   - User-supplied messages whose author is the user.
 
 2. Quotation attribution:
    - Direct quotations.
@@ -104,15 +104,12 @@ Required fixture categories:
    - Unicode, emoji, surrogate pairs and combining characters.
    - Exact original text preservation.
 
-5. Duplicate import and retry:
-   - Repeated import with identical stable source identifiers.
-   - Interrupted import followed by retry.
-   - Duplicate message identifiers with identical content.
-   - Duplicate identifiers with conflicting content.
-   - Missing stable conversation identifiers.
-   - Missing stable message identifiers.
-   - Similar wording with different source identifiers.
-   - Same wording from unrelated source conversations.
+5. Native creation and retry:
+   - Repeated save of the same pending native operation using its original identifiers.
+   - Interrupted native conversation or message creation followed by retry.
+   - Duplicate Mopapa-generated identifiers already assigned to different records, with identical or conflicting content.
+   - Missing conversation or message identifiers in malformed native records.
+   - Identical or similar wording in separate messages or conversations must not cause automatic merging.
 
 6. Failure and recovery:
    - Invalid conversation references.
@@ -120,7 +117,7 @@ Required fixture categories:
    - Broken quotation parent references.
    - Cyclic quotation relationships.
    - Failed persistence.
-   - Interrupted import.
+   - Interrupted native save followed by retry using the same pending identifiers.
    - Backup export and restore of a populated archive.
    - Reload and verification of preserved source text and metadata.
 

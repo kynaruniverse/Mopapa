@@ -286,8 +286,7 @@ Rules:
 - A participant ID is not a global identity.
 - A conversation must not store its complete message history in one text field.
 - Message order must be established through message sequence and source timestamps, not array position.
-- Conversation deletion is an operation, not a status value.
-- A completed deletion must process dependent records under the approved deletion policy.
+- Stage 2 may create only "mopapa_native" and "user_supplied" origin types. "file_import" and "other" are reserved for separately approved future adapters and do not authorise import functionality.
 
 5.2 Participant records
 
@@ -462,7 +461,7 @@ Validation requirements:
 - A source role must not be rewritten to make it agree with an assumed author.
 - Where source role and author information contradict each other, preserve the source role and retain unresolved authorship or reject the affected record. Never guess.
 - Import origin must never be used as an authorship value.
-- An imported message may still have been written by the user.
+- A user-supplied message may still have been written by the user; origin does not establish authorship.
 - A person mentioned in a message is not automatically its author or a conversation participant.
 - Author attribution must not be inferred from writing style or message wording.
 
@@ -2210,7 +2209,7 @@ The following decisions close the initial design-readiness review. A decision ma
 
 | No. | Decision | Disposition |
 |---:|---|---|
-| 19 | Message role, author kind and attribution combinations | Resolve before Stage 2. Define and test the complete allowed-combination table against actual import formats. Unknown or contradictory attribution must remain unresolved or be rejected, never guessed. |
+| 19 | Message role, author kind and attribution combinations | Resolve before Stage 2. Define and test the complete allowed role, author and attribution combinations for native and user-supplied messages. External adapter mappings must be specified and tested separately for each approved source format. Unknown or contradictory attribution must remain unresolved or be rejected, never guessed. |
 | 20 | Nested quotations, compound claims and attribution conflicts | Resolve before Stage 2 for message preservation and before Stage 3 for extraction. Preserve the original message unchanged. Keep nested speaker attribution explicit. Do not treat quoted or reported speech as direct evidence from the quoted person. Compound claims must be split into independently assessable claims where safe; otherwise retain them as one uncertain candidate with evidence limitations. |
 
 #### D. Backup, migration and storage

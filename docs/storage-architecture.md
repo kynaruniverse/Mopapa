@@ -49,19 +49,26 @@ The persistence request is best-effort. Browser storage protection is not a guar
 
 ## Current saved-record schema and field semantics
 
-The primary record is stored as JSON under `mopapa.v1`. Its current schema version is `1`.
+The primary record is stored as JSON under `mopapa.v1`. Its current schema version is `2`.
 
 The canonical application data contains these top-level fields:
 
 | Field | Type | Meaning |
 |---|---|---|
-| `schemaVersion` | number | Current schema version, `1`. |
-| `entries` | array | Saved personal memories, tasks and appointments. |
+| `schemaVersion` | number | Current schema version, `2`. |
+| `entries` | array | Existing manually saved entries, tasks and appointments. |
 | `learned` | object | Legacy room-sorter learning data. |
 | `customRooms` | array | User-created rooms. |
 | `ask` | object | Ask-specific aliases, confirmed source choices and unanswered questions. |
+| `conversations` | array | Present as an empty array; non-empty records are not supported in schema version 2. |
+| `messages` | array | Present as an empty array; non-empty records are not supported in schema version 2. |
+| `memories` | array | Present as an empty array; non-empty records are not supported in schema version 2. |
+| `memorySources` | array | Present as an empty array; non-empty records are not supported in schema version 2. |
+| `memoryRelations` | array | Present as an empty array; non-empty records are not supported in schema version 2. |
 
-A backup must contain an `entries` array. The other data domains are optional when importing older supported records and are normalised to their current defaults.
+A schema-version-2 primary record or backup must contain all five additional collections as valid empty arrays. Supported legacy version 0 and version 1 inputs may omit them; the implemented migration adds them.
+
+A backup must contain an `entries` array. Other supported legacy data domains may be normalised to their current defaults during migration.
 
 ### Saved entry fields
 

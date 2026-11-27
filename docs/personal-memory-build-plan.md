@@ -757,7 +757,7 @@ This build plan is the authoritative location for current implementation sequenc
 
 The Stage 2 readiness review has established the direction of native, source-independent conversation and message preservation.
 
-The remaining preparation is to finalise the conversation and message record model, schema version 3 migration, participant and authorship rules, timestamp handling, quotation representation, native creation and retry behaviour, archive inspection, backup and restore, evaluation fixtures and archive benchmark methodology.
+The core conversation, participant, message, timestamp, quotation and retry requirements are now documented in the canonical record specification. Remaining preparation is to close the explicitly unresolved author, role and attribution combinations; specify the schema-version-2-to-version-3 migration, backup, restore and failure paths against the current storage implementation; establish a measured message and archive size boundary; and complete the code-alignment review, executable evaluation fixtures and archive benchmark methodology.
 
 The implementation must also be checked against the existing codebase to identify any required changes to storage, startup, interface, script loading and tests.
 
