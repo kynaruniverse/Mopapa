@@ -1017,6 +1017,199 @@ test('schema-v3 migration preflight rejects read-only tabs', function () {
   );
 });
 
+test('schema-v3 migration commits a clean v2 record and preserves its exact original', function () {
+  const initial = stored([
+    {
+      id: 'migration-memory',
+      text: 'Preserve this original text exactly',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.migrateSchemaV3();
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.sourceVersion, 2);
+  assert.strictEqual(result.targetVersion, 3);
+  assert.strictEqual(result.recoveryCopyPreserved, true);
+
+  const migratedRaw = w.localStorage.getItem('mopapa.v1');
+  const migrated = JSON.parse(migratedRaw);
+
+  assert.strictEqual(migrated.schemaVersion, 3);
+  assert.strictEqual(
+    migrated.entries[0].text,
+    'Preserve this original text exactly'
+  );
+
+  assert.deepStrictEqual(
+    migrated.conversations,
+    []
+  );
+
+  assert.deepStrictEqual(
+    migrated.messages,
+    []
+  );
+
+  assert.deepStrictEqual(
+    migrated.memories,
+    []
+  );
+
+  assert.deepStrictEqual(
+    migrated.memorySources,
+    []
+  );
+
+  assert.deepStrictEqual(
+    migrated.memoryRelations,
+    []
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().schemaVersion,
+    3
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v3 migration creates a fresh schema-v3 store without a recovery copy', function () {
+  const w = boot({});
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.migrateSchemaV3();
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.recoveryCopyPreserved, false);
+
+  const saved = JSON.parse(
+    w.localStorage.getItem('mopapa.v1')
+  );
+
+  assert.strictEqual(saved.schemaVersion, 3);
+  assert.deepStrictEqual(saved.conversations, []);
+  assert.deepStrictEqual(saved.messages, []);
+  assert.deepStrictEqual(saved.memories, []);
+  assert.deepStrictEqual(saved.memorySources, []);
+  assert.deepStrictEqual(saved.memoryRelations, []);
+});
+
+test('schema-v3 migration refuses unsafe data without changing the original or legacy migration state', function () {
+  const initial = stored([
+    {
+      id: 'unsafe-migration',
+      text: 'Original record',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const parsed = JSON.parse(initial['mopapa.v1']);
+  parsed.entries.push(null);
+  initial['mopapa.v1'] = JSON.stringify(parsed);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.migrateSchemaV3();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'unsafe-state');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.migrationBlocked(),
+    false
+  );
+});
+
+test('schema-v3 migration refuses a changed primary record without overwriting it', function () {
+  const w = boot(stored([
+    {
+      id: 'migration-conflict',
+      text: 'Original record',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const changedRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
+  });
+
+  w.localStorage.setItem('mopapa.v1', changedRaw);
+
+  const result = w.Mopapa.store.migrateSchemaV3();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    changedRaw
+  );
+});
+
+test('schema-v3 migration refuses read-only mode without writing', function () {
+  const initial = stored([]);
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.setWriteMode('readonly');
+
+  const result = w.Mopapa.store.migrateSchemaV3();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'readonly');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.migrationBlocked(),
+    false
+  );
+});
+
 function stored(entries, learned, ask) {
   return {
     'mopapa.v1': JSON.stringify({

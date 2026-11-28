@@ -2,7 +2,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var SCHEMA_VERSION = 2;
+  var SCHEMA_VERSION = 3;
   
   var MAX_PROTECTED_RECOVERY_COPIES = 10;
   var MAX_PROTECTED_RECOVERY_BYTES = 10 * 1024 * 1024;
@@ -1045,6 +1045,68 @@ function validSchemaV3EmptyArchiveEnvelope(value) {
   return true;
 }
 
+function schemaV3MigrationCandidate(currentRaw) {
+  var candidate;
+
+  if (currentRaw === null) {
+    candidate = {
+      schemaVersion: 3,
+      entries: [],
+      learned: {},
+      customRooms: [],
+      ask: {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      },
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
+    };
+  } else {
+    try {
+      candidate = JSON.parse(currentRaw);
+    } catch (e) {
+      return null;
+    }
+
+    if (
+      !candidate ||
+      typeof candidate !== 'object' ||
+      Array.isArray(candidate)
+    ) {
+      return null;
+    }
+
+    candidate = JSON.parse(JSON.stringify(candidate));
+    candidate.schemaVersion = 3;
+
+    if (!Object.prototype.hasOwnProperty.call(candidate, 'learned')) {
+      candidate.learned = {};
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(candidate, 'customRooms')) {
+      candidate.customRooms = [];
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(candidate, 'ask')) {
+      candidate.ask = {
+        aliases: [],
+        boosts: {},
+        unanswered: []
+      };
+    }
+  }
+
+  if (!validSchemaV3EmptyArchiveEnvelope(candidate)) {
+    return null;
+  }
+
+  return candidate;
+}
+
 function schemaV3MigrationPreflight() {
   function blocked(reason) {
     return {
@@ -1058,7 +1120,7 @@ function schemaV3MigrationPreflight() {
   }
 
   if (migrationPending || migrationBlocked) {
-      return blocked('migration-state');
+    return blocked('migration-state');
   }
 
   if (
@@ -1148,22 +1210,15 @@ function schemaV3MigrationPreflight() {
     ) {
       return blocked('source-ask');
     }
+
+    if (data.schemaVersion !== 2) {
+      return blocked('loaded-version');
+    }
   }
 
-  var candidate = {
-    schemaVersion: 3,
-    entries: data.entries,
-    learned: data.learned,
-    customRooms: data.customRooms,
-    ask: data.ask,
-    conversations: [],
-    messages: [],
-    memories: [],
-    memorySources: [],
-    memoryRelations: []
-  };
+  var candidate = schemaV3MigrationCandidate(currentRaw);
 
-  if (!validSchemaV3EmptyArchiveEnvelope(candidate)) {
+  if (!candidate) {
     return blocked('candidate-invalid');
   }
 
@@ -1173,6 +1228,142 @@ function schemaV3MigrationPreflight() {
     targetVersion: 3,
     emptyStore: currentRaw === null
   };
+}
+
+function migrateSchemaV3() {
+  var preflight = schemaV3MigrationPreflight();
+
+  if (!preflight.ok) {
+    return preflight;
+  }
+
+  var currentRaw;
+  var candidate;
+  var nextRaw;
+
+  try {
+    currentRaw = localStorage.getItem(KEY);
+  } catch (e) {
+    return {
+      ok: false,
+      reason: 'storage'
+    };
+  }
+
+  if (currentRaw !== lastKnownRaw) {
+    return {
+      ok: false,
+      reason: 'conflict'
+    };
+  }
+
+  candidate = schemaV3MigrationCandidate(currentRaw);
+
+  if (!candidate) {
+    return {
+      ok: false,
+      reason: 'candidate-invalid'
+    };
+  }
+
+  try {
+    nextRaw = JSON.stringify(candidate);
+  } catch (e) {
+    return {
+      ok: false,
+      reason: 'serialisation'
+    };
+  }
+
+  if (currentRaw !== null) {
+    if (!preserveRecoveryCopy(currentRaw)) {
+      return {
+        ok: false,
+        reason: 'recovery-copy'
+      };
+    }
+
+    try {
+      if (localStorage.getItem(KEY) !== currentRaw) {
+        return {
+          ok: false,
+          reason: 'conflict'
+        };
+      }
+    } catch (e) {
+      return {
+        ok: false,
+        reason: 'storage'
+      };
+    }
+  }
+
+  try {
+    localStorage.setItem(KEY, nextRaw);
+
+    if (localStorage.getItem(KEY) !== nextRaw) {
+      throw new Error('schema-v3 read-back mismatch');
+    }
+
+    var verified = JSON.parse(nextRaw);
+
+    if (
+      !validSchemaV3EmptyArchiveEnvelope(verified) ||
+      stableJSON(verified) !== stableJSON(candidate)
+    ) {
+      throw new Error('schema-v3 verification failed');
+    }
+
+    data = candidate;
+    lastKnownRaw = nextRaw;
+
+    return {
+      ok: true,
+      sourceVersion: 2,
+      targetVersion: 3,
+      recoveryCopyPreserved: currentRaw !== null
+    };
+  } catch (e) {
+    var observedRaw = null;
+    var observedSuccessfully = false;
+
+    try {
+      observedRaw = localStorage.getItem(KEY);
+      observedSuccessfully = true;
+    } catch (readError) {}
+
+    /*
+     * Roll back only when the primary value is still the exact
+     * candidate written by this migration. Never overwrite a
+     * value that may have been written by another tab.
+     */
+    if (observedSuccessfully && observedRaw === nextRaw) {
+      try {
+        if (currentRaw === null) {
+          localStorage.removeItem(KEY);
+        } else {
+          localStorage.setItem(KEY, currentRaw);
+        }
+
+        if (localStorage.getItem(KEY) !== currentRaw) {
+          return {
+            ok: false,
+            reason: 'rollback-failed'
+          };
+        }
+      } catch (rollbackError) {
+        return {
+          ok: false,
+          reason: 'rollback-failed'
+        };
+      }
+    }
+
+    return {
+      ok: false,
+      reason: 'write-or-verification'
+    };
+  }
 }
 
 function load() {
@@ -1224,7 +1415,7 @@ function load() {
         storedVersion > SCHEMA_VERSION ||
         !validMemoryCollections(
           p,
-          storedVersion === SCHEMA_VERSION
+          storedVersion >= 2
         )
       ) {
         throw new Error('unsupported schema or memory collections');
@@ -1308,7 +1499,11 @@ function load() {
 
         data.ask = cleanedAsk;
 
-        migrationPending = storedVersion < SCHEMA_VERSION;
+        data.schemaVersion = storedVersion >= 2
+          ? storedVersion
+          : 2;
+
+        migrationPending = storedVersion < 2;
       } else {
         throw new Error('unexpected shape');
       }
@@ -1937,7 +2132,7 @@ function migrate() {
                 ) ||
             !validMemoryCollections(
               p,
-              importedVersion === SCHEMA_VERSION
+              importedVersion >= 2
             ) ||
           !validImportedEntries(p.entries) ||
           (
@@ -2034,6 +2229,7 @@ function migrate() {
     load: load,
     migrate: migrate,
     schemaV3MigrationPreflight: schemaV3MigrationPreflight,
+    migrateSchemaV3: migrateSchemaV3,
     migrationBlocked: function () { return migrationBlocked; },
     save: save,
     preserveCurrentRecoveryCopy: preserveCurrentRecoveryCopy,
