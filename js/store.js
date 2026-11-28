@@ -994,6 +994,187 @@ function validMemoryCollections(value, requireAll) {
   return true;
 }
 
+function validSchemaV3EmptyArchiveEnvelope(value) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    value.schemaVersion !== 3 ||
+    !Array.isArray(value.entries) ||
+    !validImportedEntries(value.entries) ||
+    !value.learned ||
+    typeof value.learned !== 'object' ||
+    Array.isArray(value.learned) ||
+    stableJSON(cleanLegacyLearned(value.learned)) !==
+      stableJSON(value.learned) ||
+    !Array.isArray(value.customRooms)
+  ) {
+    return false;
+  }
+
+  var cleanedRooms = cleanImportedCustomRooms(value.customRooms);
+
+  if (
+    !cleanedRooms ||
+    stableJSON(cleanedRooms) !== stableJSON(value.customRooms) ||
+    !value.ask ||
+    typeof value.ask !== 'object' ||
+    Array.isArray(value.ask) ||
+    stableJSON(cleanAsk(value.ask)) !== stableJSON(value.ask)
+  ) {
+    return false;
+  }
+
+  var names = [
+    'conversations',
+    'messages',
+    'memories',
+    'memorySources',
+    'memoryRelations'
+  ];
+
+  for (var i = 0; i < names.length; i++) {
+    if (
+      !Array.isArray(value[names[i]]) ||
+      value[names[i]].length !== 0
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function schemaV3MigrationPreflight() {
+  function blocked(reason) {
+    return {
+      ok: false,
+      reason: reason
+    };
+  }
+
+  if (writeMode === 'readonly') {
+    return blocked('readonly');
+  }
+
+  if (migrationPending || migrationBlocked) {
+    return blocked('migration-state');
+  }
+
+  if (
+    data.storageUnavailable ||
+    data.corrupt ||
+    data.recoveryBlocked ||
+    data.recoveryCopySaved ||
+    data.corruptCopySaved ||
+    data.rejectedEntries ||
+    data.rejectedCustomRooms ||
+    data.rejectedAsk ||
+    data.rejectedLearned
+  ) {
+    return blocked('unsafe-state');
+  }
+
+  var currentRaw;
+
+  try {
+    currentRaw = localStorage.getItem(KEY);
+  } catch (e) {
+    return blocked('storage');
+  }
+
+  if (currentRaw !== lastKnownRaw) {
+    return blocked('conflict');
+  }
+
+  if (currentRaw !== null) {
+    var parsed;
+
+    try {
+      parsed = JSON.parse(currentRaw);
+    } catch (e) {
+      return blocked('invalid-json');
+    }
+
+    if (
+      !parsed ||
+      typeof parsed !== 'object' ||
+      Array.isArray(parsed) ||
+      parsed.schemaVersion !== 2
+    ) {
+      return blocked('source-version');
+    }
+
+    if (!validMemoryCollections(parsed, true)) {
+      return blocked('source-collections');
+    }
+
+    if (
+      !Array.isArray(parsed.entries) ||
+      cleanEntries(
+        normaliseLegacyAmounts(parsed.entries)
+      ).length !== parsed.entries.length
+    ) {
+      return blocked('source-entries');
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(parsed, 'learned') &&
+      stableJSON(cleanLegacyLearned(parsed.learned)) !==
+        stableJSON(parsed.learned)
+    ) {
+      return blocked('source-learned');
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(parsed, 'customRooms')
+    ) {
+      var sourceRooms = cleanImportedCustomRooms(
+        parsed.customRooms
+      );
+
+      if (
+        !sourceRooms ||
+        stableJSON(sourceRooms) !== stableJSON(parsed.customRooms)
+      ) {
+        return blocked('source-custom-rooms');
+      }
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(parsed, 'ask') &&
+      stableJSON(cleanAsk(parsed.ask)) !==
+        stableJSON(parsed.ask)
+    ) {
+      return blocked('source-ask');
+    }
+  }
+
+  var candidate = {
+    schemaVersion: 3,
+    entries: data.entries,
+    learned: data.learned,
+    customRooms: data.customRooms,
+    ask: data.ask,
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
+  };
+
+  if (!validSchemaV3EmptyArchiveEnvelope(candidate)) {
+    return blocked('candidate-invalid');
+  }
+
+  return {
+    ok: true,
+    sourceVersion: 2,
+    targetVersion: 3,
+    emptyStore: currentRaw === null
+  };
+}
+
 function load() {
   lastKnownRaw = null;
   saveError = null;
@@ -1850,6 +2031,7 @@ function migrate() {
     data: function () { return data; },
     load: load,
     migrate: migrate,
+    schemaV3MigrationPreflight: schemaV3MigrationPreflight,
     migrationBlocked: function () { return migrationBlocked; },
     save: save,
     preserveCurrentRecoveryCopy: preserveCurrentRecoveryCopy,

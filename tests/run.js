@@ -858,7 +858,164 @@ test('ask modules are loaded once and before ask.js', function () {
   });
 });
 
+test('schema-v3 migration preflight accepts clean schema-v2 data without writing', function () {
+  const initial = stored([
+    {
+      id: 'preflight-memory',
+      text: 'Original memory remains unchanged',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
 
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.schemaV3MigrationPreflight();
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.sourceVersion, 2);
+  assert.strictEqual(result.targetVersion, 3);
+  assert.strictEqual(result.emptyStore, false);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().schemaVersion,
+    2
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.recoveryCopies().length,
+    0
+  );
+});
+
+test('schema-v3 migration preflight accepts a fresh empty installation without writing', function () {
+  const w = boot({});
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.schemaV3MigrationPreflight();
+
+  assert.strictEqual(result.ok, true);
+  assert.strictEqual(result.sourceVersion, 2);
+  assert.strictEqual(result.targetVersion, 3);
+  assert.strictEqual(result.emptyStore, true);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    null
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().schemaVersion,
+    2
+  );
+});
+
+test('schema-v3 migration preflight rejects unsafe data without replacing the original', function () {
+  const initial = stored([]);
+  const parsed = JSON.parse(initial['mopapa.v1']);
+
+  parsed.conversations = [
+    { id: 'unsupported-existing-record' }
+  ];
+
+  initial['mopapa.v1'] = JSON.stringify(parsed);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  const result = w.Mopapa.store.schemaV3MigrationPreflight();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'unsafe-state');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().corrupt,
+    true
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v3 migration preflight rejects storage changed by another tab', function () {
+  const w = boot(stored([
+    {
+      id: 'conflict-memory',
+      text: 'Original memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const newerRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerRaw);
+
+  const result = w.Mopapa.store.schemaV3MigrationPreflight();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerRaw
+  );
+});
+
+test('schema-v3 migration preflight rejects read-only tabs', function () {
+  const w = boot(stored([]));
+
+  w.Mopapa.store.load();
+  w.Mopapa.store.setWriteMode('readonly');
+
+  const result = w.Mopapa.store.schemaV3MigrationPreflight();
+
+  assert.strictEqual(result.ok, false);
+  assert.strictEqual(result.reason, 'readonly');
+
+  assert.strictEqual(
+    w.Mopapa.store.data().schemaVersion,
+    2
+  );
+});
 
 function stored(entries, learned, ask) {
   return {
