@@ -1017,6 +1017,291 @@ test('schema-v3 migration preflight rejects read-only tabs', function () {
   );
 });
 
+test('schema-v2 migration commits schema v3 and preserves the exact original record', function () {
+  const initial = stored([
+    {
+      id: 'migration-original',
+      text: '  Original text remains exactly as entered.  ',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+
+  w.Mopapa.store.load();
+
+  assert.strictEqual(w.Mopapa.store.migrate(), true);
+
+  const savedRaw = w.localStorage.getItem('mopapa.v1');
+  const saved = JSON.parse(savedRaw);
+
+  assert.strictEqual(saved.schemaVersion, 3);
+  assert.strictEqual(
+    saved.entries[0].text,
+    '  Original text remains exactly as entered.  '
+  );
+
+  assert.deepStrictEqual(
+    saved.conversations,
+    []
+  );
+
+  assert.deepStrictEqual(
+    saved.messages,
+    []
+  );
+
+  assert.deepStrictEqual(
+    saved.memories,
+    []
+  );
+
+  assert.deepStrictEqual(
+    saved.memorySources,
+    []
+  );
+
+  assert.deepStrictEqual(
+    saved.memoryRelations,
+    []
+  );
+
+  assert.strictEqual(
+    w.Mopapa.store.data().schemaVersion,
+    3
+  );
+
+  assert.notStrictEqual(savedRaw, originalRaw);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v2 migration refuses to commit when the original recovery copy cannot be verified', function () {
+  const initial = stored([
+    {
+      id: 'recovery-required',
+      text: 'Do not lose this original',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+  const originalSetItem = w.localStorage.setItem;
+
+  w.Mopapa.store.load();
+
+  w.localStorage.setItem = function (key, value) {
+    if (key.indexOf('mopapa.v1.recovery.') === 0) {
+      return;
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'recovery');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
+test('schema-v2 migration rolls back when the primary write fails', function () {
+  const initial = stored([
+    {
+      id: 'write-failure',
+      text: 'Original data survives a failed migration',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+  const originalSetItem = w.localStorage.setItem;
+
+  w.Mopapa.store.load();
+
+  w.localStorage.setItem = function (key, value) {
+    if (
+      key === 'mopapa.v1' &&
+      JSON.parse(String(value)).schemaVersion === 3
+    ) {
+      throw new Error('simulated schema-v3 write failure');
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    originalRaw
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v2 migration rolls back a failed read-back verification', function () {
+  const initial = stored([
+    {
+      id: 'readback-failure',
+      text: 'Original text survives verification failure',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+  const originalGetItem = w.localStorage.getItem;
+  let returnMismatch = true;
+
+  w.Mopapa.store.load();
+
+  w.localStorage.getItem = function (key) {
+    const value = originalGetItem.call(this, key);
+
+    if (
+      key === 'mopapa.v1' &&
+      returnMismatch &&
+      value !== originalRaw
+    ) {
+      returnMismatch = false;
+      return 'deliberately incorrect read-back';
+    }
+
+    return value;
+  };
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+
+  assert.strictEqual(
+    originalGetItem.call(w.localStorage, 'mopapa.v1'),
+    originalRaw
+  );
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    originalGetItem.call(w.localStorage, copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v2 migration blocks safely when rollback itself fails', function () {
+  const initial = stored([
+    {
+      id: 'rollback-failure',
+      text: 'Original data is retained in recovery',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]);
+
+  const originalRaw = initial['mopapa.v1'];
+  const w = boot(initial);
+  const originalSetItem = w.localStorage.setItem;
+
+  w.Mopapa.store.load();
+
+  w.localStorage.setItem = function (key, value) {
+    if (key === 'mopapa.v1') {
+      const version = JSON.parse(String(value)).schemaVersion;
+
+      if (version === 3) {
+        originalSetItem.call(this, key, value);
+        throw new Error('simulated failure after writing schema v3');
+      }
+
+      if (version === 2) {
+        throw new Error('simulated rollback failure');
+      }
+    }
+
+    return originalSetItem.call(this, key, value);
+  };
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+  assert.strictEqual(w.Mopapa.store.data().recoveryBlocked, true);
+
+  const copies = w.Mopapa.store.recoveryCopies();
+
+  assert.strictEqual(copies.length, 1);
+  assert.strictEqual(
+    w.localStorage.getItem(copies[0].key),
+    originalRaw
+  );
+});
+
+test('schema-v2 migration refuses to overwrite a newer record from another tab', function () {
+  const w = boot(stored([
+    {
+      id: 'conflict-original',
+      text: 'Original memory',
+      room: 'notes',
+      created: ago(1)
+    }
+  ]));
+
+  w.Mopapa.store.load();
+
+  const newerRaw = JSON.stringify({
+    schemaVersion: 2,
+    entries: [],
+    learned: {},
+    customRooms: [],
+    ask: {
+      aliases: [],
+      boosts: {},
+      unanswered: []
+    },
+    conversations: [],
+    messages: [],
+    memories: [],
+    memorySources: [],
+    memoryRelations: []
+  });
+
+  w.localStorage.setItem('mopapa.v1', newerRaw);
+
+  assert.strictEqual(w.Mopapa.store.migrate(), false);
+  assert.strictEqual(w.Mopapa.store.migrationBlocked(), true);
+  assert.strictEqual(w.Mopapa.store.saveError(), 'conflict');
+
+  assert.strictEqual(
+    w.localStorage.getItem('mopapa.v1'),
+    newerRaw
+  );
+
+  assert.strictEqual(w.Mopapa.store.recoveryCopies().length, 0);
+});
+
 function stored(entries, learned, ask) {
   return {
     'mopapa.v1': JSON.stringify({
@@ -8929,28 +9214,29 @@ test('orphan-room repair is cancelled when saved data changes before preservatio
   );
 });
 
-test('loading unversioned data upgrades it to schema version 2', function () {
+test('loading schema-v2 data upgrades it to schema version 3', function () {
   const w = boot(stored([
     { id: 'legacy', text: 'Older saved memory', room: 'notes' }
   ]));
 
   w.Mopapa.store.load();
 
-  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 2);
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion,
+  3);
   assert.strictEqual(w.Mopapa.store.data().entries.length, 1);
 
   assert.strictEqual(w.Mopapa.store.save(), true);
 
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
-  assert.strictEqual(saved.schemaVersion, 2);
+  assert.strictEqual(saved.schemaVersion, 3);
   assert.strictEqual(saved.entries[0].id, 'legacy');
 });
 
 test('loading a future schema version preserves it as corrupt recovery data', function () {
   const w = boot({
     'mopapa.v1': JSON.stringify({
-      schemaVersion: 3,
+      schemaVersion: 4,
       entries: []
     })
   });
@@ -9192,7 +9478,7 @@ test('valid backup restore can replace corrupt saved data', function () {
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
   assert.strictEqual(saved.entries[0].id, 'restored');
-  assert.strictEqual(saved.schemaVersion, 2);
+  assert.strictEqual(saved.schemaVersion, 3);
 });
 
 test('loading rejects a non-numeric schema version', function () {
@@ -9559,7 +9845,7 @@ test('store distinguishes storage failures from save conflicts', function () {
     w.localStorage.getItem('mopapa.v1')
   );
 
-  assert.strictEqual(recovered.schemaVersion, 2);
+  assert.strictEqual(recovered.schemaVersion, 3);
   assert.strictEqual(recovered.entries.length, 1);
   assert.strictEqual(recovered.entries[0].id, 'original');
   assert.strictEqual(
@@ -9746,7 +10032,7 @@ test('failed JSON serialisation preserves the saved record and can be retried', 
     w.localStorage.getItem('mopapa.v1')
   );
 
-  assert.strictEqual(recovered.schemaVersion, 2);
+  assert.strictEqual(recovered.schemaVersion, 3);
   assert.strictEqual(recovered.entries.length, 1);
   assert.strictEqual(recovered.entries[0].id, 'original');
   assert.strictEqual(
@@ -10649,7 +10935,7 @@ test('restore rejects a future schema version without replacing current data', f
   assert.strictEqual(w.localStorage.getItem('mopapa.v1'), before);
 });
 
-test('restore upgrades a valid unversioned backup to schema version 2', function () {
+test('restore upgrades a valid unversioned backup to schema version 3', function () {
   const w = boot(stored([
     { id: 'old', text: 'Old entry', room: 'notes' }
   ]));
@@ -10680,12 +10966,13 @@ test('restore upgrades a valid unversioned backup to schema version 2', function
   );
 
   assert.strictEqual(result, true);
-  assert.strictEqual(w.Mopapa.store.data().schemaVersion, 2);
+  assert.strictEqual(w.Mopapa.store.data().schemaVersion,
+  3);
   assert.strictEqual(w.Mopapa.store.data().entries[0].id, 'imported');
 
   const saved = JSON.parse(w.localStorage.getItem('mopapa.v1'));
 
-  assert.strictEqual(saved.schemaVersion, 2);
+  assert.strictEqual(saved.schemaVersion, 3);
 });
 
 test('schema version 2 requires all five empty memory collections', function () {

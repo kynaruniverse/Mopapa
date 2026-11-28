@@ -2,7 +2,7 @@ var Mopapa = window.Mopapa = window.Mopapa || {};
 
 Mopapa.store = (function () {
   var KEY = 'mopapa.v1';
-  var SCHEMA_VERSION = 2;
+  var SCHEMA_VERSION = 3;
   
   var MAX_PROTECTED_RECOVERY_COPIES = 10;
   var MAX_PROTECTED_RECOVERY_BYTES = 10 * 1024 * 1024;
@@ -1057,7 +1057,7 @@ function schemaV3MigrationPreflight() {
     return blocked('readonly');
   }
 
-  if (migrationPending || migrationBlocked) {
+  if (migrationBlocked) {
     return blocked('migration-state');
   }
 
@@ -1224,7 +1224,7 @@ function load() {
         storedVersion > SCHEMA_VERSION ||
         !validMemoryCollections(
           p,
-          storedVersion === SCHEMA_VERSION
+          storedVersion >= 2
         )
       ) {
         throw new Error('unsupported schema or memory collections');
@@ -1338,7 +1338,17 @@ function migrate() {
     return false;
   }
 
-  if (data.storageUnavailable || data.corrupt || data.recoveryBlocked) {
+  if (
+    data.storageUnavailable ||
+    data.corrupt ||
+    data.recoveryBlocked ||
+    data.recoveryCopySaved ||
+    data.corruptCopySaved ||
+    data.rejectedEntries ||
+    data.rejectedCustomRooms ||
+    data.rejectedAsk ||
+    data.rejectedLearned
+  ) {
     migrationBlocked = true;
     saveError = data.recoveryBlocked ? 'recovery' : 'storage';
     return false;
@@ -1363,6 +1373,163 @@ function migrate() {
   if (currentRaw === null) {
     migrationPending = false;
     return true;
+  }
+
+  var sourceVersion = 0;
+
+  try {
+    var sourceRecord = JSON.parse(currentRaw);
+
+    sourceVersion = sourceRecord &&
+      Object.prototype.hasOwnProperty.call(
+        sourceRecord,
+        'schemaVersion'
+      )
+        ? sourceRecord.schemaVersion
+        : 0;
+  } catch (e) {
+    migrationBlocked = true;
+    saveError = 'migration';
+    return false;
+  }
+
+  if (SCHEMA_VERSION === 3 && sourceVersion === 2) {
+    var preflight = schemaV3MigrationPreflight();
+
+    if (!preflight.ok) {
+      migrationBlocked = true;
+
+      if (preflight.reason === 'readonly') {
+        saveError = 'readonly';
+      } else if (preflight.reason === 'conflict') {
+        saveError = 'conflict';
+      } else if (preflight.reason === 'storage') {
+        saveError = 'storage';
+      } else if (preflight.reason === 'unsafe-state') {
+        saveError = 'recovery';
+      } else {
+        saveError = 'migration';
+      }
+
+      return false;
+    }
+
+    var candidate = {
+      schemaVersion: 3,
+      entries: data.entries,
+      learned: data.learned,
+      customRooms: data.customRooms,
+      ask: data.ask,
+      conversations: [],
+      messages: [],
+      memories: [],
+      memorySources: [],
+      memoryRelations: []
+    };
+
+    if (!validSchemaV3EmptyArchiveEnvelope(candidate)) {
+      migrationBlocked = true;
+      saveError = 'migration';
+      return false;
+    }
+
+    var nextRaw;
+
+    try {
+      nextRaw = JSON.stringify(candidate);
+    } catch (e) {
+      migrationBlocked = true;
+      saveError = 'storage';
+      return false;
+    }
+
+    if (!preserveRecoveryCopy(currentRaw)) {
+      migrationBlocked = true;
+      data.recoveryBlocked = true;
+      saveError = 'recovery';
+      return false;
+    }
+
+    var latestRaw;
+
+    try {
+      latestRaw = localStorage.getItem(KEY);
+    } catch (e) {
+      migrationBlocked = true;
+      saveError = 'storage';
+      return false;
+    }
+
+    if (latestRaw !== currentRaw) {
+      migrationBlocked = true;
+      saveError = 'conflict';
+      return false;
+    }
+
+    try {
+      localStorage.setItem(KEY, nextRaw);
+
+      var savedRaw = localStorage.getItem(KEY);
+
+      if (savedRaw !== nextRaw) {
+        throw new Error('schema-v3 migration read-back mismatch');
+      }
+
+      var verifiedRecord = JSON.parse(savedRaw);
+
+      if (
+        !validSchemaV3EmptyArchiveEnvelope(verifiedRecord) ||
+        stableJSON(verifiedRecord) !== stableJSON(candidate)
+      ) {
+        throw new Error('schema-v3 migration verification failed');
+      }
+
+      data = candidate;
+      lastKnownRaw = nextRaw;
+      migrationPending = false;
+      migrationBlocked = false;
+
+      return true;
+    } catch (e) {
+      var restored = false;
+
+      try {
+        var observedRaw = localStorage.getItem(KEY);
+
+        if (observedRaw === currentRaw) {
+          restored = true;
+        } else if (observedRaw === nextRaw) {
+          localStorage.setItem(KEY, currentRaw);
+          restored = localStorage.getItem(KEY) === currentRaw;
+        }
+      } catch (restoreError) {
+        restored = false;
+      }
+
+      if (restored) {
+        lastKnownRaw = currentRaw;
+      } else {
+        data.recoveryBlocked = true;
+      }
+
+      migrationBlocked = true;
+
+      saveError = (
+        e && (
+          e.name === 'QuotaExceededError' ||
+          e.code === 22 ||
+          e.code === 1014
+        )
+      ) ? 'quota' : 'storage';
+
+      return false;
+    }
+  }
+
+  if (data.storageUnavailable || data.corrupt || data.recoveryBlocked) {
+    migrationBlocked = true;
+    saveError = data.recoveryBlocked ? 'recovery' : 'storage';
+    return false;
   }
 
   if (!preserveRecoveryCopy(currentRaw)) {
